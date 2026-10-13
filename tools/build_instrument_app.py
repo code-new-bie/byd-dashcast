@@ -1,4 +1,4 @@
-"""Rebuild only the hash-pinned 0.4.4 App payload from user-owned local inputs.
+"""Rebuild only the hash-pinned 0.5.0 first-trial App payload from user-owned local inputs.
 
 Never flashes, changes MCU/OS, overwrites inputs, signs an APK or certifies runtime.
 Output is a local packaging verification, not an independently certified delivery.
@@ -20,9 +20,9 @@ PREFIX = "base/app/dip-instrument"
 ORIGINAL_APP_HASH = "d4969ab876f27d3a40cd04658a447d46da636f98f153889a5b520c34207062f5"
 ORIGINAL_MCU_HASH = "1ac756c66b26e16c2d1f4b2a93a6bd4ea0722fdfe7df3a0f51ab572c7179f337"
 REFERENCE_OS_HASH = "779166fadb80a0cb100e358a7563e827633b8ba61286ae98880a482b08c2b9c7"
-APP_OUTPUT_HASH = "a26f7926925db7696f3aa0d3c9360103393e952cfc46dd89c57b520fb1da5ffa"
+APP_OUTPUT_HASH = "bf8446491f0277a66e25fbb96a6355b403735ae5ad8dfbe079cd34958a2b5641"
 MODULE_HASHES = {
-    "instrument-receiver": "80f38d15c1b80b5cfb0fd3ca34209d6db63b0b17b605ab65523b8bafe8c2407e",
+    "instrument-receiver": "5d0bebd667afa7fcc2419e05ca92228bf161d44c1a7cbd8581bbc152714d125e",
     "instrument-usb": "734cfe1796ee040a57237e21bbf0563514d81a6d8c4114cc8d958586183d0e4b",
     "startup.ksh": "dcc08669bdef4077196019df5956a45f7b29abc70860e40f71f8c2c81079a6f4",
     "run-cast.ksh": "268ee0e537d6f78dc9715d44d5c3c8e5504aad794480a9708cfb77c9515f6b83",
@@ -73,7 +73,7 @@ def build(original, reference, output):
     for name in ("startup.ksh", "run-cast.ksh", "cast-mode.ksh", "usb-mode.ksh"):
         modules[name] = (ROOT / "phase1/qnx/ref2-noauth" / name).read_text(encoding="utf-8").encode()
     if {name: digest(data) for name, data in modules.items()} != MODULE_HASHES:
-        raise ValueError("Adapted module differs from 0.4.4; review instead of relabelling a changed payload")
+        raise ValueError("Adapted module differs from audited 0.5.0; review changed payload before relabelling")
     candidate = copy.deepcopy(app)
     directory = next(name for name in ref_app if name.rstrip("/") == PREFIX)
     candidate[directory] = copy.deepcopy(ref_app[directory])
@@ -94,9 +94,9 @@ def build(original, reference, output):
     if roundtrip_tail[:0x120] != tail[:0x120] or roundtrip_tail[0x148:] != tail[0x148:]:
         raise ValueError("SV installation metadata changed")
     if digest(packed) != APP_OUTPUT_HASH:
-        raise ValueError("Final App differs from the independently audited 0.4.4 payload")
+        raise ValueError("Final App differs from the audited 0.5.0 first-trial payload")
     output.mkdir(parents=True)
-    package = output / "dashcast-phase1-app-0.4.4-LOCAL-REBUILD-NOT-CERTIFIED.zip"
+    package = output / "dashcast-app-0.5.0-LOCAL-REBUILD-NOT-CERTIFIED.zip"
     with zipfile.ZipFile(package, "x", compression=zipfile.ZIP_STORED) as archive:
         archive.writestr("release/app.sv", packed)
         for name, data in sidecars.items():
@@ -106,7 +106,7 @@ def build(original, reference, output):
             raise ValueError("Output ZIP integrity/range failure")
         if digest(archive.read("release/app.sv")) != APP_OUTPUT_HASH:
             raise ValueError("Output App readback mismatch")
-    report = dict(status="PASS_LOCAL_APP_REPRODUCTION_RUNTIME_NOT_TESTED", version="0.4.4",
+    report = dict(status="PASS_LOCAL_APP_REPRODUCTION_RUNTIME_NOT_TESTED", version="0.5.0",
                   app_sha256=digest(packed), original_members_preserved=46, app_members=53,
                   os_in_package=False, mcu_in_package=False, apk_signature_checked=False,
                   modules={name: digest(data) for name, data in modules.items()},

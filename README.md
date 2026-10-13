@@ -1,6 +1,6 @@
 # Dashcast
 
-BYD Android 车机 → QNX 仪表的阶段一 USB 投屏验证工程，当前源码基线 **0.4.4**。
+BYD Android 车机 → QNX 仪表 USB 投屏工程。当前开发源码 **0.5.0 持续小窗首测版**；已有实车反馈的阶段一基线与公开 Release 为 **0.4.4**，二者验收范围不同。
 
 此项目用于可恢复台架或车辆停稳时的验证，不是官方固件、通用车型适配包或行驶中使用的生产产品。仪表 MCU 不修改，视频不使用激活码/token/设备绑定；正常 ADB 和 USB 访问授权仍然必需。
 
@@ -11,6 +11,9 @@ BYD Android 车机 → QNX 仪表的阶段一 USB 投屏验证工程，当前源
 - 复用仪表已有媒体/窗口接口，验证中央 640×240 小窗口；原仪表 HMI 保留。
 - 0.4.4 修复操作锁残留、跨会话 TCP 源端口复用和重复 NCM 重连。
 - 实车已有首次动态画面与新版9次重复连接记录；**传输通过、画面观察和Host实际恢复是不同验收项**。
+- 0.5.0增加前台Service拥有的最长30分钟会话、通知停止、有界日志；切导航不再由Activity取消长会话。采集传输真实编码PTS，不保存持续视频。
+- 长模式先协商DCV1/2；老仪表接收端会在START前拒绝。必须使用配套0.5.0仪表App，不能仅升级APK。
+- 10/30分钟真实画面、后台生命周期、停止/重复使用及视频后Host恢复**尚待停稳实车验收**。640×240中央窗口不保证不遮挡安全信息。
 
 详细边界见 [验证状态](docs/VALIDATION.md)，不要把历史“待验证”或当前一次通过推广到所有车型。
 
@@ -23,14 +26,14 @@ analysis/                   哈希固定的原生适配、ELF读取、SV容器�
 tools/                      公开内容检查、离线App包装、工具测试
 docs/                       架构、构建、操作、验证和发布清单
 .github/                    源码检查/Android构建CI、问题模板
-SOURCE_MANIFEST.json        首次整理的逐文件哈希及机械变换清单
+SOURCE_MANIFEST.json        当前审核源码的逐文件哈希、来源及机械变换清单
 ```
 
 不包含原厂/参考固件、SDK、编译APK、原始实车日志、签名私钥、ADB身份或历史视频凭据。固件构建需要操作者自行提供匹配且有权使用的输入，**克隆仓库不等于可以直接刷仪表**。
 
 ## 构建与使用
 
-APK需要JDK21、Android SDK35、build-tools35.0.1；Java语言目标11，目标车机Android10/API29。依赖版本保持0.4.4基线，没有借整理升级运行逻辑。
+APK需要JDK21、Android SDK35、build-tools35.0.1；Java语言目标11，目标车机Android10/API29。依赖版本承接0.4.4，没有同时升级工具链或重写Kotlin。
 
 ```bash
 cd phase1/android
@@ -44,7 +47,8 @@ Windows使用`gradlew.bat`。首次需要网络下载依赖；`--offline`只适�
 ## 文档入口
 
 - [架构及端口说明](docs/ARCHITECTURE.md)
-- [0.4.4改动与历史摘要](CHANGELOG.md)
+- [0.5.0任务、状态机和验收](docs/TASKS_0.5.0.md)
+- [0.5.0及历史改动](CHANGELOG.md)
 - [验证状态与剩余现场确认](docs/VALIDATION.md)
 - [上传前检查与Release边界](docs/PUBLISHING.md)
 - [贡献说明](CONTRIBUTING.md)、[安全说明](SECURITY.md)

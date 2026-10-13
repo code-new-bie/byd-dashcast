@@ -22,7 +22,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Check public files
-        run: python3 tools/check_public_tree.py
+        run: python3 tools/check_public_tree.py --verify-snapshot
       - name: Test repository tools
         run: python3 -m unittest discover -s tools/tests -p 'test_*.py' -v
       - name: Set up JDK

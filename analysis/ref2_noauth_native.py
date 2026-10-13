@@ -114,7 +114,9 @@ def build_receiver(source):
     patch.put("unused_public_key_removed", 0x10ae68, bytes(270))
     result, report = patch.finish()
     report["arm_source_sha256"] = digest(arm_source.encode("utf-8"))
-    report["protocol"] = "DCV1/1, TCP31707, no crypto/activation/identity"
+    report["protocol"] = "DCV1/1 short + DCV1/2 bounded continuous, TCP31707, no crypto/activation/identity"
+    report["continuous_limits"] = dict(session_seconds=1860, heartbeat_ms=15000,
+                                       frames=65000, frame_bytes=0x200000)
     return result, report
 
 

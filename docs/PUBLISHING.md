@@ -5,7 +5,7 @@
 1. 确认[许可证状态](../LICENSE_STATUS.md)，由项目所有者决定LICENSE与权利声明；不将原厂/参考固件自动包含在项目许可证中。
 2. `python tools/check_public_tree.py --verify-snapshot`；检查SOURCE_MANIFEST与`git status --short`，确认没有额外内容/软链接。
 3. `git add .`后再次`python tools/check_public_tree.py`，以及`git diff --cached --stat`和`git diff --cached --check`。检查器会检查被强制加入索引的忽略文件，不能靠`git add -f`绕过范围。
-4. 由操作者创建GitHub空仓库，再手动设置remote/commit/push；本地整理没有创建远程、上传文件或替操作者提交。
+4. 当前仓库为code-new-bie/byd-dashcast，维护2021-song-plus-dmi分支；使用WSL git/gh正常提交推送，不force覆盖其他历史。任务/使用/验证文档与代码一起维护；完成后回读提交及CI，不把云端构建当实车验收。
 
 ## 不上传什么
 
@@ -13,8 +13,8 @@
 
 ## Release边界
 
-公开源码与可刷固件不是同一件事。App-only升级ZIP包含原厂App内容，不随源码公开；即使使用GitHub Release而不是Git提交也应单独核对发布范围与来源权限。CI不自动发布任何二进制。
+公开源码与可刷固件不是同一件事。经项目所有者授权分享的0.4.4配套包已在[Release](https://github.com/code-new-bie/byd-dashcast/releases/tag/v0.4.4-2021-song-plus-dmi)独立提供，FULL含原版国内MCU原件；这些负载不放进Git源代码历史，也不自动纳入源码许可证。CI不自动发布二进制。
 
 若以后发布APK，需要明确debug/release签名、是否能覆盖原版本、版本匹配及测试范围。签名密钥保留在仓库外，不能把原设备身份或旧密钥放进示例配置。
 
-源码依赖外部匹配输入才能生成仪表App，不在README提供未知来源固件下载链接。原实测两文件交付留在本地，内容/哈希不因本轮整理而改变。
+0.5.0是最长30分钟的配套首测开发，真车验收未完成；当前维护源码和本地验证包，不自动替换0.4.4 Release。之后发布需独立核对同签名APK/仪表组件/OS/MCU原件、验收状态和回退前提，交付目录仍只有仪表ZIP与APK。

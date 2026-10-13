@@ -261,6 +261,112 @@ public final class AdbShellClientTest {
         return packet(CNXN, 0x01000000, 4096, "device::\0".getBytes(StandardCharsets.US_ASCII));
     }
 
+    @Test
+    public void dataProgressRenewsIdleDeadlineBeyondOldAbsoluteTimeout() throws Exception {
+        java.util.concurrent.atomic.AtomicLong clock = new java.util.concurrent.atomic.AtomicLong();
+        AdbShellClient client = new AdbShellClient("127.0.0.1", 5555, 20000, null,
+                message -> {}, new AtomicBoolean(), clock::get);
+        ByteArrayOutputStream peer = new ByteArrayOutputStream();
+        peer.write(packet(CNXN, 0x01000000, 4096,
+                "device::features=shell_v2\0".getBytes(StandardCharsets.US_ASCII)));
+        peer.write(packet(OKAY, 7, 1, EMPTY));
+        for (int index = 0; index < 360; index++) {
+            peer.write(packet(WRTE, 7, 1, new byte[] {1, 1, 0, 0, 0, 42}));
+        }
+        peer.write(packet(WRTE, 7, 1, new byte[] {3, 1, 0, 0, 0, 0}));
+        peer.write(packet(CLSE, 7, 1, EMPTY));
+        final int[] packets = {0};
+        client.executeControlledProtocol(new ByteArrayInputStream(peer.toByteArray()), new ByteArrayOutputStream(), "owned",
+                (data, length) -> {
+                    packets[0]++;
+                    clock.addAndGet(5_000_000_000L);
+                }, new AtomicBoolean());
+        assertEquals(360, packets[0]);
+        assertEquals(1_800_000_000_000L, clock.get());
+    }
+
+    @Test
+    public void legacyDiagnosticsKeepAbsoluteDeadlineEvenIfPeerKeepsSendingData() throws Exception {
+        java.util.concurrent.atomic.AtomicLong clock = new java.util.concurrent.atomic.AtomicLong();
+        AdbShellClient client = new AdbShellClient("127.0.0.1", 5555, 20000, null,
+                message -> {}, new AtomicBoolean(), clock::get);
+        byte[] peer = concat(connect(), packet(OKAY, 7, 1, EMPTY),
+                packet(WRTE, 7, 1, new byte[] {1}), packet(WRTE, 7, 1, new byte[] {1}),
+                packet(WRTE, 7, 1, new byte[] {1}), packet(WRTE, 7, 1, new byte[] {1}),
+                packet(WRTE, 7, 1, new byte[] {1}), packet(CLSE, 7, 1, EMPTY));
+        final int[] consumed = {0};
+        assertThrows(IOException.class, () -> client.executeProtocol(new ByteArrayInputStream(peer),
+                new ByteArrayOutputStream(), "diagnostic", (data, length) -> {
+                    consumed[0]++;
+                    clock.addAndGet(5_000_000_000L);
+                }));
+        assertEquals(4, consumed[0]);
+    }
+
+    @Test
+    public void liveStopSendsOnlyFixedStdinOnceAndStillRequiresSuccessfulShellExit() throws Exception {
+        AtomicBoolean stop = new AtomicBoolean();
+        Harness harness = new Harness(null);
+        byte[] peer = concat(packet(CNXN, 0x01000000, 4096,
+                "device::features=shell_v2\0".getBytes(StandardCharsets.US_ASCII)),
+                packet(OKAY, 7, 1, EMPTY), packet(WRTE, 7, 1, new byte[] {1, 1, 0, 0, 0, 42}),
+                packet(OKAY, 7, 1, EMPTY), packet(WRTE, 7, 1, new byte[] {3, 1, 0, 0, 0, 0}),
+                packet(CLSE, 7, 1, EMPTY));
+        harness.client.executeControlledProtocol(new ByteArrayInputStream(peer), harness.sent, "owned",
+                (data, length) -> stop.set(true), stop);
+        List<WirePacket> stdin = new ArrayList<>();
+        for (WirePacket sent : harness.sentPackets()) {
+            if (sent.command == WRTE) {
+                stdin.add(sent);
+            }
+        }
+        assertEquals(1, stdin.size());
+        assertEquals(1, stdin.get(0).arg0);
+        assertEquals(7, stdin.get(0).arg1);
+        assertArrayEquals(new byte[] {0, 5, 0, 0, 0, 'S', 'T', 'O', 'P', '\n'}, stdin.get(0).payload);
+    }
+
+    @Test
+    public void stopDrainCannotBeKeptAliveForeverByFurtherStdout() throws Exception {
+        java.util.concurrent.atomic.AtomicLong clock = new java.util.concurrent.atomic.AtomicLong();
+        AtomicBoolean stop = new AtomicBoolean();
+        AdbShellClient client = new AdbShellClient("127.0.0.1", 5555, 20000, null,
+                message -> {}, new AtomicBoolean(), clock::get);
+        ByteArrayOutputStream peer = new ByteArrayOutputStream();
+        peer.write(packet(CNXN, 0x01000000, 4096,
+                "device::features=shell_v2\0".getBytes(StandardCharsets.US_ASCII)));
+        peer.write(packet(OKAY, 7, 1, EMPTY));
+        for (int index = 0; index < 10; index++) {
+            peer.write(packet(WRTE, 7, 1, new byte[] {1, 1, 0, 0, 0, 42}));
+        }
+        IOException error = assertThrows(IOException.class, () -> client.executeControlledProtocol(
+                new ByteArrayInputStream(peer.toByteArray()), new ByteArrayOutputStream(), "owned",
+                (data, length) -> { stop.set(true); clock.addAndGet(5_000_000_000L); }, stop));
+        assertEquals("CAPTURE_STOP_EXIT_UNCONFIRMED", error.getMessage());
+    }
+
+    @Test
+    public void nativeStopHookRunsBeforeStdinAndItsCleanupDoesNotConsumeCaptureDrainBudget() throws Exception {
+        AtomicBoolean stop = new AtomicBoolean(true);
+        java.util.concurrent.atomic.AtomicLong clock = new java.util.concurrent.atomic.AtomicLong();
+        ByteArrayOutputStream sent = new ByteArrayOutputStream();
+        AdbShellClient client = new AdbShellClient("127.0.0.1", 5555, 20000, null,
+                message -> {}, new AtomicBoolean(), clock::get);
+        byte[] peer = concat(packet(CNXN, 0x01000000, 4096,
+                "device::features=shell_v2\0".getBytes(StandardCharsets.US_ASCII)),
+                packet(OKAY, 7, 1, EMPTY), packet(WRTE, 7, 1, new byte[] {3, 1, 0, 0, 0, 0}),
+                packet(CLSE, 7, 1, EMPTY));
+        final int[] called = {0};
+        client.executeControlledProtocol(new ByteArrayInputStream(peer), sent, "owned", (data, length) -> {}, stop,
+                () -> {
+                    called[0]++;
+                    assertFalse(new String(sent.toByteArray(), StandardCharsets.US_ASCII).contains("STOP\n"));
+                    clock.addAndGet(12_000_000_000L);
+                });
+        assertEquals(1, called[0]);
+        assertTrue(new String(sent.toByteArray(), StandardCharsets.US_ASCII).contains("STOP\n"));
+    }
+
     private static byte[] normalSession() {
         return concat(connect(), packet(OKAY, 7, 1, EMPTY),
                 packet(WRTE, 7, 1, "2000\n".getBytes(StandardCharsets.UTF_8)), packet(CLSE, 7, 1, EMPTY));

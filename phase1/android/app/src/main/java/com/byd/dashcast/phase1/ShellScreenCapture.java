@@ -11,6 +11,9 @@ import android.os.Process;
 import android.view.Surface;
 
 import java.io.IOException;
+import java.io.FileDescriptor;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 
@@ -27,14 +30,22 @@ public final class ShellScreenCapture {
 
     public static void main(String[] args) {
         try {
-            if (args.length != 1 || Process.myUid() != 2000 || Build.VERSION.SDK_INT != 29) {
+            boolean live = args.length == 2 && "live".equals(args[1]);
+            if ((args.length != 1 && !live) || Process.myUid() != 2000 || Build.VERSION.SDK_INT != 29) {
                 throw new IOException("SHELL_CAPTURE_REQUIRES_AUTHORIZED_UID2000_ANDROID10");
             }
             int seconds = Integer.parseInt(args[0]);
-            if (seconds < 1 || seconds > 10) {
+            if (seconds < 1 || seconds > (live ? ProjectionLimits.MAX_SECONDS : 10)) {
                 throw new IOException("SHELL_CAPTURE_DURATION_LIMIT");
             }
-            capture(seconds);
+            if (live) {
+                try (CaptureStopControl control = new CaptureStopControl(System.in)) {
+                    control.start();
+                    capture(seconds, control);
+                }
+            } else {
+                capture(seconds, null);
+            }
         } catch (Exception error) {
             System.err.println("SHELL_CAPTURE_FAILED " + error);
             for (Throwable suppressed : error.getSuppressed()) {
@@ -71,7 +82,7 @@ public final class ShellScreenCapture {
         throw new IOException("SHELL_CAPTURE_NO_HARDWARE_BASELINE_ENCODER");
     }
 
-    private static void capture(int seconds) throws Exception {
+    private static void capture(int seconds, CaptureStopControl control) throws Exception {
         MediaCodec codec = encoder();
         Surface surface = null;
         Mirror mirror = null;
@@ -83,7 +94,7 @@ public final class ShellScreenCapture {
             codec.start();
             started = true;
             mirror = new Mirror(surface);
-            stream(codec, seconds);
+            stream(codec, seconds, control);
         } catch (Exception error) {
             failure = error;
             throw error;
@@ -133,17 +144,20 @@ public final class ShellScreenCapture {
         return first;
     }
 
-    private static void stream(MediaCodec codec, int seconds) throws IOException {
+    private static void stream(MediaCodec codec, int seconds, CaptureStopControl control) throws IOException {
         long stopAt = System.nanoTime() + seconds * 1_000_000_000L;
+        long drainUntil = stopAt + 2_000_000_000L;
+        OutputStream stdout = new FileOutputStream(FileDescriptor.out);
         long lastPts = -1;
         int frames = 0;
         boolean eos = false;
         byte[] config = new byte[0];
         MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
-        while (System.nanoTime() < stopAt + 2_000_000_000L) {
-            if (!eos && System.nanoTime() >= stopAt) {
+        while (System.nanoTime() < drainUntil) {
+            if (!eos && (System.nanoTime() >= stopAt || control != null && control.stopped())) {
                 codec.signalEndOfInputStream();
                 eos = true;
+                drainUntil = System.nanoTime() + 2_000_000_000L;
             }
             int index = codec.dequeueOutputBuffer(info, 10_000);
             if (index == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
@@ -165,26 +179,38 @@ public final class ShellScreenCapture {
                         config = AvcByteStream.normalizeConfiguration(buffer);
                     } else {
                         if ((info.flags & MediaCodec.BUFFER_FLAG_PARTIAL_FRAME) != 0 || info.presentationTimeUs <= lastPts
-                                || ++frames > 360) {
+                                || ++frames > (control == null ? 360 : ProjectionLimits.MAX_FRAMES)) {
                             throw new IOException("SHELL_CAPTURE_PARTIAL_B_FRAME_OR_FRAME_LIMIT");
                         }
-                        if ((info.flags & MediaCodec.BUFFER_FLAG_KEY_FRAME) != 0) {
+                        boolean key = (info.flags & MediaCodec.BUFFER_FLAG_KEY_FRAME) != 0;
+                        byte[] picture = AvcByteStream.normalize(buffer);
+                        if (key) {
                             if (config.length == 0) {
                                 throw new IOException("SHELL_CAPTURE_MISSING_CONFIGURATION");
                             }
-                            System.out.write(config);
+                            if (config.length > NoAuthVideoProtocol.MAX_FRAME_BYTES - picture.length) {
+                                throw new IOException("SHELL_CAPTURE_CONFIG_FRAME_LIMIT");
+                            }
+                            byte[] combined = new byte[config.length + picture.length];
+                            System.arraycopy(config, 0, combined, 0, config.length);
+                            System.arraycopy(picture, 0, combined, config.length, picture.length);
+                            picture = combined;
                         }
-                        System.out.write(AvcByteStream.normalize(buffer));
-                        System.out.flush();
-                        if (System.out.checkError()) {
-                            throw new IOException("SHELL_CAPTURE_STDOUT_CLOSED");
+                        if (control != null) {
+                            stdout.write(CaptureFrameProtocol.header(picture.length, info.presentationTimeUs, key));
                         }
+                        stdout.write(picture);
+                        stdout.flush();
                         lastPts = info.presentationTimeUs;
                     }
                 }
                 if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
-                    if (frames < 2) {
+                    if (frames < 2 && !(control != null && control.stopped())) {
                         throw new IOException("SHELL_CAPTURE_FEWER_THAN_TWO_PICTURES");
+                    }
+                    if (control != null) {
+                        stdout.write(CaptureFrameProtocol.end(Math.max(0, lastPts)));
+                        stdout.flush();
                     }
                     System.err.println("SHELL_CAPTURE_COMPLETE frames=" + frames + "; display unverified");
                     return;

@@ -3,6 +3,7 @@ package com.byd.dashcast.phase1;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Bounded live AVC stdout through authorized local ADB, framed as complete pictures.
@@ -16,6 +17,7 @@ final class AdbScreenVideoSource {
     private final AdbShellClient client;
     private final VideoPatternProbe.Observer observer;
     private final Consumer<String> log;
+    private boolean exitConfirmed;
 
     AdbScreenVideoSource(AdbShellClient client, VideoPatternProbe.Observer observer, Consumer<String> log) {
         this.client = Objects.requireNonNull(client);
@@ -50,6 +52,21 @@ final class AdbScreenVideoSource {
 
     void runSmallWindow(int seconds, String installedApk) throws IOException {
         runCommand(ShellCaptureCommand.create(installedApk, seconds));
+    }
+
+    void runContinuous(int seconds, String installedApk, AtomicBoolean stopRequested, Runnable finishReceiver)
+            throws IOException {
+        FramedCaptureReader reader = new FramedCaptureReader(observer, finishReceiver);
+        log.accept("VIDEO_SOURCE=authorized_ADB_DCS1; timestamps=encoder_PTS; no video file recorded");
+        client.executeShellV2Controlled(ShellCaptureCommand.continuous(installedApk, seconds), reader, log,
+                Objects.requireNonNull(stopRequested), finishReceiver);
+        exitConfirmed = true;
+        reader.finish(stopRequested.get());
+        log.accept(reader.statistics());
+    }
+
+    boolean exitConfirmed() {
+        return exitConfirmed;
     }
 
     private void run(int seconds, boolean smallWindow) throws IOException {

@@ -13,9 +13,9 @@ bash gradlew testDebugUnitTest assembleDebug lintDebug --console=plain
 
 Windows对应`gradlew.bat`。APK位于`app/build/outputs/apk/debug/app-debug.apk`，测试/ lint在`app/build`。新机器首次下载依赖，不能直接假设`--offline`可用。
 
-运行版本仍0.4.4/code14。此公开整理不改APK生产代码；文本行尾统一LF。历史参考包1的10个旧夹具/辅助类不公开（其中3个测试套共32项），AnnexB测试改为调用当前无凭据DCV1契约；其余测试保留。
+当前开发版本0.5.0/code15，发布实车基线0.4.4/code14保留。文本行尾统一LF。历史参考包1的10个旧夹具/辅助类不公开（其中3个测试套共32项），AnnexB测试调用当前无凭据DCV1短契约；其余及新长会话测试保留。
 
-**工作区历史231测试与公开版199测试分开计数。**公开版不带旧凭据测试链，这不改变APK视频授权/运行行为。最新本地复测结果见[验证状态](VALIDATION.md)。
+0.5.0工作区259测试/37套；公开版独立227测试/34套通过（只排除32个历史凭据测试）。公开版与工作区分别构建/验证，不以一方通过替代另一方；历史0.4.4为231/199。最新结果见[验证状态](VALIDATION.md)。
 
 ## 自备输入的仪表App离线包装
 
@@ -26,7 +26,7 @@ python -m pip install -r requirements-native.txt
 python tools/build_instrument_app.py --original private-inputs/original.zip --reference private-inputs/reference2.zip --output build/instrument-check
 ```
 
-工具只读原版App/MCU、参考OS和原生模块，核对固定哈希、sidecar、46→53成员和全部原成员元数据；适配后的6模块哈希及app.sv应与0.4.4基线相同。输出目录必须不存在，不覆盖输入/旧交付。
+工具只读原版App/MCU、参考OS和原生模块，核对固定哈希、sidecar、46→53成员和全部原成员元数据；适配后的6模块与已审计0.5.0首测App固定哈希相同，不能用0.4.4 App假称支持长会话。输出目录必须不存在，不覆盖输入/旧交付。
 
 输出App-only ZIP仅有app.sv及3个版本辅助文件，不含OS/MCU。报告位于输出目录旁的子目录，不混入ZIP。它**不是完整交付验收**：需成对选定APK、检查签名/匹配条件、当前回归及恢复手段，才可由操作者决定停稳验证。此工具不能代替实车验收或旧私有工作区的独立审计。
 
@@ -42,4 +42,4 @@ python tools/check_public_tree.py --verify-snapshot
 
 最后一项用于核对首次整理的逐文件哈希，之后正常开发改源码会改变快照，应重新审核/更新清单。日常检查默认检查待公开文件、危险扩展名/凭据模式/个人路径和文档链接，不当作完整秘密扫描器或法律审查。
 
-GitHub CI只检查公开源码/工具并构建测试APK；不连接车辆、不制作或上传参考固件、不发布Release，不使用签名私钥/设备ADB身份。首次远程运行尚未在本地替代验证。
+GitHub CI只检查公开源码/工具并构建测试APK；不连接车辆、不制作或上传参考固件、不发布Release，不使用签名私钥/设备ADB身份。0.4.4源码首次CI已通过；0.5.0 CI以本次提交后的实际运行状态为准，不等于实车验证。

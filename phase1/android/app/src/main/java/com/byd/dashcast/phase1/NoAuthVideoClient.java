@@ -26,6 +26,7 @@ final class NoAuthVideoClient implements Closeable {
     private final AtomicBoolean cancelled;
     private final Logger logger;
     private final LongSupplier nanoTime;
+    private final boolean continuous;
     private NoAuthVideoTransport video;
     private NoAuthVideoProtocol.Reply evidence;
     private boolean negotiated;
@@ -39,16 +40,29 @@ final class NoAuthVideoClient implements Closeable {
     private long firstPts = -1;
     private long previousPtsMillis = -1;
     private long payloadBytes;
+    private boolean cleanupConfirmed = true;
+    private long maxAckNanos;
+    private long totalAckNanos;
 
     NoAuthVideoClient(Connector connector, AtomicBoolean cancelled, Logger logger) {
         this(connector, cancelled, logger, System::nanoTime);
     }
 
     NoAuthVideoClient(Connector connector, AtomicBoolean cancelled, Logger logger, LongSupplier nanoTime) {
+        this(connector, cancelled, logger, nanoTime, false);
+    }
+
+    NoAuthVideoClient(Connector connector, AtomicBoolean cancelled, Logger logger, boolean continuous) {
+        this(connector, cancelled, logger, System::nanoTime, continuous);
+    }
+
+    NoAuthVideoClient(Connector connector, AtomicBoolean cancelled, Logger logger, LongSupplier nanoTime,
+            boolean continuous) {
         this.connector = Objects.requireNonNull(connector, "connector");
         this.cancelled = Objects.requireNonNull(cancelled, "cancelled");
         this.logger = Objects.requireNonNull(logger, "logger");
         this.nanoTime = Objects.requireNonNull(nanoTime, "nanoTime");
+        this.continuous = continuous;
     }
 
     void begin() throws IOException {
@@ -61,15 +75,17 @@ final class NoAuthVideoClient implements Closeable {
             byte[] header = video.readExact(NoAuthVideoProtocol.HEADER_BYTES);
             byte[] offer = video.readExact(NoAuthVideoProtocol.OFFER_BYTES);
             NoAuthVideoProtocol.validateOffer(header, offer);
-            exchange(NoAuthVideoProtocol.hello(), NoAuthVideoProtocol.HELLO, 0, 0);
+            exchange(NoAuthVideoProtocol.hello(continuous), NoAuthVideoProtocol.HELLO, 0, 0);
             negotiated = true;
+            cleanupConfirmed = false;
             lastHeartbeat = nanoTime.getAsLong();
             NoAuthVideoProtocol.Reply reply = exchange(NoAuthVideoProtocol.start(), NoAuthVideoProtocol.START, 0, 0);
             if ((reply.flags & 1) == 0 || reply.submissions != 0) {
                 throw new IOException("DCV1_MEDIA_CONTEXT_NOT_READY");
             }
             started = true;
-            logger.log("RECEIVER_READY DCV1/1 no video authorization; 640x240; NOT picture confirmation");
+            logger.log("RECEIVER_READY DCV1/" + (continuous ? 2 : 1)
+                    + " no video authorization; 640x240; NOT picture confirmation");
         } catch (IOException error) {
             try {
                 close();
@@ -93,21 +109,28 @@ final class NoAuthVideoClient implements Closeable {
                 || (previousPtsMillis >= 0 && relativeMillis - previousPtsMillis > 2000)) {
             throw new IOException("DCV1_NON_MONOTONIC_OR_GAPPED_PTS");
         }
-        byte[] packet = NoAuthVideoProtocol.frame(annexB, acknowledged + 1, relativeMillis);
+        byte[] packet = NoAuthVideoProtocol.frame(annexB, acknowledged + 1, relativeMillis, continuous);
         if (nanoTime.getAsLong() - lastHeartbeat >= 1_000_000_000L) {
             heartbeat();
         }
+        long ackStart = nanoTime.getAsLong();
         evidence = exchange(packet, NoAuthVideoProtocol.FRAME, acknowledged + 1, relativeMillis);
+        long ackNanos = Math.max(0, nanoTime.getAsLong() - ackStart);
+        maxAckNanos = Math.max(maxAckNanos, ackNanos);
+        totalAckNanos += ackNanos;
         acknowledged++;
         previousPtsMillis = relativeMillis;
         payloadBytes += annexB.length;
-        if (acknowledged == 1 || acknowledged % 30 == 0) {
+        if (acknowledged == 1 || acknowledged % (continuous ? 150 : 30) == 0) {
             logger.log(evidence.summary());
+            if (continuous) {
+                logger.log(statistics());
+            }
         }
     }
 
     private void heartbeat() throws IOException {
-        evidence = exchange(NoAuthVideoProtocol.heartbeat(++heartbeats), NoAuthVideoProtocol.HEARTBEAT, 0, 0);
+        evidence = exchange(NoAuthVideoProtocol.heartbeat(++heartbeats, continuous), NoAuthVideoProtocol.HEARTBEAT, 0, 0);
         if (evidence.submissions != acknowledged) {
             throw new IOException("DCV1_HEARTBEAT_SUBMISSION_MISMATCH");
         }
@@ -139,7 +162,7 @@ final class NoAuthVideoClient implements Closeable {
         byte[] header = video.readExact(NoAuthVideoProtocol.HEADER_BYTES);
         byte[] payload = video.readExact(NoAuthVideoProtocol.ACK_BYTES);
         try {
-            return NoAuthVideoProtocol.reply(header, payload, type, sequence, pts);
+            return NoAuthVideoProtocol.reply(header, payload, type, sequence, pts, continuous);
         } catch (NoAuthVideoProtocol.Rejected error) {
             rejected = true;
             terminalCleanup = error.terminalCleanupReported();
@@ -155,7 +178,15 @@ final class NoAuthVideoClient implements Closeable {
     }
 
     String statistics() {
-        return "DCV1 acknowledged=" + acknowledged + " H264 bytes=" + payloadBytes;
+        return "DCV1 acknowledged=" + acknowledged + " H264 bytes=" + payloadBytes
+                + " source_duration_ms=" + Math.max(0, previousPtsMillis)
+                + " max_ack_ms=" + maxAckNanos / 1_000_000L
+                + " mean_ack_ms=" + (acknowledged == 0 ? 0 : totalAckNanos / acknowledged / 1_000_000L)
+                + "; ACK timing is NOT end-to-end display latency";
+    }
+
+    boolean cleanupConfirmed() {
+        return cleanupConfirmed;
     }
 
     @Override
@@ -171,12 +202,14 @@ final class NoAuthVideoClient implements Closeable {
         try {
             video.beginCleanup();
             if (terminalCleanup) {
+                cleanupConfirmed = true;
                 logger.log("ERROR_CLEANUP_REPORTED: negative FRAME ACK followed native cleanup; no STOP on closed peer");
             } else if (negotiated) {
                 NoAuthVideoProtocol.Reply reply = exchange(NoAuthVideoProtocol.stop(), NoAuthVideoProtocol.STOP, 0, 0);
                 if (!reply.cleanupReported()) {
                     throw new IOException("DCV1 receiver did not report media/window cleanup");
                 }
+                cleanupConfirmed = true;
                 logger.log("STOP_CLEANUP_REPORTED: native media/window cleanup returned 0; manually check window exit");
             }
         } catch (IOException error) {

@@ -9,12 +9,23 @@ final class ShellCaptureCommand {
     }
 
     static String create(String apk, int seconds) {
-        if (seconds < 1 || seconds > 10 || apk == null || !apk.startsWith("/data/app/")
+        return create(apk, seconds, false);
+    }
+
+    static String continuous(String apk, int seconds) {
+        ProjectionLimits.requireSeconds(seconds);
+        return create(apk, seconds, true);
+    }
+
+    private static String create(String apk, int seconds, boolean continuous) {
+        if (seconds < 1 || seconds > (continuous ? ProjectionLimits.MAX_SECONDS : 10)
+                || apk == null || !apk.startsWith("/data/app/")
                 || !apk.endsWith(".apk") || apk.length() > 1024 || apk.indexOf('\0') >= 0
                 || apk.indexOf('\n') >= 0 || apk.indexOf('\r') >= 0) {
-            throw new IllegalArgumentException("Expected installed APK and 1..10 second capture");
+            throw new IllegalArgumentException("Expected installed APK and bounded capture duration");
         }
         return "CLASSPATH='" + apk.replace("'", "'\\''")
-                + "' /system/bin/app_process /system/bin com.byd.dashcast.phase1.ShellScreenCapture " + seconds;
+                + "' /system/bin/app_process /system/bin com.byd.dashcast.phase1.ShellScreenCapture " + seconds
+                + (continuous ? " live" : "");
     }
 }

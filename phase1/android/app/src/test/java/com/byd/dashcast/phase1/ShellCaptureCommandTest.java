@@ -5,6 +5,16 @@ import static org.junit.Assert.*;
 
 public final class ShellCaptureCommandTest {
     @Test
+    public void continuousModeIsSeparateAndStillQuotesOnlyAnInstalledApk() {
+        assertTrue(ShellCaptureCommand.continuous("/data/app/x'$y/base.apk", 1800)
+                .endsWith("ShellScreenCapture 1800 live"));
+        assertTrue(ShellCaptureCommand.continuous("/data/app/x'$y/base.apk", 600).contains("x'\\''$y"));
+        assertThrows(IllegalArgumentException.class,
+                () -> ShellCaptureCommand.continuous("/sdcard/base.apk", 1800));
+        assertThrows(IllegalArgumentException.class,
+                () -> ShellCaptureCommand.continuous("/data/app/x/base.apk", 1801));
+    }
+    @Test
     public void fixedEntryPointQuotesInstalledApkAndDoesNotDisableAuthentication() {
         assertEquals("CLASSPATH='/data/app/abc/base.apk' /system/bin/app_process /system/bin "
                 + "com.byd.dashcast.phase1.ShellScreenCapture 5",

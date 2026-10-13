@@ -85,6 +85,8 @@ public final class MainActivity extends Activity {
     private EditText portField;
     private EditText interfaceField;
     private EditText secondsField;
+    private EditText continuousSecondsField;
+    private TextView continuousStatusView;
     private volatile boolean taskRunning;
     private volatile boolean adbReady;
     private volatile boolean adbAuthorizationOnly;
@@ -111,6 +113,16 @@ public final class MainActivity extends Activity {
     private TextView logView;
     private TextView exportStatusView;
     private TextView controlStatusView;
+    private final Runnable projectionMonitor = new Runnable() {
+        @Override
+        public void run() {
+            if (continuousStatusView != null) {
+                continuousStatusView.setText(getString(R.string.continuous_status, ProjectionService.status()));
+            }
+            setBusy(taskRunning || ProjectionService.blocksOperations());
+            mainHandler.postDelayed(this, 1000);
+        }
+    };
 
     /**
      * Creates the diagnostic UI.
@@ -122,7 +134,7 @@ public final class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(createContentView());
         appendLog("APK " + BuildConfig.VERSION_NAME
-                + "; NCM capability-driven initialization / alternate-0 cleanup; video: DCV1/1, 640x240."
+                + "; NCM capability-driven initialization / alternate-0 cleanup; DCV1/1 short + DCV1/2 continuous, 640x240."
                 + " Instrument installed version is not remotely verified; runtime not yet certified.");
         appendLog("Legacy app BYDAuto grants: " + InstrumentUsbController.permissionSummary(this)
                 + "; not required by the original navigation relay; direct setBuffer removed.");
@@ -134,6 +146,7 @@ public final class MainActivity extends Activity {
      */
     @Override
     protected void onDestroy() {
+        mainHandler.removeCallbacks(projectionMonitor);
         cancelled.set(true);
         probeExecutor.shutdownNow();
         super.onDestroy();
@@ -141,11 +154,18 @@ public final class MainActivity extends Activity {
 
     @Override
     protected void onStop() {
+        mainHandler.removeCallbacks(projectionMonitor);
         if (taskRunning && !(adbAuthorizationOnly && awaitingAdbTrust)) {
             cancelled.set(true);
             appendLog("Activity hidden: cancel current probe. USB role is NOT automatically restored.");
         }
         super.onStop();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        mainHandler.post(projectionMonitor);
     }
 
     private View createContentView() {
@@ -165,6 +185,11 @@ public final class MainActivity extends Activity {
         root.addView(scopeView, new LinearLayout.LayoutParams(-1, -2));
 
         addControlSection(root);
+        continuousSecondsField = createField(root, "持续投屏时长 1..1800 秒（先600秒，再1800秒）", "600");
+        root.addView(createButton("开始持续投屏（可切到导航，最多30分钟）", view -> startContinuousProjection()));
+        continuousStatusView = new TextView(this);
+        continuousStatusView.setText(getString(R.string.continuous_status, ProjectionService.status()));
+        root.addView(continuousStatusView);
         secondsField = createField(root, "动态视频时长 1..60 秒", "10");
         addVideoButtons(root);
         addLegacyAdvancedSection(root);
@@ -178,7 +203,10 @@ public final class MainActivity extends Activity {
         root.addView(usbButton);
         root.addView(capabilityButton);
         root.addView(allButton);
-        root.addView(createButton("一键导出日志到下载目录", view -> exportLogsToDownloads()));
+        Button downloadButton = new Button(this);
+        downloadButton.setText(R.string.export_session_logs);
+        downloadButton.setOnClickListener(view -> exportLogsToDownloads());
+        root.addView(downloadButton);
         root.addView(clearButton);
 
         exportStatusView = new TextView(this);
@@ -201,7 +229,7 @@ public final class MainActivity extends Activity {
         controlStatusView.setText(R.string.control_initial_status);
         root.addView(controlStatusView);
         receiverInstalled = new CheckBox(this);
-        receiverInstalled.setText("已刷入本次阶段一仪表验证包，车辆停稳（原始包不支持）");
+        receiverInstalled.setText(R.string.matching_firmware);
         root.addView(receiverInstalled);
         root.addView(createButton("仪表切 NCM / Device", view -> confirmUsbCommand(InstrumentUsbCommand.NCM)));
         root.addView(createButton("仪表恢复 Host（先拔 USB 线）", view -> confirmUsbCommand(InstrumentUsbCommand.HOST)));
@@ -221,8 +249,11 @@ public final class MainActivity extends Activity {
         root.addView(createButton("可选：USB 动态测试图验证（Surface/EGL）", view -> startReferenceVideo(false)));
         root.addView(createButton("本地硬编动态画面 → TS（不联网）", view -> startVideoProbe(false)));
         Button cancelButton = new Button(this);
-        cancelButton.setText("停止当前验证（不会自动切 Host）");
-        cancelButton.setOnClickListener(view -> cancelled.set(true));
+        cancelButton.setText(R.string.stop_projection);
+        cancelButton.setOnClickListener(view -> {
+            cancelled.set(true);
+            ProjectionService.requestStop(this);
+        });
         root.addView(cancelButton);
         root.addView(createButton("记录仪表画面观察结果", view -> recordDisplayObservation()));
         root.addView(createButton("另存日志 + 最近 TS 样本 ZIP（选择位置）", view -> exportReport()));
@@ -516,6 +547,45 @@ public final class MainActivity extends Activity {
                         executeProbe("reference USB video", () -> performReferenceVideo(seconds, screenCapture))).show();
     }
 
+    private void startContinuousProjection() {
+        if (taskRunning || ProjectionService.blocksOperations()) {
+            appendLog("持续投屏未启动：已有任务或清理未确认，请先停止并查看状态。");
+            return;
+        }
+        if (!receiverInstalled.isChecked() || !adbReady) {
+            appendLog("持续投屏未启动：确认匹配0.5.0仪表App、车辆停稳，并先授权本APK的ADB。");
+            return;
+        }
+        final int seconds;
+        try {
+            seconds = Integer.parseInt(continuousSecondsField.getText().toString().trim());
+            ProjectionLimits.requireSeconds(seconds);
+            UsbDevice device = UsbNcmSession.findDevice(this);
+            if (!Usb.hasPermission(this, device)) {
+                appendLog("持续投屏未启动：请先允许访问仪表USB。");
+                return;
+            }
+        } catch (IOException | IllegalArgumentException | SecurityException error) {
+            appendLog("持续投屏未启动：" + error.getMessage());
+            return;
+        }
+        new AlertDialog.Builder(this).setTitle("持续小窗投屏：停稳验证")
+                .setMessage("匹配0.5.0仪表App；仍是中央640×240小窗，不保证不遮挡仪表安全信息。"
+                        + "先600秒再1800秒；切到导航不会停止，可回应用或通知栏点停止。"
+                        + "不保存视频文件，不自动切Host，不自动重连。普通ADB/USB授权仍保留。"
+                        + "若窗口未退出或清理不确认，停止测试并正常重启，不重复发切换命令。")
+                .setNegativeButton("取消", null)
+                .setPositiveButton("已停稳，开始", (dialog, which) -> {
+                    try {
+                        ProjectionService.start(this, seconds);
+                        appendLog("CONTINUOUS_START_REQUEST seconds=" + seconds + "; Service owns the session");
+                        setBusy(true);
+                    } catch (RuntimeException error) {
+                        appendLog("持续服务启动未确认：" + error);
+                    }
+                }).show();
+    }
+
     private void performReferenceVideo(int seconds, boolean screenCapture) throws IOException {
         LogHub.banner("VIDEO_ATTEMPT " + System.currentTimeMillis()
                 + " screenCapture=" + screenCapture + "; prior attempts retained");
@@ -684,7 +754,7 @@ public final class MainActivity extends Activity {
                     + "BYDAuto grants: " + InstrumentUsbController.permissionSummary(this) + "\n"
                     + "Application log plus bounded, allowlisted OEM/Android state evidence; NOT QNX instrument logs.\n"
                     + "Network diagnostic addresses may be included. No video or credentials are collected.\n\n"
-                    + reportLog.toString();
+                    + reportLog.toString() + "\n" + ProjectionService.journal();
             String usbLog = LogHub.snapshot();
             try {
                 DownloadLogExporter.export(new MediaStoreDownloadStore(getContentResolver()),
@@ -696,7 +766,7 @@ public final class MainActivity extends Activity {
             appendLog("EXPORT_SAVED Download/" + fileName
                     + " (report.txt + usb_ncm.txt + navigation_relay.txt + android_usb_state.txt; no TS sample)");
             showExportMessage("日志已保存到 下载 / " + fileName, false);
-        });
+        }, true);
     }
 
     private void showExportMessage(String message, boolean failed) {
@@ -716,7 +786,7 @@ public final class MainActivity extends Activity {
         if (request != EXPORT_REQUEST || result != RESULT_OK || data == null || data.getData() == null) {
             return;
         }
-        String report = reportLog.toString();
+        String report = reportLog.toString() + "\n" + ProjectionService.journal();
         File sample = lastTsFile;
         android.net.Uri uri = data.getData();
         executeProbe("export", () -> {
@@ -845,8 +915,17 @@ public final class MainActivity extends Activity {
     }
 
     private void executeProbe(String label, ProbeAction action) {
-        if (taskRunning) {
+        executeProbe(label, action, false);
+    }
+
+    private void executeProbe(String label, ProbeAction action, boolean readOnlyExport) {
+        if (taskRunning || !readOnlyExport && ProjectionService.blocksOperations()) {
             appendLog("Busy; cancel/wait for current probe first");
+            return;
+        }
+        final UsbOperationGate.Lease lease = readOnlyExport ? null : UsbOperationGate.acquire();
+        if (!readOnlyExport && lease == null) {
+            appendLog("Busy: another Activity/Service operation still owns the session or its cleanup");
             return;
         }
         taskRunning = true;
@@ -861,13 +940,19 @@ public final class MainActivity extends Activity {
                 } catch (Exception error) {
                     appendLog(label + " failed: " + describe(error));
                 } finally {
+                    if (lease != null) {
+                        lease.close();
+                    }
                     taskRunning = false;
-                    setBusy(false);
+                    setBusy(ProjectionService.blocksOperations());
                 }
             });
         } catch (RuntimeException error) {
+            if (lease != null) {
+                lease.close();
+            }
             taskRunning = false;
-            setBusy(false);
+            setBusy(ProjectionService.blocksOperations());
             appendLog("Probe queue rejected: " + describe(error));
         }
     }
@@ -1067,7 +1152,8 @@ public final class MainActivity extends Activity {
             if (receiverInstalled != null) {
                 receiverInstalled.setEnabled(!busy);
             }
-            for (EditText field : new EditText[] {targetField, portField, interfaceField, secondsField}) {
+            for (EditText field : new EditText[] {targetField, portField, interfaceField, secondsField,
+                    continuousSecondsField}) {
                 if (field != null) {
                     field.setEnabled(!busy);
                 }

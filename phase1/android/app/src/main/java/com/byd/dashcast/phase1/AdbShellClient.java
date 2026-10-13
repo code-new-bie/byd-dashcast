@@ -11,6 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import java.util.function.LongSupplier;
 
 /**
  * Bounded local ADB client with standard user-approved RSA authentication.
@@ -38,7 +39,9 @@ public final class AdbShellClient {
     private final AdbAuthenticator authenticator;
     private final Consumer<String> log;
     private final AtomicBoolean cancelled;
+    private final LongSupplier nanoTime;
     private long readDeadline;
+    private ReadPulse readPulse = () -> {};
 
     /**
      * Creates a local ADB client.
@@ -54,6 +57,11 @@ public final class AdbShellClient {
     /** Local transport using only an app-owned identity and normal device confirmation. */
     public AdbShellClient(String host, int port, int timeoutMillis, AdbAuthenticator authenticator,
             Consumer<String> log, AtomicBoolean cancelled) {
+        this(host, port, timeoutMillis, authenticator, log, cancelled, System::nanoTime);
+    }
+
+    AdbShellClient(String host, int port, int timeoutMillis, AdbAuthenticator authenticator,
+            Consumer<String> log, AtomicBoolean cancelled, LongSupplier nanoTime) {
         if (host == null || host.isEmpty()) {
             throw new IllegalArgumentException("ADB host must not be empty");
         }
@@ -69,6 +77,7 @@ public final class AdbShellClient {
         this.authenticator = authenticator;
         this.log = java.util.Objects.requireNonNull(log);
         this.cancelled = java.util.Objects.requireNonNull(cancelled);
+        this.nanoTime = java.util.Objects.requireNonNull(nanoTime);
     }
 
     /**
@@ -90,9 +99,20 @@ public final class AdbShellClient {
 
     /** Bounded stderr diagnostics for the explicitly requested capture, never mixed into AVC. */
     void executeShellV2(String command, ShellOutputHandler outputHandler, Consumer<String> diagnostics) throws IOException {
+        executeShellV2Controlled(command, outputHandler, diagnostics, null);
+    }
+
+    /** Graceful stop sends STOP to this shell's stdin only, then requires EXIT within a finite drain budget. */
+    void executeShellV2Controlled(String command, ShellOutputHandler outputHandler, Consumer<String> diagnostics,
+            AtomicBoolean stopRequested) throws IOException {
+        executeShellV2Controlled(command, outputHandler, diagnostics, stopRequested, () -> {});
+    }
+
+    void executeShellV2Controlled(String command, ShellOutputHandler outputHandler, Consumer<String> diagnostics,
+            AtomicBoolean stopRequested, Runnable beforeStop) throws IOException {
         ShellV2Output output = new ShellV2Output(outputHandler, diagnostics);
         try {
-            executeNetwork(command, output, true);
+            executeNetwork(command, output, true, stopRequested, beforeStop);
             output.requireSuccess();
             log.accept("ADB_SHELL_V2_EXIT=0 stderr_bytes=" + output.stderrBytes());
         } finally {
@@ -103,6 +123,16 @@ public final class AdbShellClient {
 
     private void executeNetwork(String command, ShellOutputHandler outputHandler, boolean shellV2)
             throws IOException {
+        executeNetwork(command, outputHandler, shellV2, null);
+    }
+
+    private void executeNetwork(String command, ShellOutputHandler outputHandler, boolean shellV2,
+            AtomicBoolean stopRequested) throws IOException {
+        executeNetwork(command, outputHandler, shellV2, stopRequested, () -> {});
+    }
+
+    private void executeNetwork(String command, ShellOutputHandler outputHandler, boolean shellV2,
+            AtomicBoolean stopRequested, Runnable beforeStop) throws IOException {
         if (command == null || command.isEmpty() || command.indexOf('\0') >= 0) {
             throw new IllegalArgumentException("ADB shell command must not be empty");
         }
@@ -113,7 +143,8 @@ public final class AdbShellClient {
         try (Socket socket = new Socket()) {
             socket.connect(new InetSocketAddress(host, port), timeoutMillis);
             socket.setSoTimeout(Math.min(timeoutMillis, 1000));
-            executeProtocol(socket.getInputStream(), socket.getOutputStream(), command, outputHandler, shellV2);
+            executeProtocol(socket.getInputStream(), socket.getOutputStream(), command, outputHandler,
+                    shellV2, stopRequested, beforeStop);
         }
     }
 
@@ -132,8 +163,31 @@ public final class AdbShellClient {
 
     private void executeProtocol(InputStream input, OutputStream output, String command,
             ShellOutputHandler handler, boolean shellV2) throws IOException {
+        executeProtocol(input, output, command, handler, shellV2, null);
+    }
+
+    void executeControlledProtocol(InputStream input, OutputStream output, String command,
+            ShellOutputHandler handler, AtomicBoolean stopRequested) throws IOException {
+        executeControlledProtocol(input, output, command, handler, stopRequested, () -> {});
+    }
+
+    void executeControlledProtocol(InputStream input, OutputStream output, String command,
+            ShellOutputHandler handler, AtomicBoolean stopRequested, Runnable beforeStop) throws IOException {
+        ShellV2Output decoded = new ShellV2Output(handler);
+        executeProtocol(input, output, command, decoded, true, stopRequested, beforeStop);
+        decoded.requireSuccess();
+    }
+
+    private void executeProtocol(InputStream input, OutputStream output, String command,
+            ShellOutputHandler handler, boolean shellV2, AtomicBoolean stopRequested) throws IOException {
+        executeProtocol(input, output, command, handler, shellV2, stopRequested, () -> {});
+    }
+
+    private void executeProtocol(InputStream input, OutputStream output, String command,
+            ShellOutputHandler handler, boolean shellV2, AtomicBoolean stopRequested, Runnable beforeStop)
+            throws IOException {
         checkCancelled();
-        readDeadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMillis);
+        renewReadDeadline();
         sendPacket(output, COMMAND_CNXN, ADB_VERSION, MAX_PAYLOAD,
                 "host::\0".getBytes(StandardCharsets.UTF_8));
         Packet connected = authenticate(input, output);
@@ -146,9 +200,15 @@ public final class AdbShellClient {
             throw new IOException("ADB command exceeds the negotiated payload limit");
         }
         checkCancelled();
-        readDeadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeoutMillis);
+        renewReadDeadline();
         sendPacket(output, COMMAND_OPEN, 1, 0, service);
-        readShellPackets(input, output, handler, 1);
+        ShellControl control = new ShellControl(output, stopRequested, beforeStop);
+        readPulse = control::beforeRead;
+        try {
+            readShellPackets(input, output, handler, 1, control);
+        } finally {
+            readPulse = () -> {};
+        }
     }
 
     private static boolean supportsShellV2(byte[] payload) {
@@ -187,7 +247,7 @@ public final class AdbShellClient {
                 throw new IOException("ADB requires an application-owned authorized identity");
             }
             if (!signed) {
-                readDeadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(AUTH_TIMEOUT_MILLIS);
+                readDeadline = nanoTime.getAsLong() + TimeUnit.MILLISECONDS.toNanos(AUTH_TIMEOUT_MILLIS);
                 byte[] signature = authenticator.sign(packet.payload);
                 if (signature.length != 256) {
                     throw new IOException("Invalid ADB authentication signature length");
@@ -210,7 +270,7 @@ public final class AdbShellClient {
     }
 
     private void readShellPackets(InputStream input, OutputStream output,
-            ShellOutputHandler outputHandler, int localId) throws IOException {
+            ShellOutputHandler outputHandler, int localId, ShellControl control) throws IOException {
         int remoteId = 0;
         boolean opened = false;
         while (true) {
@@ -224,6 +284,7 @@ public final class AdbShellClient {
                 }
                 remoteId = packet.arg0;
                 opened = true;
+                control.remoteId = remoteId;
                 continue;
             }
             if (packet.command == COMMAND_WRTE) {
@@ -234,6 +295,11 @@ public final class AdbShellClient {
                     outputHandler.onOutput(packet.payload, packet.payload.length);
                 }
                 sendPacket(output, COMMAND_OKAY, localId, remoteId, new byte[0]);
+                // A long stream is bounded by capture/session limits, not by an absolute 20s ADB deadline.
+                // Only valid consumed shell data renews the idle timeout; empty ACK traffic does not.
+                if (packet.payload.length > 0 && control.stop != null) {
+                    renewReadDeadline();
+                }
                 continue;
             }
             if (packet.command == COMMAND_CLSE) {
@@ -294,7 +360,8 @@ public final class AdbShellClient {
         int offset = 0;
         while (offset < length) {
             checkCancelled();
-            if (System.nanoTime() >= readDeadline) {
+            readPulse.beforeRead();
+            if (nanoTime.getAsLong() >= readDeadline) {
                 throw new IOException("ADB 等待超时；如有授权弹窗请允许后重新连接。命令完成未确认。");
             }
             final int count;
@@ -317,6 +384,45 @@ public final class AdbShellClient {
     private void checkCancelled() throws IOException {
         if (cancelled.get() || Thread.currentThread().isInterrupted()) {
             throw new IOException("ADB operation cancelled; previously submitted commands cannot be undone");
+        }
+    }
+
+    private void renewReadDeadline() {
+        readDeadline = nanoTime.getAsLong() + TimeUnit.MILLISECONDS.toNanos(timeoutMillis);
+    }
+
+    private interface ReadPulse {
+        void beforeRead() throws IOException;
+    }
+
+    private final class ShellControl {
+        private final OutputStream output;
+        private final AtomicBoolean stop;
+        private final Runnable beforeStop;
+        private int remoteId;
+        private boolean sent;
+        private long deadline;
+
+        ShellControl(OutputStream output, AtomicBoolean stop, Runnable beforeStop) {
+            this.output = output;
+            this.stop = stop;
+            this.beforeStop = java.util.Objects.requireNonNull(beforeStop);
+        }
+
+        void beforeRead() throws IOException {
+            if (stop != null && stop.get() && remoteId != 0 && !sent) {
+                beforeStop.run();
+                // shell-v2 channel 0=stdin, LE32 length=5, then a fixed owned-process control line.
+                sendPacket(output, COMMAND_WRTE, 1, remoteId,
+                        new byte[] {0, 5, 0, 0, 0, 'S', 'T', 'O', 'P', '\n'});
+                sent = true;
+                deadline = nanoTime.getAsLong() + ProjectionLimits.STOP_TIMEOUT_NANOS;
+                renewReadDeadline();
+                log.accept("CAPTURE_STOP_STDIN_SENT; waiting for owned shell-v2 EXIT, no global kill");
+            }
+            if (sent && nanoTime.getAsLong() >= deadline) {
+                throw new IOException("CAPTURE_STOP_EXIT_UNCONFIRMED");
+            }
         }
     }
 

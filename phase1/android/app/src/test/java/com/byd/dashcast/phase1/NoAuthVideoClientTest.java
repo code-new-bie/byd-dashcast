@@ -13,6 +13,31 @@ import static org.junit.Assert.*;
 
 /** Independent scripted binary receiver; tests cancellation/error/cleanup, not QNX display. */
 public final class NoAuthVideoClientTest {
+    @Test
+    public void continuousClientNegotiatesVersionTwoAndStopConfirmsCleanup() throws Exception {
+        Link link = new Link().ready().ack(3, 0, 0, 0, 0, 0);
+        NoAuthVideoClient client = new NoAuthVideoClient((port, flag) -> link,
+                new AtomicBoolean(), message -> {}, () -> 0L, true);
+        client.begin();
+        assertEquals(2, link.writes.get(0)[39]);
+        assertFalse(client.cleanupConfirmed());
+        client.close();
+        assertTrue(client.cleanupConfirmed());
+    }
+
+    @Test
+    public void continuousVersionRejectionNeverStartsMediaOrFallsBackToShortProtocol() {
+        Link link = new Link().offer();
+        link.reads.add(header(0x87, 16, 0, 0));
+        link.reads.add(state(0, 0, 0));
+        link.reads.peekLast()[3] = 1;
+        NoAuthVideoClient client = new NoAuthVideoClient((port, flag) -> link,
+                new AtomicBoolean(), message -> {}, true);
+        assertThrows(IOException.class, client::begin);
+        assertEquals(1, link.writes.size());
+        assertEquals(7, link.writes.get(0)[7]);
+        assertTrue(link.closed && client.cleanupConfirmed());
+    }
     private static final class Link implements NoAuthVideoTransport {
         final ArrayDeque<byte[]> reads = new ArrayDeque<>();
         final List<byte[]> writes = new ArrayList<>();

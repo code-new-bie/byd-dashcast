@@ -1,7 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">BYD 投屏阶段一验证</string>
-    <string name="screen_title">BYD → QNX 投屏阶段一验证</string>
+    <string name="app_name">BYD 仪表 USB 投屏</string>
+    <string name="screen_title">BYD → QNX 仪表投屏 0.5.0</string>
     <string name="control_initial_status">待连接 ADB；原厂导航中继版本、USB 枚举与视频需分别验证。</string>
-    <string name="screen_scope">阶段一 0.4.0：仪表须升级配套 REF2-OS+APP 包（不含 MCU）。停车、退出导航、拔掉全部 USB 外设及车机数据线；连接/授权 ADB，单次请求 NCM，再接数据线并允许系统 USB 访问。DCV1 视频不需激活或设备授权，从 640×240 小窗验证。退出窗口、拔线后再单次请求 Host 并检查 U 盘识别。请求提交、枚举、窗口报告和人工画面分开验收；不需回收仪表日志。禁止行驶中测试。</string>
+    <string name="screen_scope">0.5.0 持续小窗首测：需配套仪表 App；OS、国内原版 MCU 内容不改，FULL 包仍可能再次刷写它们。停稳或台架验证，连接/授权 ADB，单次请求 NCM，再接数据线并允许系统 USB 访问。持续模式先600秒、再1800秒，可切到导航；通知栏或本页可停止。不保存持续视频，无视频激活授权。中央640×240小窗不保证不遮挡安全信息，发现遮挡立即停止。确认窗口退出、拔线后再请求 Host 并检查 U 盘。日志一键导出到下载；不需要仪表 U 盘取日志。禁止行驶中测试。</string>
+    <string name="continuous_status">持续投屏：%1$s</string>
+    <string name="matching_firmware">已刷入匹配仪表包，车辆停稳（持续模式需要0.5.0配套App）</string>
+    <string name="export_session_logs">一键导出日志到下载目录（含持续会话）</string>
+    <string name="stop_projection">停止投屏 / 当前验证（不会自动切 Host）</string>
+    <string name="projection_channel">仪表持续投屏</string>
+    <string name="projection_notification_title">仪表持续投屏运行中</string>
+    <string name="projection_notification_text">可切到导航；停止后拔线再恢复 Host</string>
+    <string name="projection_notification_stop">停止投屏</string>
 </resources>

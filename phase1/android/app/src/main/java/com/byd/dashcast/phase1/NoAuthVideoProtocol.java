@@ -32,8 +32,12 @@ final class NoAuthVideoProtocol {
     }
 
     static byte[] hello() {
+        return hello(false);
+    }
+
+    static byte[] hello(boolean continuous) {
         ByteBuffer payload = ByteBuffer.allocate(16).order(ByteOrder.BIG_ENDIAN);
-        payload.putLong(0).put(MAGIC).putInt(1);
+        payload.putLong(0).put(MAGIC).putInt(continuous ? 2 : 1);
         return packet(HELLO, 0, 0, 0, payload.array());
     }
 
@@ -44,7 +48,11 @@ final class NoAuthVideoProtocol {
     }
 
     static byte[] heartbeat(int counter) throws IOException {
-        if (counter < 1 || counter > MAX_TEST_FRAMES + 4) {
+        return heartbeat(counter, false);
+    }
+
+    static byte[] heartbeat(int counter, boolean continuous) throws IOException {
+        if (counter < 1 || counter > frameLimit(continuous) + 4) {
             throw new IOException("DCV1_HEARTBEAT_LIMIT");
         }
         ByteBuffer payload = ByteBuffer.allocate(20).order(ByteOrder.BIG_ENDIAN);
@@ -57,8 +65,12 @@ final class NoAuthVideoProtocol {
     }
 
     static byte[] frame(byte[] annexB, int sequence, long ptsMillis) throws IOException {
+        return frame(annexB, sequence, ptsMillis, false);
+    }
+
+    static byte[] frame(byte[] annexB, int sequence, long ptsMillis, boolean continuous) throws IOException {
         if (annexB == null || annexB.length == 0 || annexB.length > MAX_FRAME_BYTES
-                || sequence < 1 || sequence > MAX_TEST_FRAMES || ptsMillis < 0 || ptsMillis > 0xffffffffL) {
+                || sequence < 1 || sequence > frameLimit(continuous) || ptsMillis < 0 || ptsMillis > 0xffffffffL) {
             throw new IOException("DCV1_FRAME_LIMIT");
         }
         int types = inspectAnnexB(annexB);
@@ -92,6 +104,11 @@ final class NoAuthVideoProtocol {
     }
 
     static Reply reply(byte[] header, byte[] payload, int operation, int sequence, long pts) throws IOException {
+        return reply(header, payload, operation, sequence, pts, false);
+    }
+
+    static Reply reply(byte[] header, byte[] payload, int operation, int sequence, long pts, boolean continuous)
+            throws IOException {
         validateEnvelope(header, operation | 0x80, ACK_BYTES, sequence, pts);
         if (payload == null || payload.length != ACK_BYTES) {
             throw new IOException("DCV1_BAD_ACK_LENGTH");
@@ -101,7 +118,7 @@ final class NoAuthVideoProtocol {
         int flags = values.getInt();
         int frames = values.getInt();
         long lastPts = Integer.toUnsignedLong(values.getInt());
-        if ((flags & ~31) != 0 || frames < 0 || frames > MAX_TEST_FRAMES) {
+        if ((flags & ~31) != 0 || frames < 0 || frames > frameLimit(continuous)) {
             throw new IOException("DCV1_INVALID_OR_FAILED_MEDIA_STATE");
         }
         if (result != 0) {
@@ -114,6 +131,10 @@ final class NoAuthVideoProtocol {
             throw new IOException("DCV1_SUBMISSION_READBACK_MISMATCH");
         }
         return new Reply(flags, frames, lastPts);
+    }
+
+    private static int frameLimit(boolean continuous) {
+        return continuous ? ProjectionLimits.MAX_FRAMES : MAX_TEST_FRAMES;
     }
 
     private static void validateEnvelope(byte[] raw, int type, int length, int sequence, long pts)

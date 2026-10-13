@@ -5,14 +5,14 @@
 
 // SLOT connection_deadline_no_license 0x101bfc 156
 // Original inline LICENSE-expiry arithmetic is also replaced (not just cast_valid).
-// Deadline = min(last heartbeat+15s, session start+90s), purely monotonic and bounded.
+// Deadline = min(last heartbeat+15s, session start+31min), purely monotonic and bounded.
 ldrd r2, r3, [sp, #0xe8]
 movw ip, #15000
 adds r2, r2, ip
 adc r3, r3, #0
 ldrd r0, r1, [sp, #0xd8]
-movw ip, #0x5f90
-movt ip, #1
+movw ip, #0x61a0
+movt ip, #0x1c
 adds r0, r0, ip
 adc r1, r1, #0
 cmp r3, r1
@@ -159,13 +159,14 @@ cmp r2, r3
 bne version_fail
 ldr r2, [r1, #4]
 cmp r2, #0x01000000
+cmpne r2, #0x02000000
 bne version_fail
+rev ip, r2
 ldrd r2, r3, [sp]
 strd r2, r3, [r0, #0x28]
 mov r1, #0
 str r1, [r0, #0x30]
-mov r1, #1
-str r1, [r0, #0x38]
+str ip, [r0, #0x38]
 mov r0, #0
 bx lr
 version_fail:
@@ -206,6 +207,7 @@ bx lr
 // SLOT session_valid 0x102e98 176
 ldr r1, [r0, #0x38]
 cmp r1, #1
+cmpne r1, #2
 bne valid_fail
 push {r4, r5}
 ldrd r4, r5, [r0, #0x28]
@@ -395,7 +397,7 @@ cmp ip, #1
 bhi header_fail
 cmp r2, #0
 beq header_fail
-movw r1, #1800
+movw r1, #65000
 cmp r2, r1
 bhi header_fail
 mov r0, #0
