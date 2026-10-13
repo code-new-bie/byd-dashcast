@@ -1,0 +1,37 @@
+name: Source and Android checks
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # verified official v4
+        with:
+          persist-credentials: false
+      - name: Check public files
+        run: python3 tools/check_public_tree.py
+      - name: Test repository tools
+        run: python3 -m unittest discover -s tools/tests -p 'test_*.py' -v
+      - name: Set up JDK
+        uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # verified official v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install pinned Android packages using runner SDK configuration
+        run: '"$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.1"'
+      - name: Test, build and lint
+        working-directory: phase1/android
+        run: bash gradlew testDebugUnitTest assembleDebug lintDebug --console=plain

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">BYD 投屏阶段一验证</string>
+    <string name="screen_title">BYD → QNX 投屏阶段一验证</string>
+    <string name="control_initial_status">待连接 ADB；原厂导航中继版本、USB 枚举与视频需分别验证。</string>
+    <string name="screen_scope">阶段一 0.4.0：仪表须升级配套 REF2-OS+APP 包（不含 MCU）。停车、退出导航、拔掉全部 USB 外设及车机数据线；连接/授权 ADB，单次请求 NCM，再接数据线并允许系统 USB 访问。DCV1 视频不需激活或设备授权，从 640×240 小窗验证。退出窗口、拔线后再单次请求 Host 并检查 U 盘识别。请求提交、枚举、窗口报告和人工画面分开验收；不需回收仪表日志。禁止行驶中测试。</string>
+</resources>

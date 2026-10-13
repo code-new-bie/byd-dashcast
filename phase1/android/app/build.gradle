@@ -1,0 +1,48 @@
+plugins {
+    id "com.android.application"
+}
+
+android {
+    namespace "com.byd.dashcast.phase1"
+    compileSdk 35
+
+    defaultConfig {
+        applicationId "com.byd.dashcast.phase1"
+        minSdk 29
+        // Target API 29 matches the Android 10 head-unit runtime under test.
+        targetSdk 29
+        versionCode 14
+        versionName "0.4.4"
+    }
+
+    buildTypes {
+        debug {
+            applicationIdSuffix ".debug"
+            versionNameSuffix "-debug"
+        }
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"),
+                    "proguard-rules.pro"
+        }
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+
+    lint {
+        disable "ExpiredTargetSdkVersion"
+    }
+}
+
+dependencies {
+    testImplementation "junit:junit:4.13.2"
+    // Desktop tests only; the APK uses Android's own JSONObject implementation.
+    testImplementation "org.json:json:20260814"
+}

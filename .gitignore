@@ -1,0 +1,52 @@
+# Firmware, original/reference archives and vehicle data never belong in this repo.
+*.sv
+*.zip
+*.apk
+*.aab
+*.img
+*.bin
+*.elf
+*.so
+*.h264
+*.dcv1
+*.ts
+*.mp4
+*.log
+dashcast-logs-*
+private-inputs/
+release/
+
+# Signing material / local device identities.
+*.jks
+*.keystore
+*.pem
+*.p12
+*.pfx
+*.key
+adbkey*
+.env
+.env.*
+!.env.example
+
+# Dependency/runtime caches and generated outputs.
+.gradle*/
+.android-sdk/
+.downloads/
+.native-deps/
+.idea/
+.vscode/
+**/build/
+_tmp/
+__pycache__/
+*.pyc
+.ruff_cache/
+.pytest_cache/
+.venv/
+local.properties
+*.iml
+
+# Only the checksum-verified Gradle wrapper jar is intentionally versioned.
+*.jar
+!phase1/android/gradle/wrapper/gradle-wrapper.jar
+Thumbs.db
+.DS_Store
