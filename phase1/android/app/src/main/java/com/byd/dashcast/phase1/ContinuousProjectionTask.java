@@ -36,6 +36,7 @@ final class ContinuousProjectionTask implements ProjectionSessionController.Task
         NoAuthVideoClient client = null;
         AdbScreenVideoSource source = null;
         FrameRateGate frameRateGate = new FrameRateGate(NoAuthVideoProtocol.FPS);
+        FramePacer framePacer = new FramePacer(NoAuthVideoProtocol.FPS);
         IOException failure = null;
         boolean usbClean = true;
         boolean captureAttempted = false;
@@ -91,7 +92,10 @@ final class ContinuousProjectionTask implements ProjectionSessionController.Task
                         ownedClient.begin();
                         begun[0] = true;
                     }
-                    // Synchronous ACK provides backpressure: never queue an unbounded list of old frames.
+                    // PTS retiming alone does not prevent burst writes when the encoder releases
+                    // several output units together. Schedule each synchronous write on the
+                    // monotonic 30 FPS clock; a slow ACK path is recorded as late, never hidden.
+                    framePacer.awaitNextSlot();
                     ownedClient.frame(data, outputPts);
                     streaming.run();
                 }
@@ -109,6 +113,7 @@ final class ContinuousProjectionTask implements ProjectionSessionController.Task
             failure = new IOException("Continuous projection failed: " + error, error);
         } finally {
             log.accept(frameRateGate.statistics());
+            log.accept(framePacer.statistics());
             cleaning.run();
             if (client != null) {
                 try {
