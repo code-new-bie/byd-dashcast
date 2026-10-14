@@ -126,15 +126,15 @@
     },
     {
       "path": "docs/ARCHITECTURE.md",
-      "bytes": 7500,
-      "sha256": "15af2ad7edfa0a3e165ac303401a39723a593438478f4422d383ac117dc962c2",
+      "bytes": 1919,
+      "sha256": "9e9973477d3222489709bc988eba33023886a1cc1ced218a1102ce634b4a2506",
       "origin": "publication/template/docs/ARCHITECTURE.md",
       "transformations": []
     },
     {
       "path": "docs/BUILD.md",
-      "bytes": 3640,
-      "sha256": "d9779a0f347d55dfe4b21361a9aab28c208e6c3eec6801bf6a5e7cefcd462afa",
+      "bytes": 1227,
+      "sha256": "f2f6fe2a2fb283b2c2a501d02d11103e48264df5e9037cae0c4997d327644844",
       "origin": "publication/template/docs/BUILD.md",
       "transformations": []
     },
@@ -182,8 +182,8 @@
     },
     {
       "path": "docs/VALIDATION.md",
-      "bytes": 9995,
-      "sha256": "965a301390bb956d38b2f1d30f6613c64f072b2a1946163b3ecbc53e44f075d1",
+      "bytes": 1585,
+      "sha256": "44b2e408775c016ba669231b59bc9707a6700902f9be6b43ae0d3a61e64f8222",
       "origin": "publication/template/docs/VALIDATION.md",
       "transformations": []
     },
