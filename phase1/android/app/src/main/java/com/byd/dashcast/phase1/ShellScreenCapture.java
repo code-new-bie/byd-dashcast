@@ -159,12 +159,10 @@ public final class ShellScreenCapture {
         long drainUntil = stopAt + 2_000_000_000L;
         OutputStream stdout = new FileOutputStream(FileDescriptor.out);
         long lastPts = -1;
-        long firstFramePts = -1;
-        long firstFrameNanos = -1;
-        long lastFrameNanos = -1;
         int frames = 0;
         boolean eos = false;
         byte[] config = new byte[0];
+        OutputFrameRateEvidence frameRateEvidence = new OutputFrameRateEvidence(NoAuthVideoProtocol.FPS);
         MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
         while (System.nanoTime() < drainUntil) {
             if (!eos && (System.nanoTime() >= stopAt || control != null && control.stopped())) {
@@ -201,11 +199,7 @@ public final class ShellScreenCapture {
                             throw new IOException("SHELL_CAPTURE_PARTIAL_B_FRAME_OR_FRAME_LIMIT");
                         }
                         long frameNanos = System.nanoTime();
-                        if (firstFramePts < 0) {
-                            firstFramePts = info.presentationTimeUs;
-                            firstFrameNanos = frameNanos;
-                        }
-                        lastFrameNanos = frameNanos;
+                        frameRateEvidence.record(info.presentationTimeUs, frameNanos);
                         boolean key = (info.flags & MediaCodec.BUFFER_FLAG_KEY_FRAME) != 0;
                         byte[] picture = AvcByteStream.normalize(buffer);
                         if (key) {
@@ -232,14 +226,21 @@ public final class ShellScreenCapture {
                     if (frames < 2 && !(control != null && control.stopped())) {
                         throw new IOException("SHELL_CAPTURE_FEWER_THAN_TWO_PICTURES");
                     }
+                    OutputFrameRateEvidence.Result evidence = frameRateEvidence.result();
+                    System.err.println(evidence.logLine());
+                    if (!eosWasRequestedByUser(control) && seconds >= 3) {
+                        frameRateEvidence.requireStable();
+                    }
                     if (control != null) {
                         stdout.write(CaptureFrameProtocol.end(Math.max(0, lastPts)));
                         stdout.flush();
                     }
                     System.err.println("SHELL_CAPTURE_COMPLETE frames=" + frames
-                            + " pts_fps_x100=" + rateX100(frames, firstFramePts, lastPts, 1_000_000L)
-                            + " wall_fps_x100=" + rateX100(frames, firstFrameNanos, lastFrameNanos, 1_000_000_000L)
-                            + " average_pts_interval_us=" + averageInterval(firstFramePts, lastPts, frames)
+                            + " pts_fps_x100=" + evidence.ptsFpsX100
+                            + " wall_fps_x100=" + evidence.wallFpsX100
+                            + " min_pts_interval_us=" + evidence.minPtsIntervalUs
+                            + " max_pts_interval_us=" + evidence.maxPtsIntervalUs
+                            + " average_pts_interval_us=" + evidence.averagePtsIntervalUs
                             + "; encoder_output_measured, instrument_display_unverified");
                     return;
                 }
@@ -250,18 +251,8 @@ public final class ShellScreenCapture {
         throw new IOException("SHELL_CAPTURE_EOS_TIMEOUT");
     }
 
-    private static long rateX100(int frames, long first, long last, long unitsPerSecond) {
-        if (frames < 2 || first < 0 || last <= first) {
-            return 0;
-        }
-        return (frames - 1L) * unitsPerSecond * 100L / (last - first);
-    }
-
-    private static long averageInterval(long first, long last, int frames) {
-        if (frames < 2 || first < 0 || last <= first) {
-            return 0;
-        }
-        return (last - first) / (frames - 1L);
+    private static boolean eosWasRequestedByUser(CaptureStopControl control) throws IOException {
+        return control != null && control.stopped();
     }
 
     /**
