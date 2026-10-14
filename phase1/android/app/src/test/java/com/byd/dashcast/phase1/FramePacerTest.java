@@ -36,11 +36,13 @@ public final class FramePacerTest {
         pacer.awaitNextSlot();
         clock.addAndGet(40_000_000L);
         pacer.awaitNextSlot();
+        long secondSend = clock.get();
         pacer.awaitNextSlot();
 
         assertEquals(3L, pacer.scheduledFrames());
         assertEquals(1L, pacer.lateFrames());
         assertTrue(pacer.maxLateNanos() >= 6_000_000L);
+        assertEquals(33_333_333L, clock.get() - secondSend);
         assertTrue(pacer.statistics().contains("late_frames=1"));
     }
 
