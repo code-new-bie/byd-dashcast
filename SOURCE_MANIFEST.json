@@ -169,7 +169,7 @@
     {
       "path": "docs/TASKS_0.7.1.md",
       "bytes": 1441,
-      "sha256": "ae67271d9f5f1c31fcbe5e44af8bd1e420d99ed7c19bd392370901a743bffad7",
+      "sha256": "b09edbf51e2d981106cb990a5a39a974111ca184ce7068a220c1ade1f185b692",
       "origin": "publication/template/docs/TASKS_0.7.1.md",
       "transformations": []
     },
@@ -183,7 +183,7 @@
     {
       "path": "docs/VALIDATION.md",
       "bytes": 1585,
-      "sha256": "44b2e408775c016ba669231b59bc9707a6700902f9be6b43ae0d3a61e64f8222",
+      "sha256": "d46c1686632cc8d64256566e7efe6e002338374e1a3d81ea88df1a9f33f152fe",
       "origin": "publication/template/docs/VALIDATION.md",
       "transformations": []
     },
