@@ -159,6 +159,9 @@ public final class ShellScreenCapture {
         long drainUntil = stopAt + 2_000_000_000L;
         OutputStream stdout = new FileOutputStream(FileDescriptor.out);
         long lastPts = -1;
+        long firstFramePts = -1;
+        long firstFrameNanos = -1;
+        long lastFrameNanos = -1;
         int frames = 0;
         boolean eos = false;
         byte[] config = new byte[0];
@@ -197,6 +200,12 @@ public final class ShellScreenCapture {
                                 || ++frames > (control == null ? 360 : ProjectionLimits.MAX_CAPTURE_FRAMES)) {
                             throw new IOException("SHELL_CAPTURE_PARTIAL_B_FRAME_OR_FRAME_LIMIT");
                         }
+                        long frameNanos = System.nanoTime();
+                        if (firstFramePts < 0) {
+                            firstFramePts = info.presentationTimeUs;
+                            firstFrameNanos = frameNanos;
+                        }
+                        lastFrameNanos = frameNanos;
                         boolean key = (info.flags & MediaCodec.BUFFER_FLAG_KEY_FRAME) != 0;
                         byte[] picture = AvcByteStream.normalize(buffer);
                         if (key) {
@@ -227,7 +236,11 @@ public final class ShellScreenCapture {
                         stdout.write(CaptureFrameProtocol.end(Math.max(0, lastPts)));
                         stdout.flush();
                     }
-                    System.err.println("SHELL_CAPTURE_COMPLETE frames=" + frames + "; display unverified");
+                    System.err.println("SHELL_CAPTURE_COMPLETE frames=" + frames
+                            + " pts_fps_x100=" + rateX100(frames, firstFramePts, lastPts, 1_000_000L)
+                            + " wall_fps_x100=" + rateX100(frames, firstFrameNanos, lastFrameNanos, 1_000_000_000L)
+                            + " average_pts_interval_us=" + averageInterval(firstFramePts, lastPts, frames)
+                            + "; encoder_output_measured, instrument_display_unverified");
                     return;
                 }
             } finally {
@@ -235,6 +248,20 @@ public final class ShellScreenCapture {
             }
         }
         throw new IOException("SHELL_CAPTURE_EOS_TIMEOUT");
+    }
+
+    private static long rateX100(int frames, long first, long last, long unitsPerSecond) {
+        if (frames < 2 || first < 0 || last <= first) {
+            return 0;
+        }
+        return (frames - 1L) * unitsPerSecond * 100L / (last - first);
+    }
+
+    private static long averageInterval(long first, long last, int frames) {
+        if (frames < 2 || first < 0 || last <= first) {
+            return 0;
+        }
+        return (last - first) / (frames - 1L);
     }
 
     /**
