@@ -6,6 +6,7 @@ import static org.junit.Assert.*;
 public final class ProjectionLimitsAndJournalTest {
     @Test
     public void durationHasFiniteThirtyMinuteBoundary() {
+        assertEquals(33_333L, ProjectionLimits.TARGET_FRAME_INTERVAL_US);
         ProjectionLimits.requireSeconds(1);
         ProjectionLimits.requireSeconds(600);
         ProjectionLimits.requireSeconds(1800);
