@@ -58,6 +58,10 @@ final class OutputFrameRateEvidence {
         lastWallNanos = wallNanos;
     }
 
+    long sampleFrames() {
+        return frames;
+    }
+
     Result result() {
         long ptsFpsX100 = rateX100(frames, firstPts, lastPts, 1_000_000L);
         long wallFpsX100 = rateX100(frames, firstWallNanos, lastWallNanos, 1_000_000_000L);

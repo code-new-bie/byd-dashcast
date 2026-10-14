@@ -163,6 +163,7 @@ public final class ShellScreenCapture {
         boolean eos = false;
         byte[] config = new byte[0];
         OutputFrameRateEvidence frameRateEvidence = new OutputFrameRateEvidence(NoAuthVideoProtocol.FPS);
+        long nextRollingGateFrame = OutputFrameRateEvidence.MIN_STABLE_FRAMES;
         MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
         while (System.nanoTime() < drainUntil) {
             if (!eos && (System.nanoTime() >= stopAt || control != null && control.stopped())) {
@@ -200,6 +201,12 @@ public final class ShellScreenCapture {
                         }
                         long frameNanos = System.nanoTime();
                         frameRateEvidence.record(info.presentationTimeUs, frameNanos);
+                        if (frameRateEvidence.sampleFrames() >= nextRollingGateFrame) {
+                            OutputFrameRateEvidence.Result rolling = frameRateEvidence.result();
+                            System.err.println(rolling.logLine() + " sample=rolling");
+                            frameRateEvidence.requireStable();
+                            nextRollingGateFrame += OutputFrameRateEvidence.MIN_STABLE_FRAMES;
+                        }
                         boolean key = (info.flags & MediaCodec.BUFFER_FLAG_KEY_FRAME) != 0;
                         byte[] picture = AvcByteStream.normalize(buffer);
                         if (key) {
