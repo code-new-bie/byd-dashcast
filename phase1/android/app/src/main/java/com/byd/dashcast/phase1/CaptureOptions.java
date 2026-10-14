@@ -97,16 +97,24 @@ final class CaptureOptions {
         if (args.length == 1 || args.length == 2 && "live".equals(args[1])) {
             return of(Mode.STRETCH);
         }
+        if (args.length == 3 && "remote".equals(args[1])) {
+            return of(Mode.STRETCH);
+        }
         if (!"live".equals(args[1])) {
             throw new IllegalArgumentException("Geometry options require the controlled live stream");
         }
-        if (args.length == 3) {
-            return parse(args[2]);
+        int geometryStart = args.length > 2 && "remote".equals(args[2]) ? 4 : 2;
+        if (args.length == geometryStart) {
+            return of(Mode.STRETCH);
         }
-        if (args.length != 7 || !"region".equals(args[2])) {
+        if (args.length == geometryStart + 1) {
+            return parse(args[geometryStart]);
+        }
+        if (args.length != geometryStart + 5 || !"region".equals(args[geometryStart])) {
             throw new IllegalArgumentException("Unexpected shell capture geometry arguments");
         }
-        return parse("region:" + args[3] + ":" + args[4] + ":" + args[5] + ":" + args[6]);
+        return parse("region:" + args[geometryStart + 1] + ":" + args[geometryStart + 2] + ":"
+                + args[geometryStart + 3] + ":" + args[geometryStart + 4]);
     }
 
     Mode mode() {
