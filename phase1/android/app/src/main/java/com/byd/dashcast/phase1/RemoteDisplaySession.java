@@ -7,14 +7,10 @@ import android.os.Process;
 import android.view.Display;
 import android.view.Surface;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.nio.charset.StandardCharsets;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Owns one Android virtual display for the shell-side encoder surface.
@@ -23,10 +19,10 @@ import java.util.concurrent.TimeUnit;
 final class RemoteDisplaySession implements AutoCloseable {
     private static final int VIRTUAL_DISPLAY_FLAG_PUBLIC = 1;
     private static final int VIRTUAL_DISPLAY_FLAG_PRESENTATION = 2;
+    private static final int VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY = 8;
     private static final int DISPLAY_WIDTH = NoAuthVideoProtocol.WIDTH;
     private static final int DISPLAY_HEIGHT = NoAuthVideoProtocol.HEIGHT;
     private static final int DISPLAY_DENSITY_DPI = 160;
-    private static final int MAX_AM_OUTPUT_BYTES = 16 * 1024;
 
     private VirtualDisplay display;
 
@@ -34,29 +30,28 @@ final class RemoteDisplaySession implements AutoCloseable {
         if (surface == null || target == null || !target.isRemote()) {
             throw new IllegalArgumentException("Remote display requires a surface and remote target");
         }
-        VirtualDisplay created = null;
         try {
             Context context = shellContext();
             System.err.println("SHELL_CAPTURE_REMOTE_CONTEXT package=" + context.getPackageName()
                     + " uid=" + Process.myUid());
-            created = createVirtualDisplay(context, surface);
-            Display androidDisplay = created.getDisplay();
+            display = createVirtualDisplay(context, surface);
+            Display androidDisplay = display.getDisplay();
             if (androidDisplay == null || androidDisplay.getDisplayId() < 0) {
                 throw new IOException("SHELL_CAPTURE_REMOTE_DISPLAY_INFO_MISSING");
             }
             System.err.println("SHELL_CAPTURE_REMOTE_DISPLAY_CREATED id=" + androidDisplay.getDisplayId()
                     + " size=" + DISPLAY_WIDTH + "x" + DISPLAY_HEIGHT + " density=" + DISPLAY_DENSITY_DPI
-                    + " flags=PUBLIC|PRESENTATION component=" + target.component());
+                    + " flags=PUBLIC|PRESENTATION|OWN_CONTENT_ONLY component=" + target.component());
             launchOnDisplay(androidDisplay.getDisplayId(), target.component());
-            display = created;
-            created = null;
-        } catch (InvocationTargetException error) {
-            throw unwrap(error);
         } catch (Exception error) {
-            if (created != null) {
-                created.release();
+            Exception failure = error instanceof InvocationTargetException
+                    ? unwrap((InvocationTargetException)error) : error;
+            try {
+                close();
+            } catch (RuntimeException cleanup) {
+                failure.addSuppressed(cleanup);
             }
-            throw error;
+            throw failure;
         }
     }
 
@@ -68,7 +63,7 @@ final class RemoteDisplaySession implements AutoCloseable {
                 int.class, Surface.class, int.class, VirtualDisplay.Callback.class, Handler.class, String.class);
         Object result = create.invoke(global, context, null, "dashcast-remote-" + System.currentTimeMillis(),
                 DISPLAY_WIDTH, DISPLAY_HEIGHT, DISPLAY_DENSITY_DPI, surface,
-                VIRTUAL_DISPLAY_FLAG_PUBLIC | VIRTUAL_DISPLAY_FLAG_PRESENTATION,
+                VIRTUAL_DISPLAY_FLAG_PUBLIC | VIRTUAL_DISPLAY_FLAG_PRESENTATION | VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY,
                 null, null, null);
         if (!(result instanceof VirtualDisplay)) {
             throw new IOException("SHELL_CAPTURE_REMOTE_DISPLAY_CREATE_FAILED");
@@ -78,31 +73,16 @@ final class RemoteDisplaySession implements AutoCloseable {
 
     private static void launchOnDisplay(int displayId, String component) throws Exception {
         java.lang.Process process = new ProcessBuilder("/system/bin/am", "start", "--display",
-                Integer.toString(displayId), "--user", "current", "-n", component)
+                Integer.toString(displayId), "--user", "current", "-a", "android.intent.action.MAIN",
+                "-c", "android.intent.category.LAUNCHER", "-n", component)
                 .redirectErrorStream(true)
                 .start();
-        ByteArrayOutputStream output = new ByteArrayOutputStream();
-        try (InputStream input = process.getInputStream()) {
-            byte[] buffer = new byte[1024];
-            int length;
-            int remaining = MAX_AM_OUTPUT_BYTES;
-            while ((length = input.read(buffer)) >= 0) {
-                if (remaining > 0) {
-                    int copied = Math.min(length, remaining);
-                    output.write(buffer, 0, copied);
-                    remaining -= copied;
-                }
-            }
-        }
-        if (!process.waitFor(10, TimeUnit.SECONDS)) {
-            process.destroyForcibly();
-            throw new IOException("SHELL_CAPTURE_REMOTE_APP_START_TIMEOUT");
-        }
-        String detail = new String(output.toByteArray(), StandardCharsets.UTF_8).trim()
+        String detail = BoundedProcessOutput.read(process, 10_000L).trim()
                 .replace('\n', ' ').replace('\r', ' ');
         System.err.println("SHELL_CAPTURE_REMOTE_AM exit=" + process.exitValue() + " output=" + detail);
-        if (process.exitValue() != 0) {
-            throw new IOException("SHELL_CAPTURE_REMOTE_APP_START_FAILED exit=" + process.exitValue());
+        if (process.exitValue() != 0 || detail.contains("Error:") || detail.contains("SecurityException")) {
+            throw new IOException("SHELL_CAPTURE_REMOTE_APP_START_FAILED exit=" + process.exitValue()
+                    + " output=" + detail);
         }
     }
 

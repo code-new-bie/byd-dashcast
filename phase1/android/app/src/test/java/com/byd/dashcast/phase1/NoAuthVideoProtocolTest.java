@@ -40,7 +40,7 @@ public final class NoAuthVideoProtocolTest {
         byte[] request = NoAuthVideoProtocol.start();
         assertArrayEquals(header(1, 24, 0, 0), Arrays.copyOf(request, 24));
         assertArrayEquals(ByteBuffer.allocate(24).order(ByteOrder.BIG_ENDIAN)
-                .putInt(1920).putInt(720).putInt(1920).putInt(720).putInt(30).putInt(0).array(),
+                .putInt(640).putInt(240).putInt(640).putInt(240).putInt(30).putInt(0).array(),
                 Arrays.copyOfRange(request, 24, 48));
         assertArrayEquals(header(3, 0, 0, 0), NoAuthVideoProtocol.stop());
     }

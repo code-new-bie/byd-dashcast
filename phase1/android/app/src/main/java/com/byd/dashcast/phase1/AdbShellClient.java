@@ -110,6 +110,11 @@ public final class AdbShellClient {
 
     void executeShellV2Controlled(String command, ShellOutputHandler outputHandler, Consumer<String> diagnostics,
             AtomicBoolean stopRequested, Runnable beforeStop) throws IOException {
+        executeShellV2Controlled(command, outputHandler, diagnostics, stopRequested, beforeStop, value -> {});
+    }
+
+    void executeShellV2Controlled(String command, ShellOutputHandler outputHandler, Consumer<String> diagnostics,
+            AtomicBoolean stopRequested, Runnable beforeStop, Consumer<Boolean> exitConfirmation) throws IOException {
         ShellV2Output output = new ShellV2Output(outputHandler, diagnostics);
         try {
             executeNetwork(command, output, true, stopRequested, beforeStop);
@@ -118,6 +123,7 @@ public final class AdbShellClient {
         } finally {
             // Preserve already received capture evidence even when the frame consumer rejects.
             output.reportDiagnostics();
+            exitConfirmation.accept(output.exitConfirmed());
         }
     }
 

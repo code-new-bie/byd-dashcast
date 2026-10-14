@@ -16,9 +16,12 @@ import java.util.function.Consumer;
  */
 final class ShellV2Output implements AdbShellClient.ShellOutputHandler {
     private static final int MAX_FRAME_BYTES = 1024 * 1024;
+    private static final int DIAGNOSTIC_BYTES = 4096;
+    private static final int DIAGNOSTIC_TAIL_BYTES = DIAGNOSTIC_BYTES / 2;
     private final AdbShellClient.ShellOutputHandler stdout;
     private final Consumer<String> diagnostics;
     private final ByteArrayOutputStream stderr = new ByteArrayOutputStream();
+    private byte[] stderrTail = new byte[0];
     private final byte[] header = new byte[5];
     private int headerBytes;
     private int channel;
@@ -62,8 +65,9 @@ final class ShellV2Output implements AdbShellClient.ShellOutputHandler {
                     stdout.onOutput(chunk, count);
                 } else if (channel == 2) {
                     stderrBytes = (int)Math.min((long)stderrBytes + count, Integer.MAX_VALUE);
-                    int keep = Math.min(count, 4096 - stderr.size());
+                    int keep = Math.min(count, DIAGNOSTIC_BYTES - stderr.size());
                     stderr.write(data, offset, keep);
+                    keepDiagnosticTail(data, offset, count);
                 } else {
                     exitCode = data[offset] & 255;
                 }
@@ -108,9 +112,26 @@ final class ShellV2Output implements AdbShellClient.ShellOutputHandler {
         }
         diagnosticsReported = true;
         if (stderr.size() > 0) {
-            diagnostics.accept("ADB_CAPTURE_STDERR " + new String(stderr.toByteArray(), StandardCharsets.UTF_8)
-                    + (stderrBytes > stderr.size() ? " [truncated]" : ""));
+            byte[] first = stderr.toByteArray();
+            String text = stderrBytes <= DIAGNOSTIC_BYTES ? new String(first, StandardCharsets.UTF_8)
+                    : new String(first, 0, DIAGNOSTIC_TAIL_BYTES, StandardCharsets.UTF_8)
+                            + "\n[stderr middle truncated]\n" + new String(stderrTail, StandardCharsets.UTF_8);
+            diagnostics.accept("ADB_CAPTURE_STDERR " + text);
         }
+    }
+
+    private void keepDiagnosticTail(byte[] data, int offset, int count) {
+        int incoming = Math.min(count, DIAGNOSTIC_TAIL_BYTES);
+        int prior = Math.min(stderrTail.length, DIAGNOSTIC_TAIL_BYTES - incoming);
+        byte[] tail = new byte[prior + incoming];
+        System.arraycopy(stderrTail, stderrTail.length - prior, tail, 0, prior);
+        System.arraycopy(data, offset + count - incoming, tail, prior, incoming);
+        stderrTail = tail;
+    }
+
+    /** A nonzero status is a failed command, but a complete EXIT still proves that the child ended. */
+    boolean exitConfirmed() {
+        return !failed && headerBytes == 0 && remaining == 0 && exitCode != null;
     }
 
     int stderrBytes() {

@@ -91,9 +91,6 @@ final class ContinuousProjectionTask implements ProjectionSessionController.Task
                         return;
                     }
                     long outputPts = frameRateGate.outputPts(pts);
-                    if (outputPts < 0L) {
-                        return;
-                    }
                     contract.accept(data, log);
                     if (!begun[0]) {
                         ownedClient.begin();

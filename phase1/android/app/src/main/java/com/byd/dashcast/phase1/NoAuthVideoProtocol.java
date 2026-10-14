@@ -21,6 +21,11 @@ final class NoAuthVideoProtocol {
     static final int WIDTH = 1920;
     static final int HEIGHT = 720;
     static final int FPS = 30;
+    // START is x, y, window width, window height, FPS, flags; encoded size comes from SPS.
+    static final int WINDOW_X = 640;
+    static final int WINDOW_Y = 240;
+    static final int WINDOW_WIDTH = 640;
+    static final int WINDOW_HEIGHT = 240;
     static final int START = 1;
     static final int FRAME = 2;
     static final int STOP = 3;
@@ -43,7 +48,8 @@ final class NoAuthVideoProtocol {
 
     static byte[] start() {
         ByteBuffer payload = ByteBuffer.allocate(24).order(ByteOrder.BIG_ENDIAN);
-        payload.putInt(WIDTH).putInt(HEIGHT).putInt(WIDTH).putInt(HEIGHT).putInt(FPS).putInt(0);
+        payload.putInt(WINDOW_X).putInt(WINDOW_Y).putInt(WINDOW_WIDTH).putInt(WINDOW_HEIGHT)
+                .putInt(FPS).putInt(0);
         return packet(START, 0, 0, 0, payload.array());
     }
 

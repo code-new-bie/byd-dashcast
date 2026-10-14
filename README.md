@@ -1,10 +1,12 @@
 # Dashcast
 
-BYD Android 车机 → QNX 仪表 USB 投屏工程。当前开发源码 **0.8.0 远程副屏门控版**，使用 **0.7.9 高清仪表接收端**。APK可列出车机可启动应用，选择应用后通过授权ADB shell创建Android `VirtualDisplay`，用 `am start --display`启动应用，再复用H.264/DCV1/NCM/QNX视频链路；车机主屏路径仍保留。远程显示创建、跨屏启动、QNX解码和真实30 FPS仍待实车验证，公开 Release 仍为0.4.4。
+BYD Android 车机 → QNX 仪表 USB 投屏工程。当前开发源码 **0.8.1 视频显示修复版**，需匹配 **0.8.1仪表App**。修复窗口位置越界、远程shell缺Looper、FPS检查提前结束及失败退出误隔离；保留完整编码帧参考链。H.264编码1920×720，仪表显示在原640×240小窗。原NCM/DCV1链路继续使用；本版实车恢复画面、应用跨屏和实际30FPS待验证，公开Release仍为0.4.4。
 
 此项目用于可恢复台架或车辆停稳时的验证，不是官方固件、通用车型适配包或行驶中使用的生产产品。仪表 MCU 不修改，视频不使用激活码/token/设备绑定；正常 ADB 和 USB 访问授权仍然必需。
 
 ## 当前成果
+
+- [0.8.1修复与现场验证](docs/TASKS_0.8.1.md)：需同时更新APK和仪表App，先验证测试图、主屏，再验证指定应用。
 
 - APK 经已授权的本机 ADB 和原厂导航文字中继，请求仪表 Host/NCM 模式。
 - 车机画面经 shell SurfaceControl 镜像、硬件 H.264 Baseline 编码，通过用户态 USB NCM/TCP/DCV1 发送。

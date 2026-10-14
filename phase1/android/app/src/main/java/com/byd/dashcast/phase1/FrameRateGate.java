@@ -3,12 +3,12 @@ package com.byd.dashcast.phase1;
 import java.io.IOException;
 
 /**
- * Selects at most one encoded access unit per target frame interval using encoder PTS.
+ * Preserves every encoded access unit and assigns a bounded transport PTS cadence.
  *
  * <p>The source encoder may produce more than the requested rate on the Android head unit.
- * Dropping before DCV1 keeps the instrument stream bounded without queueing stale pictures.
- * Accepted pictures are re-timestamped to a fixed target cadence before they enter DCV1. This
- * removes small source-clock jitter without inventing pictures when the encoder is slow. The
+ * Rate limiting belongs at the encoder's Surface input and in the transport pacer. Dropping a
+ * coded P picture can invalidate the following reference-dependent pictures. All valid pictures
+ * are re-timestamped to a fixed target cadence before they enter DCV1. The
  * class measures the resulting PTS cadence; it does not claim decoded-display timing.</p>
  *
  * @author Codex
@@ -23,10 +23,8 @@ final class FrameRateGate {
     private long lastInputPts = -1L;
     private long firstOutputPts = -1L;
     private long lastOutputPts = -1L;
-    private long nextOutputPts = -1L;
     private long inputFrames;
     private long outputFrames;
-    private long droppedFrames;
 
     FrameRateGate(int targetFps) {
         if (targetFps < 1 || targetFps > 120) {
@@ -37,9 +35,7 @@ final class FrameRateGate {
     }
 
     /**
-     * Returns the fixed output PTS for an accepted picture, or {@code -1} when the source picture
-     * is intentionally dropped. The input PTS remains the selection clock; the returned PTS is
-     * the transport clock.
+     * Returns the fixed transport PTS for every valid picture without discarding coded references.
      */
     long outputPts(long ptsMicros) throws IOException {
         if (ptsMicros < 0L || lastInputPts >= 0L && ptsMicros <= lastInputPts) {
@@ -50,10 +46,6 @@ final class FrameRateGate {
         }
         lastInputPts = ptsMicros;
         inputFrames++;
-        if (nextOutputPts >= 0L && ptsMicros < nextOutputPts) {
-            droppedFrames++;
-            return -1L;
-        }
         if (firstOutputPts < 0L) {
             firstOutputPts = ptsMicros;
             lastOutputPts = ptsMicros;
@@ -61,21 +53,12 @@ final class FrameRateGate {
             lastOutputPts = advanceOutputPts(lastOutputPts);
         }
         outputFrames++;
-        nextOutputPts = advanceDeadline(ptsMicros);
         return lastOutputPts;
     }
 
-    /** Compatibility helper for tests and callers that only need the selection decision. */
+    /** Compatibility helper; valid encoded pictures are always preserved. */
     boolean accept(long ptsMicros) throws IOException {
         return outputPts(ptsMicros) >= 0L;
-    }
-
-    private long advanceDeadline(long ptsMicros) throws IOException {
-        long deadline = ptsMicros + intervalMicros;
-        if (deadline <= ptsMicros) {
-            throw new IOException("FRAME_RATE_GATE_PTS_OVERFLOW");
-        }
-        return deadline;
     }
 
     private long advanceOutputPts(long ptsMicros) throws IOException {
@@ -95,18 +78,18 @@ final class FrameRateGate {
     }
 
     long droppedFrames() {
-        return droppedFrames;
+        return 0L;
     }
 
     String statistics() {
         return "FRAME_RATE_GATE target_fps=" + targetFps
                 + " input_frames=" + inputFrames
                 + " output_frames=" + outputFrames
-                + " dropped_frames=" + droppedFrames
+                + " dropped_frames=0"
                 + " input_pts_fps_x100=" + rateX100(inputFrames, firstInputPts, lastInputPts)
                 + " output_pts_fps_x100=" + rateX100(outputFrames, firstOutputPts, lastOutputPts)
                 + " output_interval_us=" + intervalMicros
-                + " retimed=true; PTS cadence only, instrument decoded/display FPS not measured";
+                + " retimed=true preserve_encoded_references=true; PTS cadence only, instrument decoded/display FPS not measured";
     }
 
     private static long rateX100(long frames, long firstPts, long lastPts) {

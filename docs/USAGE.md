@@ -2,7 +2,7 @@
 
 前提：匹配仪表App与已安装的参考包2 OS、可恢复升级流程、稳定供电、车机Android10及正常本机ADB。不要把本仓库当作已刷固件或车型兼容声明。
 
-当前开发APK0.8.0匹配现有0.7.9高清仪表App；仪表包本轮不变，已刷0.7.9完整包不因远程副屏代码重新刷写。不能把APK覆盖到0.5/0.6仪表接收端，也不要把0.7.0～0.7.9 APK与0.8.0 APK混用。公开0.4.4 Release不支持长模式。按匹配的App-only/FULL包处理，FULL升级器可能重刷未改的OS、MCU和引导，必须保留回退包。
+当前开发APK0.8.1必须匹配0.8.1显示修复仪表App，需要同时更新两端。已有参考2 OS者本轮功能只需App；FULL仍携带原OS/MCU/引导，升级器可能重写，按现有可恢复入口处理。升级后先测试图10秒及二次播放，再主屏短时投屏，最后指定应用探针/投屏；FPS偏差只记日志，不提前结束视频。
 
 1. 保持车辆停稳/在可恢复台架。通过已验证的升级入口处理匹配包，独立release目录，不与旧包混放；按所用App-only/FULL包核对实际刷写范围。升级后正常重启清除旧RAM锁，检查原仪表信息正常。
 2. 安装匹配签名APK；同签名才可覆盖保留数据/ADB身份。新构建签名不匹配时停止，不为覆盖安装盲目卸载清数据。
@@ -14,9 +14,9 @@
 
 切换失败、窗口未退、STOP未确认或重要信息被遮挡：停止本轮，必要时正常重启走既有恢复方式。不要连发命令、手动删guard或强制切Host。
 
-## 0.8.0远程副屏门控
+## 0.8.1远程副屏验证
 
-1. 覆盖安装0.8.0 APK并授权本APK的ADB；不需要为本轮重新刷0.7.9仪表包。
+1. 更新0.8.1仪表App和同签名APK；0.7.9/0.8.0接收器不能与本版APK混用。
 2. 不切NCM、不连接仪表，在“远程副屏目标”刷新应用列表，选择一个普通可启动应用，点击“1b. 远程副屏探针”。
 3. 只有同时出现`SHELL_CAPTURE_REMOTE_CONTEXT`、`SHELL_CAPTURE_REMOTE_DISPLAY_CREATED`、`SHELL_CAPTURE_REMOTE_AM exit=0`、实际1920×720格式、SPS/PPS/IDR、`SHELL_CAPTURE_COMPLETE`和`REMOTE_DISPLAY_RUNTIME_PASS`才算车机远程副屏门控通过。
 4. 车机门控通过后，再按本页原有NCM、USB授权和停稳投屏顺序验证仪表；持续投屏时可选择同一应用。应用跨屏、secure surface、固定主屏或多窗口兼容性必须按具体应用分别记录。
@@ -31,7 +31,7 @@
 
 USB断开只中止当前会话，不自动换模式或重连。出现QUARANTINED/清理未确认应停止测试，确认正常恢复后重启仪表和APK进程，不为重试删锁或强杀共享服务。此版本未做道路使用或安全层级验收。
 
-## 0.7.9 G3与高清首测
+## 历史0.7.9 G3与高清首测（0.8.1改为FPS诊断，不因偏差停止视频）
 
 在短时链路已通过且车辆停稳/台架可恢复的前提下，先确认 APK 界面为0.7.9、仪表App为匹配高清版本。先点击G3探针，观察`SHELL_CAPTURE_CODEC`、`SHELL_CAPTURE_FORMAT`实际1920×720、滚动/最终`SHELL_CAPTURE_FPS_GATE status=PASS`、`SHELL_CAPTURE_COMPLETE`和APK最终的`G3_RUNTIME_HARDWARE_AVC_PASS`；再做投屏，观察`FRAME_RATE_GATE`输入/输出/丢帧、`FRAME_PACER`的传输起始FPS/平均间隔/迟到帧、`min_transport_interval_us`、`max_transport_interval_us`、`burst_intervals=0`、`output_interval_us=33333`和Surface重复cadence配置；如出现迟到，确认迟到后的相邻发送间隔没有追赶突发。真实仪表画面、QNX解码和30 FPS仍以现场测量为准。出现告警遮挡、黑屏、残影或清理未确认立即停止。短时通过后再做600秒、1800秒、后台、自然结束、异常退出和视频后Host回归。
 

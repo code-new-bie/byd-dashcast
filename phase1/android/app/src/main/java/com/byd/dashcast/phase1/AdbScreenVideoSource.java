@@ -14,13 +14,24 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @date 2026/10/11
  */
 final class AdbScreenVideoSource {
-    private final AdbShellClient client;
+    @FunctionalInterface
+    interface ControlledCapture {
+        void execute(String command, AdbShellClient.ShellOutputHandler handler, Consumer<String> diagnostics,
+                AtomicBoolean stop, Runnable beforeStop, Consumer<Boolean> exitConfirmation) throws IOException;
+    }
+
+    private final ControlledCapture capture;
     private final VideoPatternProbe.Observer observer;
     private final Consumer<String> log;
     private boolean exitConfirmed;
+    private boolean captureResourcesReleased;
 
     AdbScreenVideoSource(AdbShellClient client, VideoPatternProbe.Observer observer, Consumer<String> log) {
-        this.client = Objects.requireNonNull(client);
+        this(Objects.requireNonNull(client)::executeShellV2Controlled, observer, log);
+    }
+
+    AdbScreenVideoSource(ControlledCapture capture, VideoPatternProbe.Observer observer, Consumer<String> log) {
+        this.capture = Objects.requireNonNull(capture);
         this.observer = Objects.requireNonNull(observer);
         this.log = Objects.requireNonNull(log);
     }
@@ -71,9 +82,11 @@ final class AdbScreenVideoSource {
         log.accept("CAPTURE_SELECTION=" + selectedOptions
                 + "; immutable for this session; instrument rectangle unchanged");
         log.accept("PROJECTION_TARGET=" + selectedTarget + "; virtual display is owned by the ADB shell helper");
-        client.executeShellV2Controlled(command, reader, log,
-                Objects.requireNonNull(stopRequested), finishReceiver);
-        exitConfirmed = true;
+        capture.execute(command, reader, message -> {
+            log.accept(message);
+            captureResourcesReleased |= message.contains("SHELL_CAPTURE_RESOURCES_RELEASED");
+        }, Objects.requireNonNull(stopRequested), finishReceiver,
+                ended -> exitConfirmed = ended && captureResourcesReleased);
         reader.finish(stopRequested.get());
         log.accept(reader.statistics());
     }
@@ -92,7 +105,7 @@ final class AdbScreenVideoSource {
         });
         log.accept("VIDEO_SOURCE=authorized_ADB; nominal_receiver_fps=30; timestamps=receipt_NOT_source_PTS");
         log.accept("ADB_VIDEO_COMMAND " + command);
-        client.executeShellV2(command, reader, log);
+        capture.execute(command, reader, log, null, () -> {}, ended -> {});
         reader.finish();
         if (reader.frameCount() < 2) {
             throw new IOException("ADB capture produced fewer than two complete pictures; moving video unverified");

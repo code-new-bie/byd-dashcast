@@ -1,6 +1,10 @@
 package com.byd.dashcast.phase1;
 
 import org.junit.Test;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -13,6 +17,29 @@ import static org.junit.Assert.assertThrows;
 
 /** Binary video never contains shell-v2 STDERR/EXIT framing, even across arbitrary ADB chunks. */
 public final class ShellV2OutputTest {
+    @Test
+    public void nonzeroExitIsConfirmedTerminationButStillCommandFailure() throws Exception {
+        ShellV2Output decoder = new ShellV2Output((bytes, count) -> {});
+        byte[] wire = frame(3, new byte[] {1});
+        decoder.onOutput(wire, wire.length);
+        assertTrue(decoder.exitConfirmed());
+        assertThrows(IOException.class, decoder::requireSuccess);
+    }
+
+    @Test
+    public void keepsCleanupEvidenceAtTheTailOfLongDiagnostics() throws Exception {
+        List<String> logs = new ArrayList<>();
+        ShellV2Output decoder = new ShellV2Output((bytes, count) -> {}, logs::add);
+        byte[] stderr = new byte[9000];
+        java.util.Arrays.fill(stderr, (byte)'x');
+        byte[] marker = "\nSHELL_CAPTURE_RESOURCES_RELEASED\n".getBytes(StandardCharsets.UTF_8);
+        byte[] wire = join(frame(2, stderr), frame(2, marker), frame(3, new byte[] {0}));
+        decoder.onOutput(wire, wire.length);
+        decoder.requireSuccess();
+        assertTrue(logs.get(0).contains("SHELL_CAPTURE_RESOURCES_RELEASED"));
+        assertTrue(logs.get(0).length() < 4300);
+    }
+
     @Test
     public void preservesBinaryStdoutAndDiscardsStderrAcrossSingleByteChunks() throws Exception {
         ByteArrayOutputStream raw = new ByteArrayOutputStream();
@@ -97,7 +124,8 @@ public final class ShellV2OutputTest {
         assertArrayEquals(new byte[] {0, 0, 1}, video.toByteArray());
         assertEquals(5000, decoder.stderrBytes());
         assertEquals(1, logs.size());
-        assertEquals("ADB_CAPTURE_STDERR ".length() + 4096 + " [truncated]".length(), logs.get(0).length());
+        assertTrue(logs.get(0).contains("[stderr middle truncated]"));
+        assertTrue(logs.get(0).length() < 4300);
     }
 
     @Test

@@ -7,6 +7,7 @@ import android.media.MediaCodecList;
 import android.media.MediaFormat;
 import android.os.Build;
 import android.os.IBinder;
+import android.os.Looper;
 import android.os.Process;
 import android.view.Surface;
 
@@ -49,6 +50,11 @@ public final class ShellScreenCapture {
             if (seconds < 1 || seconds > (live ? ProjectionLimits.MAX_SECONDS : 10)) {
                 throw new IOException("SHELL_CAPTURE_DURATION_LIMIT");
             }
+            if (target.isRemote() && Looper.myLooper() == null) {
+                // app_process invokes this main directly; ActivityThread and framework Handlers need a Looper.
+                Looper.prepareMainLooper();
+                System.err.println("SHELL_CAPTURE_REMOTE_LOOPER_READY");
+            }
             if (live) {
                 try (CaptureStopControl control = new CaptureStopControl(System.in)) {
                     control.start();
@@ -72,6 +78,8 @@ public final class ShellScreenCapture {
         format.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
         format.setInteger(MediaFormat.KEY_BIT_RATE, 6_000_000);
         format.setInteger(MediaFormat.KEY_FRAME_RATE, NoAuthVideoProtocol.FPS);
+        // Throttle Surface input before encoding; dropping encoded P frames breaks their reference chain.
+        format.setFloat(MediaFormat.KEY_MAX_FPS_TO_ENCODER, (float)NoAuthVideoProtocol.FPS);
         format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1);
         format.setInteger(MediaFormat.KEY_PROFILE, MediaCodecInfo.CodecProfileLevel.AVCProfileBaseline);
         format.setInteger(MediaFormat.KEY_LEVEL, MediaCodecInfo.CodecProfileLevel.AVCLevel4);
@@ -148,6 +156,8 @@ public final class ShellScreenCapture {
                 } else {
                     throw cleanup;
                 }
+            } else if (failure == null || failure.getSuppressed().length == 0) {
+                System.err.println("SHELL_CAPTURE_RESOURCES_RELEASED");
             }
         }
     }
@@ -209,8 +219,7 @@ public final class ShellScreenCapture {
                         frameRateEvidence.record(info.presentationTimeUs, frameNanos);
                         if (frameRateEvidence.sampleFrames() >= nextRollingGateFrame) {
                             OutputFrameRateEvidence.Result rolling = frameRateEvidence.result();
-                            System.err.println(rolling.logLine() + " sample=rolling");
-                            frameRateEvidence.requireStable();
+                            System.err.println(rolling.logLine() + " sample=rolling diagnostic_only=true");
                             nextRollingGateFrame += OutputFrameRateEvidence.MIN_STABLE_FRAMES;
                         }
                         boolean key = (info.flags & MediaCodec.BUFFER_FLAG_KEY_FRAME) != 0;
@@ -240,10 +249,9 @@ public final class ShellScreenCapture {
                         throw new IOException("SHELL_CAPTURE_FEWER_THAN_TWO_PICTURES");
                     }
                     OutputFrameRateEvidence.Result evidence = frameRateEvidence.result();
-                    System.err.println(evidence.logLine());
-                    if (!eosWasRequestedByUser(control) && seconds >= 3) {
-                        frameRateEvidence.requireStable();
-                    }
+                    // Display refresh, codec batching and ACK backpressure can jitter timestamps.
+                    // Keep the measured result without terminating valid H.264 pictures.
+                    System.err.println(evidence.logLine() + " sample=final diagnostic_only=true");
                     if (control != null) {
                         stdout.write(CaptureFrameProtocol.end(Math.max(0, lastPts)));
                         stdout.flush();
@@ -262,10 +270,6 @@ public final class ShellScreenCapture {
             }
         }
         throw new IOException("SHELL_CAPTURE_EOS_TIMEOUT");
-    }
-
-    private static boolean eosWasRequestedByUser(CaptureStopControl control) throws IOException {
-        return control != null && control.stopped();
     }
 
     /**

@@ -11,7 +11,7 @@ bash gradlew testDebugUnitTest assembleDebug lintDebug --console=plain
 
 Windows 使用 `gradlew.bat`。APK位于 `app/build/outputs/apk/debug/app-debug.apk`，测试和 lint 报告位于 `app/build`。首次构建需要按操作者环境准备依赖；`--offline`只适用于缓存已经就绪的机器。
 
-当前源码版本为 0.8.0/code27：除既有1920×720/30 FPS和传输门控外，新增可启动应用列表、车机侧Android `VirtualDisplay`和`am start --display`远程副屏探针；主屏SurfaceControl路径仍保留。远程探针只证明车机虚拟显示创建、跨屏启动和H.264入口，不证明QNX解码或仪表实际显示。构建成功不等于设备硬件编码、跨屏启动、远端解码或实际显示成功。
+当前源码版本为0.8.1/code28。APK需匹配0.8.1仪表App；START窗口位置/大小与1920×720编码尺寸独立。远程目标预先准备Looper，FPS偏差只记录诊断，编码后不丢参考帧，完整EXIT和资源释放分别确认。构建成功仍需现场确认跨屏启动、仪表动态画面和实际30FPS。
 
 ## 测试范围
 
