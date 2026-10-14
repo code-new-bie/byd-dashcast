@@ -11,7 +11,8 @@ import java.util.concurrent.locks.LockSupport;
  * encoder or pipe releases several access units together, their transport writes can otherwise
  * burst even though their PTS values are 33,333 microseconds apart. This class schedules the
  * start of each write at a fixed 30 FPS cadence. It never duplicates a picture and never catches
- * up by sending extra pictures; a slow ACK path is reported as late instead.</p>
+ * up by sending extra pictures; a slow ACK path is reported as late and the next slot is
+ * re-anchored from the current time.</p>
  */
 final class FramePacer {
     interface Sleeper {
@@ -79,10 +80,14 @@ final class FramePacer {
         }
         lastSendNanos = now;
         initialized = true;
-        if (slot > Long.MAX_VALUE - intervalNanos) {
+        // A slow synchronous ACK/encode path must not make the next call immediately catch up
+        // against an old deadline. Re-anchor after lateness so two writes are never emitted as a
+        // burst merely because the previous write consumed more than one frame interval.
+        long nextBase = late > 0L ? now : slot;
+        if (nextBase > Long.MAX_VALUE - intervalNanos) {
             throw new IOException("FRAME_PACER_CLOCK_OVERFLOW");
         }
-        nextSlotNanos = slot + intervalNanos;
+        nextSlotNanos = nextBase + intervalNanos;
     }
 
     long scheduledFrames() {
