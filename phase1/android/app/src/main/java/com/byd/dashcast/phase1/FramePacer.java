@@ -31,6 +31,9 @@ final class FramePacer {
     private long lateFrames;
     private long totalWaitNanos;
     private long maxLateNanos;
+    private long minTransportIntervalNanos = -1L;
+    private long maxTransportIntervalNanos = -1L;
+    private long burstIntervals;
     private long firstSendNanos = -1L;
     private long lastSendNanos = -1L;
 
@@ -54,6 +57,9 @@ final class FramePacer {
      */
     void awaitNextSlot() throws IOException {
         long beforeWait = nanoTime.getAsLong();
+        if (lastSendNanos >= 0L && beforeWait < lastSendNanos) {
+            throw new IOException("FRAME_PACER_CLOCK_MOVED_BACKWARD");
+        }
         long slot = initialized ? nextSlotNanos : beforeWait;
         long now = beforeWait;
         while (now < slot) {
@@ -77,6 +83,16 @@ final class FramePacer {
         scheduledFrames++;
         if (firstSendNanos < 0L) {
             firstSendNanos = now;
+        }
+        if (lastSendNanos >= 0L) {
+            long interval = now - lastSendNanos;
+            minTransportIntervalNanos = minTransportIntervalNanos < 0L
+                    ? interval : Math.min(minTransportIntervalNanos, interval);
+            maxTransportIntervalNanos = maxTransportIntervalNanos < 0L
+                    ? interval : Math.max(maxTransportIntervalNanos, interval);
+            if (interval < intervalNanos) {
+                burstIntervals++;
+            }
         }
         lastSendNanos = now;
         initialized = true;
@@ -110,8 +126,15 @@ final class FramePacer {
                 + " max_late_us=" + maxLateNanos / MICROS_PER_NANO
                 + " total_wait_ms=" + totalWaitNanos / 1_000_000L
                 + " transport_start_fps_x100=" + rateX100(scheduledFrames, firstSendNanos, lastSendNanos)
+                + " min_transport_interval_us=" + intervalMicros(minTransportIntervalNanos)
+                + " max_transport_interval_us=" + intervalMicros(maxTransportIntervalNanos)
+                + " burst_intervals=" + burstIntervals
                 + " average_transport_interval_us=" + averageIntervalMicros()
                 + "; monotonic_transport_schedule, no_frame_duplication, instrument_display_unverified";
+    }
+
+    private static long intervalMicros(long nanos) {
+        return nanos < 0L ? 0L : nanos / MICROS_PER_NANO;
     }
 
     private long averageIntervalMicros() {

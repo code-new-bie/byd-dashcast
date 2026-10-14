@@ -24,6 +24,9 @@ public final class FramePacerTest {
         assertEquals(3L, pacer.scheduledFrames());
         assertEquals(0L, pacer.lateFrames());
         assertTrue(pacer.statistics().contains("transport_start_fps_x100=3000"));
+        assertTrue(pacer.statistics().contains("min_transport_interval_us=33333"));
+        assertTrue(pacer.statistics().contains("max_transport_interval_us=33333"));
+        assertTrue(pacer.statistics().contains("burst_intervals=0"));
         assertTrue(pacer.statistics().contains("average_transport_interval_us=33333"));
     }
 
@@ -43,7 +46,22 @@ public final class FramePacerTest {
         assertEquals(1L, pacer.lateFrames());
         assertTrue(pacer.maxLateNanos() >= 6_000_000L);
         assertEquals(33_333_333L, clock.get() - secondSend);
+        assertTrue(pacer.statistics().contains("min_transport_interval_us=33333"));
+        assertTrue(pacer.statistics().contains("max_transport_interval_us=40000"));
+        assertTrue(pacer.statistics().contains("burst_intervals=0"));
         assertTrue(pacer.statistics().contains("late_frames=1"));
+    }
+
+    @Test
+    public void rejectsMonotonicClockRegressionBetweenWrites() throws Exception {
+        AtomicLong clock = new AtomicLong();
+        FramePacer pacer = new FramePacer(30, clock::get,
+                nanos -> clock.addAndGet(nanos));
+
+        pacer.awaitNextSlot();
+        clock.set(-1L);
+
+        assertThrows(java.io.IOException.class, pacer::awaitNextSlot);
     }
 
     @Test
