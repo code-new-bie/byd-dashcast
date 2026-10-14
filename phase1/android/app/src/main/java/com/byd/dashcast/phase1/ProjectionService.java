@@ -58,13 +58,18 @@ public final class ProjectionService extends Service {
     }
 
     static void start(Context context, int seconds, CaptureOptions options) {
+        start(context, seconds, options, ProjectionTarget.primary());
+    }
+
+    static void start(Context context, int seconds, CaptureOptions options, ProjectionTarget target) {
         ProjectionLimits.requireSeconds(seconds);
-        if (options == null) {
-            throw new IllegalArgumentException("Capture selection required");
+        if (options == null || target == null) {
+            throw new IllegalArgumentException("Capture selection and projection target required");
         }
         context.startForegroundService(new Intent(context, ProjectionService.class).setAction(START)
                 .putExtra("seconds", seconds).putExtra("parked_matching_firmware", true)
-                .putExtra("capture_selection", options.token()));
+                .putExtra("capture_selection", options.token())
+                .putExtra("projection_target", target.token()));
     }
 
     static void requestStop(Context context) {
@@ -165,7 +170,9 @@ public final class ProjectionService extends Service {
             int seconds = intent.getIntExtra("seconds", 0);
             ProjectionLimits.requireSeconds(seconds);
             CaptureOptions options = CaptureOptions.parse(intent.getStringExtra("capture_selection"));
+            ProjectionTarget target = ProjectionTarget.parse(intent.getStringExtra("projection_target"));
             JOURNAL.append("PROJECTION_CONFIG=" + options
+                    + "; target=" + target
                     + "; encoded=1920x720/30fps native_rect=[0,0,1920,720]; HMI occlusion and decoded FPS require vehicle validation");
             UsbDevice device = UsbNcmSession.findDevice(this);
             UsbManager usb = (UsbManager)getSystemService(USB_SERVICE);
@@ -182,7 +189,7 @@ public final class ProjectionService extends Service {
             }
             wakeLock = power.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "dashcast:continuous");
             wakeLock.acquire((seconds + 30L) * 1000);
-            ContinuousProjectionTask task = new ContinuousProjectionTask(this, seconds, JOURNAL::append, options);
+            ContinuousProjectionTask task = new ContinuousProjectionTask(this, seconds, JOURNAL::append, options, target);
             ownedLease = lease;
             boolean accepted = controller.start((stop, abort, streaming, cleaning) -> {
                 task.run(stop, abort, streaming, cleaning);

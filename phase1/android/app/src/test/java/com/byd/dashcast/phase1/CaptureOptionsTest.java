@@ -70,6 +70,9 @@ public final class CaptureOptionsTest {
         assertEquals("crop", CaptureOptions.fromShellArguments(new String[] {"600", "live", "crop"}).token());
         assertEquals("region:10:15:95:90", CaptureOptions.fromShellArguments(
                 new String[] {"600", "live", "region", "10", "15", "95", "90"}).token());
+        assertEquals("region:10:15:95:90", CaptureOptions.fromShellArguments(
+                new String[] {"600", "live", "remote", "com.example.maps/com.example.MainActivity", "region",
+                        "10", "15", "95", "90"}).token());
         for (String[] args : new String[][] {{}, {"600", "other"}, {"5", "fit"},
                 {"600", "live", "region", "0", "0", "100"}, {"600", "live", "fit", "other"},
                 {"600", "live", "region", "0", "0", "100", "100", "other"}}) {

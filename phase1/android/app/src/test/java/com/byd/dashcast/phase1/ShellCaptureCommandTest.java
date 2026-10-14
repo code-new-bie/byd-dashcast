@@ -15,6 +15,16 @@ public final class ShellCaptureCommandTest {
         assertThrows(IllegalArgumentException.class,
                 () -> ShellCaptureCommand.continuous("/data/app/x/base.apk", 600, null));
     }
+
+    @Test
+    public void remoteTargetIsPassedBeforeGeometryWithoutChangingInstrumentProtocol() {
+        String command = ShellCaptureCommand.continuous("/data/app/x/base.apk", 600,
+                CaptureOptions.of(CaptureOptions.Mode.FIT),
+                ProjectionTarget.remoteComponent("com.example.maps/com.example.maps.MainActivity", null));
+
+        assertTrue(command.endsWith("ShellScreenCapture 600 live remote '"
+                + "com.example.maps/com.example.maps.MainActivity' fit"));
+    }
     @Test
     public void continuousModeIsSeparateAndStillQuotesOnlyAnInstalledApk() {
         assertTrue(ShellCaptureCommand.continuous("/data/app/x'$y/base.apk", 1800)
@@ -31,6 +41,9 @@ public final class ShellCaptureCommandTest {
                 + "com.byd.dashcast.phase1.ShellScreenCapture 5",
                 ShellCaptureCommand.create("/data/app/abc/base.apk", 5));
         assertTrue(ShellCaptureCommand.create("/data/app/x'$y/base.apk", 10).contains("x'\\''$y"));
+        assertTrue(ShellCaptureCommand.create("/data/app/abc/base.apk", 5,
+                ProjectionTarget.remoteComponent("com.example.maps/com.example.maps.MainActivity", null))
+                .endsWith("ShellScreenCapture 5 remote 'com.example.maps/com.example.maps.MainActivity'"));
     }
 
     @Test

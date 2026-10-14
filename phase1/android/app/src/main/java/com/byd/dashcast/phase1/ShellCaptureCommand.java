@@ -12,6 +12,14 @@ final class ShellCaptureCommand {
         return create(apk, seconds, false);
     }
 
+    static String create(String apk, int seconds, ProjectionTarget target) {
+        if (target == null) {
+            throw new IllegalArgumentException("Projection target required");
+        }
+        String targetArguments = target.shellArguments();
+        return create(apk, seconds, false) + (targetArguments.isEmpty() ? "" : " " + targetArguments);
+    }
+
     static String continuous(String apk, int seconds) {
         ProjectionLimits.requireSeconds(seconds);
         return create(apk, seconds, true);
@@ -22,6 +30,15 @@ final class ShellCaptureCommand {
             throw new IllegalArgumentException("Explicit capture selection required");
         }
         return continuous(apk, seconds) + " " + options.shellArguments();
+    }
+
+    static String continuous(String apk, int seconds, CaptureOptions options, ProjectionTarget target) {
+        if (options == null || target == null) {
+            throw new IllegalArgumentException("Capture options and projection target are required");
+        }
+        String targetArguments = target.shellArguments();
+        return continuous(apk, seconds) + (targetArguments.isEmpty() ? "" : " " + targetArguments)
+                + " " + options.shellArguments();
     }
 
     private static String create(String apk, int seconds, boolean continuous) {

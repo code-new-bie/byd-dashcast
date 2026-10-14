@@ -1,11 +1,14 @@
-# 当前架构（0.7.9 G3高清硬编运行时探针候选）
+# 当前架构（0.8.0远程副屏门控候选）
 
 本项目用于受控台架或停车验证。控制面和视频面分离：控制面通过设备已有的授权通道请求 USB 角色变化；视频面通过本机 ADB 获取屏幕、硬件编码，再经 USB 网络链路发送到仪表侧接收器。
 
 ```text
 控制：APK → 已授权的车机服务 → 仪表 USB 角色
-视频：授权 ADB 屏幕源 → 硬件 H.264 → USB 网络 → DCV1 接收器 → 仪表媒体/显示
+视频主屏：授权 ADB SurfaceControl 镜像 → 硬件 H.264 → USB 网络 → DCV1 接收器 → 仪表媒体/显示
+视频远程副屏：授权 ADB shell → Android VirtualDisplay → 硬件 H.264 → USB 网络 → DCV1 接收器 → 仪表媒体/显示
 ```
+
+远程副屏只在 Android 车机侧创建。它不是把 QNX 仪表注册成 Android `Display`：APK选择一个可启动组件后，shell侧创建1920×720 public/presentation `VirtualDisplay`，把编码器输入Surface作为输出，并调用`am start --display`；主屏SurfaceControl镜像仍作为默认回退路径。VirtualDisplay权限、跨屏启动、具体应用兼容性和QNX实际显示必须单独现场验证。
 
 ## 控制边界
 

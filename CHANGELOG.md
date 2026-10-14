@@ -1,5 +1,12 @@
 # 改动摘要
 
+## 0.8.0 · 2026-10-14 远程副屏门控首版
+
+- 新增车机可启动应用列表和目标选择；默认保留车机主屏采集路径。
+- 授权 ADB shell 侧创建 1920×720 Android `VirtualDisplay`，用 `/system/bin/am start --display` 启动所选应用，输出 Surface 继续进入现有硬件 AVC、DCV1、NCM/TCP 和 QNX 视频链路。
+- 新增不连接仪表的远程副屏探针，要求虚拟显示创建、跨屏启动、实际 1920×720 编码格式、SPS/PPS/IDR 和完整结束证据。
+- 仪表 OS、MCU、App 接收器、USB 角色脚本和 DCV1 协议不改；0.8.0 APK 使用现有 0.7.9 高清仪表接收端。实车跨屏启动、QNX 解码/显示和安全 HMI 仍未验证。
+
 ## 0.7.9 · 2026-10-14 G3 高清硬编运行时探针
 
 - G3按钮改用APK自带的`ShellScreenCapture`硬件AVC入口，运行5秒自然结束采集并要求实际1920×720格式、硬件codec、滚动/最终30 FPS门控、SPS/PPS/IDR和完整退出证据。

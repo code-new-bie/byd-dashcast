@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbInterface;
 import android.hardware.usb.UsbManager;
@@ -19,6 +21,8 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
+import android.widget.ArrayAdapter;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -36,6 +40,7 @@ import java.security.SecureRandom;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -86,6 +91,9 @@ public final class MainActivity extends Activity {
     private EditText continuousSecondsField;
     private TextView continuousStatusView;
     private CaptureSettingsView captureSettingsView;
+    private Spinner projectionTargetSpinner;
+    private Button refreshProjectionTargetsButton;
+    private List<ProjectionTarget> projectionTargets = Collections.emptyList();
     private volatile boolean taskRunning;
     private volatile boolean adbReady;
     private volatile boolean adbAuthorizationOnly;
@@ -106,6 +114,7 @@ public final class MainActivity extends Activity {
             new ThreadPoolExecutor.AbortPolicy());
 
     private Button captureButton;
+    private Button remoteDisplayButton;
     private Button usbButton;
     private Button capabilityButton;
     private Button allButton;
@@ -188,6 +197,7 @@ public final class MainActivity extends Activity {
         addControlSection(root);
         captureSettingsView = new CaptureSettingsView(this, this::appendLog);
         root.addView(captureSettingsView.view());
+        addProjectionTargetControls(root);
         continuousSecondsField = createField(root, "持续投屏时长 1..1800 秒（先600秒，再1800秒）", "600");
         root.addView(createButton("开始持续投屏（可切到导航，最多30分钟）", view -> startContinuousProjection()));
         continuousStatusView = new TextView(this);
@@ -198,11 +208,14 @@ public final class MainActivity extends Activity {
         addLegacyAdvancedSection(root);
 
         captureButton = createButton("1. G3 高清硬编门控（ADB / 1920×720 / 30 FPS）", view -> runCaptureProbe());
+        remoteDisplayButton = createButton("1b. 远程副屏探针（选择应用 / VirtualDisplay / H.264）",
+                view -> runRemoteDisplayProbe());
         usbButton = createButton("2. 检查 USB 枚举 / 网络接口", view -> runUsbProbe());
         capabilityButton = createButton("3. 车机 / CAN 能力证据", view -> runCapabilityProbe());
         allButton = createButton("4. 运行全部检查", view -> runAllProbes());
         Button clearButton = createButton("清空日志", view -> logView.setText(""));
         root.addView(captureButton);
+        root.addView(remoteDisplayButton);
         root.addView(usbButton);
         root.addView(capabilityButton);
         root.addView(allButton);
@@ -244,6 +257,70 @@ public final class MainActivity extends Activity {
                     collectRelayEvidence();
                     performUsbProbe();
                 })));
+    }
+
+    private void addProjectionTargetControls(LinearLayout root) {
+        TextView title = new TextView(this);
+        title.setText("远程副屏目标：选择车机应用后，在 Android VirtualDisplay 上启动并投到仪表");
+        title.setPadding(0, dp(8), 0, dp(4));
+        root.addView(title, new LinearLayout.LayoutParams(-1, -2));
+
+        projectionTargetSpinner = new Spinner(this);
+        root.addView(projectionTargetSpinner, new LinearLayout.LayoutParams(-1, -2));
+        refreshProjectionTargetsButton = createButton("刷新可启动应用列表",
+                view -> refreshProjectionTargets());
+        root.addView(refreshProjectionTargetsButton);
+        refreshProjectionTargets();
+    }
+
+    private void refreshProjectionTargets() {
+        if (projectionTargetSpinner == null) {
+            return;
+        }
+        ArrayList<ProjectionTarget> targets = new ArrayList<>();
+        targets.add(ProjectionTarget.primary());
+        Intent launcher = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER);
+        PackageManager packageManager = getPackageManager();
+        for (ResolveInfo resolveInfo : packageManager.queryIntentActivities(launcher,
+                PackageManager.MATCH_DEFAULT_ONLY)) {
+            if (resolveInfo.activityInfo == null
+                    || getPackageName().equals(resolveInfo.activityInfo.packageName)) {
+                continue;
+            }
+            String label = String.valueOf(resolveInfo.loadLabel(packageManager));
+            ProjectionTarget target = ProjectionTarget.remote(resolveInfo.activityInfo.packageName,
+                    resolveInfo.activityInfo.name, label + " [" + resolveInfo.activityInfo.packageName + "]");
+            if (!targets.contains(target)) {
+                targets.add(target);
+            }
+        }
+        if (targets.size() > 2) {
+            List<ProjectionTarget> applications = targets.subList(1, targets.size());
+            applications.sort((left, right) -> left.displayLabel().compareToIgnoreCase(right.displayLabel()));
+        }
+        projectionTargets = targets;
+        ArrayList<String> labels = new ArrayList<>(targets.size());
+        for (ProjectionTarget target : targets) {
+            labels.add(target.displayLabel());
+        }
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
+                android.R.layout.simple_spinner_item, labels);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        projectionTargetSpinner.setAdapter(adapter);
+        projectionTargetSpinner.setSelection(0);
+        appendLog("REMOTE_TARGETS loaded=" + (targets.size() - 1)
+                + "; primary display remains the default; selected app launches on a virtual display");
+    }
+
+    private ProjectionTarget selectedProjectionTarget() {
+        if (projectionTargetSpinner == null || projectionTargets.isEmpty()) {
+            return ProjectionTarget.primary();
+        }
+        int position = projectionTargetSpinner.getSelectedItemPosition();
+        if (position < 0 || position >= projectionTargets.size()) {
+            return ProjectionTarget.primary();
+        }
+        return projectionTargets.get(position);
     }
 
     private void addVideoButtons(LinearLayout root) {
@@ -556,7 +633,7 @@ public final class MainActivity extends Activity {
             return;
         }
         if (!receiverInstalled.isChecked() || !adbReady) {
-            appendLog("持续投屏未启动：确认已装0.7.9 HD/DCV1/2仪表App、车辆停稳，并先授权本APK的ADB。");
+            appendLog("持续投屏未启动：确认已装配套HD/DCV1/2仪表App、车辆停稳，并先授权本APK的ADB。");
             return;
         }
         if (!captureSettingsView.benchAcknowledged()) {
@@ -565,8 +642,10 @@ public final class MainActivity extends Activity {
         }
         final int seconds;
         final CaptureOptions options;
+        final ProjectionTarget target;
         try {
             options = captureSettingsView.snapshot();
+            target = selectedProjectionTarget();
             seconds = Integer.parseInt(continuousSecondsField.getText().toString().trim());
             ProjectionLimits.requireSeconds(seconds);
             UsbDevice device = UsbNcmSession.findDevice(this);
@@ -579,7 +658,11 @@ public final class MainActivity extends Activity {
             return;
         }
         new AlertDialog.Builder(this).setTitle("持续小窗投屏：停稳验证")
-                .setMessage("采集模式：" + options + "。需要配套0.7.9 HD/DCV1/2仪表App。"
+                .setMessage("采集模式：" + options + "；目标：" + target.displayLabel()
+                        + "。需要配套HD/DCV1/2仪表App。"
+                        + (target.isRemote()
+                        ? "将创建1920×720 Android VirtualDisplay，并用 am --display 启动所选应用；该能力需车机shell允许创建可信虚拟显示，首次实车只作为门控验证。"
+                        : "使用现有车机主屏 SurfaceFlinger 采集链路。")
                         + "视频与仪表窗口为1920×720，Surface无新画面时按33,333微秒重复节奏，车机端再按编码PTS限流并重定时到30FPS；实际编码输出尺寸不匹配时会立即失败，并记录编码PTS FPS/墙钟 FPS；固件告警隔离未完成，禁止行驶使用。"
                         + "先600秒再1800秒；切到导航不会停止，可回应用或通知栏点停止。"
                         + "不保存视频文件，不自动切Host，不自动重连。普通ADB/USB授权仍保留。"
@@ -588,8 +671,9 @@ public final class MainActivity extends Activity {
                 .setPositiveButton("已停稳，开始", (dialog, which) -> {
                     try {
                         captureSettingsView.remember(options);
-                        ProjectionService.start(this, seconds, options);
+                        ProjectionService.start(this, seconds, options, target);
                         appendLog("CONTINUOUS_START_REQUEST seconds=" + seconds + " capture=" + options
+                                + " target=" + target
                                 + "; user_ack=stationary_only; Service owns the frozen session configuration");
                         setBusy(true);
                     } catch (RuntimeException error) {
@@ -836,6 +920,58 @@ public final class MainActivity extends Activity {
 
     private void runCaptureProbe() {
         executeProbe("H.264 probe", this::performCaptureProbe);
+    }
+
+    private void runRemoteDisplayProbe() {
+        ProjectionTarget target = selectedProjectionTarget();
+        if (!target.isRemote()) {
+            appendLog("REMOTE_DISPLAY_PROBE_BLOCKED: 请先在远程副屏目标中选择一个车机应用。");
+            return;
+        }
+        executeProbe("remote virtual display probe", () -> performRemoteDisplayProbe(target));
+    }
+
+    private void performRemoteDisplayProbe(ProjectionTarget target) throws IOException {
+        AdbShellClient client = authorizedAdbClient();
+        File outputFile = new File(getCacheDir(),
+                "dashcast_remote_probe_" + System.currentTimeMillis() + ".h264");
+        String command = ShellCaptureCommand.create(getApplicationInfo().sourceDir,
+                HARDWARE_CAPTURE_PROBE_SECONDS, target);
+        boolean[] codecEvidence = {false};
+        boolean[] displayEvidence = {false};
+        boolean[] appEvidence = {false};
+        boolean[] formatEvidence = {false};
+        boolean[] completeEvidence = {false};
+        appendLog("REMOTE_DISPLAY_TARGET=" + target);
+        appendLog("REMOTE_DISPLAY_COMMAND=" + command);
+        appendLog("REMOTE_DISPLAY_OUTPUT=" + outputFile.getAbsolutePath());
+        try (FileOutputStream outputStream = new FileOutputStream(outputFile)) {
+            H264StreamAnalyzer analyzer = new H264StreamAnalyzer(outputStream);
+            client.executeShellV2(command, analyzer, diagnostics -> {
+                appendLog(diagnostics);
+                codecEvidence[0] |= diagnostics.contains("SHELL_CAPTURE_CODEC ");
+                displayEvidence[0] |= diagnostics.contains("SHELL_CAPTURE_REMOTE_DISPLAY_CREATED ");
+                appEvidence[0] |= diagnostics.contains("SHELL_CAPTURE_REMOTE_AM exit=0 ");
+                formatEvidence[0] |= diagnostics.contains("SHELL_CAPTURE_FORMAT ");
+                completeEvidence[0] |= diagnostics.contains("SHELL_CAPTURE_COMPLETE ");
+            });
+            analyzer.flush();
+            H264StreamAnalyzer.Statistics statistics = analyzer.snapshot();
+            appendLog("REMOTE_DISPLAY_H264=" + statistics);
+            if (statistics.getSpsCount() == 0 || statistics.getPpsCount() == 0
+                    || statistics.getIdrCount() == 0) {
+                throw new IOException("REMOTE_DISPLAY_RUNTIME_H264_NAL_GATE missing SPS/PPS/IDR");
+            }
+            if (!codecEvidence[0] || !displayEvidence[0] || !appEvidence[0]
+                    || !formatEvidence[0] || !completeEvidence[0]) {
+                throw new IOException("REMOTE_DISPLAY_RUNTIME_EVIDENCE_INCOMPLETE codec=" + codecEvidence[0]
+                        + " display=" + displayEvidence[0] + " app=" + appEvidence[0]
+                        + " format=" + formatEvidence[0] + " complete=" + completeEvidence[0]);
+            }
+            appendLog("REMOTE_DISPLAY_RUNTIME_PASS target=" + target
+                    + " + VirtualDisplay + am --display + hardware AVC 1920x720/30"
+                    + "; QNX/NCM/instrument display remains a separate gate");
+        }
     }
 
     private void performAdbAuthorization() throws IOException {
@@ -1178,6 +1314,12 @@ public final class MainActivity extends Activity {
             if (captureSettingsView != null) {
                 captureSettingsView.controlsEnabled(!busy);
             }
+            if (projectionTargetSpinner != null) {
+                projectionTargetSpinner.setEnabled(!busy);
+            }
+            if (refreshProjectionTargetsButton != null) {
+                refreshProjectionTargetsButton.setEnabled(!busy);
+            }
             for (Button button : taskButtons) {
                 button.setEnabled(!busy);
             }
@@ -1192,6 +1334,9 @@ public final class MainActivity extends Activity {
             }
             if (captureButton != null) {
                 captureButton.setEnabled(!busy);
+            }
+            if (remoteDisplayButton != null) {
+                remoteDisplayButton.setEnabled(!busy);
             }
             if (usbButton != null) {
                 usbButton.setEnabled(!busy);

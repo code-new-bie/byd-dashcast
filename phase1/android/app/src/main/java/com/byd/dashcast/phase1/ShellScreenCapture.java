@@ -38,8 +38,11 @@ public final class ShellScreenCapture {
     public static void main(String[] args) {
         try {
             CaptureOptions options = CaptureOptions.fromShellArguments(args);
+            ProjectionTarget target = ProjectionTarget.fromShellArguments(args);
             boolean live = args.length >= 2 && "live".equals(args[1]);
-            if ((args.length != 1 && !live) || Process.myUid() != 2000 || Build.VERSION.SDK_INT != 29) {
+            boolean remoteProbe = args.length >= 2 && "remote".equals(args[1]);
+            if ((!live && !remoteProbe && args.length != 1)
+                    || Process.myUid() != 2000 || Build.VERSION.SDK_INT != 29) {
                 throw new IOException("SHELL_CAPTURE_REQUIRES_AUTHORIZED_UID2000_ANDROID10");
             }
             int seconds = Integer.parseInt(args[0]);
@@ -49,10 +52,10 @@ public final class ShellScreenCapture {
             if (live) {
                 try (CaptureStopControl control = new CaptureStopControl(System.in)) {
                     control.start();
-                    capture(seconds, control, options);
+                    capture(seconds, control, options, target);
                 }
             } else {
-                capture(seconds, null, options);
+                capture(seconds, null, options, target);
             }
         } catch (Exception error) {
             System.err.println("SHELL_CAPTURE_FAILED " + error);
@@ -92,10 +95,11 @@ public final class ShellScreenCapture {
         throw new IOException("SHELL_CAPTURE_NO_HARDWARE_BASELINE_ENCODER");
     }
 
-    private static void capture(int seconds, CaptureStopControl control, CaptureOptions options) throws Exception {
+    private static void capture(int seconds, CaptureStopControl control, CaptureOptions options,
+            ProjectionTarget target) throws Exception {
         MediaCodec codec = encoder();
         Surface surface = null;
-        Mirror mirror = null;
+        AutoCloseable display = null;
         boolean started = false;
         Exception failure = null;
         try {
@@ -103,7 +107,9 @@ public final class ShellScreenCapture {
             surface = codec.createInputSurface();
             codec.start();
             started = true;
-            mirror = new Mirror(surface, options);
+            display = target.isRemote()
+                    ? new RemoteDisplaySession(surface, target)
+                    : new Mirror(surface, options);
             stream(codec, seconds, control);
         } catch (Exception error) {
             failure = error;
@@ -111,8 +117,8 @@ public final class ShellScreenCapture {
         } finally {
             Exception cleanup = null;
             try {
-                if (mirror != null) {
-                    mirror.close();
+                if (display != null) {
+                    display.close();
                 }
             } catch (Exception error) {
                 cleanup = error;

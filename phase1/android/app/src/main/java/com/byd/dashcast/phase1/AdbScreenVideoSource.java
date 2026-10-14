@@ -56,13 +56,21 @@ final class AdbScreenVideoSource {
 
     void runContinuous(int seconds, String installedApk, AtomicBoolean stopRequested, Runnable finishReceiver,
             CaptureOptions options) throws IOException {
+        runContinuous(seconds, installedApk, stopRequested, finishReceiver, options, ProjectionTarget.primary());
+    }
+
+    void runContinuous(int seconds, String installedApk, AtomicBoolean stopRequested, Runnable finishReceiver,
+            CaptureOptions options, ProjectionTarget target) throws IOException {
         FramedCaptureReader reader = new FramedCaptureReader(observer, finishReceiver);
-        log.accept("VIDEO_SOURCE=authorized_ADB_DCS1; timestamps=encoder_PTS; no video file recorded");
-        String command = options == null ? ShellCaptureCommand.continuous(installedApk, seconds)
-                : ShellCaptureCommand.continuous(installedApk, seconds, options);
-        if (options != null) {
-            log.accept("CAPTURE_SELECTION=" + options + "; immutable for this session; instrument rectangle unchanged");
-        }
+        ProjectionTarget selectedTarget = Objects.requireNonNull(target, "Projection target required");
+        log.accept("VIDEO_SOURCE=authorized_ADB_DCS1; timestamps=encoder_PTS; no video file recorded"
+                + "; target=" + selectedTarget);
+        CaptureOptions selectedOptions = options == null
+                ? CaptureOptions.of(CaptureOptions.Mode.STRETCH) : options;
+        String command = ShellCaptureCommand.continuous(installedApk, seconds, selectedOptions, selectedTarget);
+        log.accept("CAPTURE_SELECTION=" + selectedOptions
+                + "; immutable for this session; instrument rectangle unchanged");
+        log.accept("PROJECTION_TARGET=" + selectedTarget + "; virtual display is owned by the ADB shell helper");
         client.executeShellV2Controlled(command, reader, log,
                 Objects.requireNonNull(stopRequested), finishReceiver);
         exitConfirmed = true;
