@@ -5,6 +5,7 @@ package com.byd.dashcast.phase1;
  * @date 2026/10/13
  */
 final class ProjectionLimits {
+    static final long TARGET_FRAME_INTERVAL_US = 1_000_000L / NoAuthVideoProtocol.FPS;
     static final int MAX_SECONDS = 1800;
     static final int MAX_FRAMES = 65000;
     static final int MAX_CAPTURE_FRAMES = 120000;

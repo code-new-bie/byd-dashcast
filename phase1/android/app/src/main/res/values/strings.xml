@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">BYD 仪表 USB 投屏</string>
-    <string name="screen_title">BYD → QNX 仪表投屏 0.7.1 HD</string>
+    <string name="screen_title">BYD → QNX 仪表投屏 0.7.2 HD</string>
     <string name="control_initial_status">待连接 ADB；原厂导航中继版本、USB 枚举与视频需分别验证。</string>
-    <string name="screen_scope">0.7.1 1920×720高清与30FPS停稳验证：仪表端使用配套HD/DCV1/2 App；OS、MCU、KZB和原HMI不改。先授权ADB、切NCM、接数据线并允许USB访问。持续模式先600秒再1800秒，可切其他应用；通知栏或本页可停止。车机硬件编码1920×720/30FPS，发送端按编码PTS限流并重定时到固定33,333微秒节奏，不保存持续视频，无视频激活授权。固件动态告警隔离尚未完成，禁止行驶使用；出现告警或遮挡立即停止。窗口退出、拔线后再切Host并检查U盘。日志一键导出到下载，不需要仪表U盘取日志。</string>
+    <string name="screen_scope">0.7.2 1920×720高清与30FPS停稳验证：仪表端使用配套HD/DCV1/2 App；OS、MCU、KZB和原HMI不改。先授权ADB、切NCM、接数据线并允许USB访问。持续模式先600秒再1800秒，可切其他应用；通知栏或本页可停止。车机硬件编码1920×720/30FPS，Surface输入无新画面时按33,333微秒重复节奏，发送端再按编码PTS限流并重定时，不保存持续视频，无视频激活授权。固件动态告警隔离尚未完成，禁止行驶使用；出现告警或遮挡立即停止。窗口退出、拔线后再切Host并检查U盘。日志一键导出到下载，不需要仪表U盘取日志。</string>
     <string name="continuous_status">持续投屏：%1$s</string>
-    <string name="matching_firmware">已刷入0.7.1 HD/DCV1/2仪表App或本次配套包，车辆停稳</string>
+    <string name="matching_firmware">已刷入0.7.2 HD/DCV1/2仪表App或本次配套包，车辆停稳</string>
     <string name="capture_geometry_scope">采集设置只改变车机1920×720源的取景方式，不改变仪表窗口、层级或编码尺寸。地图区域由你指定，不自动识别导航应用；发送端目标30FPS。</string>
     <string name="capture_fit">保持比例：完整车机画面，必要时留黑边</string>
     <string name="capture_crop">中心裁剪：保持比例，填满原小窗</string>

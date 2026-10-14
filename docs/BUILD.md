@@ -11,7 +11,7 @@ bash gradlew testDebugUnitTest assembleDebug lintDebug --console=plain
 
 Windows 使用 `gradlew.bat`。APK位于 `app/build/outputs/apk/debug/app-debug.apk`，测试和 lint 报告位于 `app/build`。首次构建需要按操作者环境准备依赖；`--offline`只适用于缓存已经就绪的机器。
 
-当前源码版本为 0.7.1/code18：持续视频目标是1920×720/30 FPS，发送端采用PTS选帧和固定时间轴重定时。构建成功不等于设备硬件编码、远端解码或实际显示成功。
+当前源码版本为 0.7.2/code19：持续视频目标是1920×720/30 FPS，发送端采用PTS选帧、固定时间轴重定时，并将Surface无新缓冲时的上一帧重复 cadence 对齐为33,333微秒。构建成功不等于设备硬件编码、远端解码或实际显示成功。
 
 ## 测试范围
 

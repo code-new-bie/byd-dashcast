@@ -25,6 +25,13 @@ import java.nio.ByteBuffer;
  * @date 2026/10/12
  */
 public final class ShellScreenCapture {
+    /**
+     * Keep a static Surface input alive at the requested 30 FPS when the display has no new
+     * buffer. This is a codec-side repeat of the last picture, not a fabricated motion frame;
+     * FrameRateGate still controls what enters DCV1.
+     */
+    static final long REPEAT_PREVIOUS_FRAME_AFTER_US = ProjectionLimits.TARGET_FRAME_INTERVAL_US;
+
     private ShellScreenCapture() {
     }
 
@@ -65,7 +72,7 @@ public final class ShellScreenCapture {
         format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1);
         format.setInteger(MediaFormat.KEY_PROFILE, MediaCodecInfo.CodecProfileLevel.AVCProfileBaseline);
         format.setInteger(MediaFormat.KEY_LEVEL, MediaCodecInfo.CodecProfileLevel.AVCLevel4);
-        format.setLong(MediaFormat.KEY_REPEAT_PREVIOUS_FRAME_AFTER, 100_000L);
+        format.setLong(MediaFormat.KEY_REPEAT_PREVIOUS_FRAME_AFTER, REPEAT_PREVIOUS_FRAME_AFTER_US);
         return format;
     }
 
