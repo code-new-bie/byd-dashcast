@@ -1,5 +1,11 @@
 # 改动摘要
 
+## 0.7.7 · 2026-10-14 高清传输节奏可观测性
+
+- `FRAME_PACER`新增`min_transport_interval_us`、`max_transport_interval_us`和`burst_intervals`，现场可直接检查是否发生低于目标间隔的发送突发。
+- 增加同步时钟倒退保护和对应JVM回归测试；APK为0.7.7/code24。
+- 仪表接收端、OS、MCU、USB角色脚本和DCV1协议不改；真实Android硬编、QNX解码和实际30 FPS仍需实车验证。
+
 ## 0.7.6 · 2026-10-14 高清传输迟到重锚定
 
 - 修正`FramePacer`在同步写入迟到后沿用旧 deadline 的边界：下一帧从当前单调时钟重新锚定一个完整的`33,333,333 ns`间隔，避免慢ACK后的追赶突发。
