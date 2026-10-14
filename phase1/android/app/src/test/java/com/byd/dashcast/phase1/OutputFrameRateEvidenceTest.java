@@ -18,6 +18,7 @@ public final class OutputFrameRateEvidenceTest {
 
         OutputFrameRateEvidence.Result result = evidence.result();
         assertTrue(result.stable());
+        assertEquals(OutputFrameRateEvidence.MIN_STABLE_FRAMES, evidence.sampleFrames());
         assertEquals("PASS", result.status);
         assertEquals(3000L, result.ptsFpsX100);
         assertTrue(result.logLine().contains("pts_min_interval_us=33333"));

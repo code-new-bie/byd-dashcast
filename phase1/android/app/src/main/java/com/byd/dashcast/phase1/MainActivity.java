@@ -63,9 +63,7 @@ public final class MainActivity extends Activity {
     private static final int ADB_TIMEOUT_MILLIS = 20000;
     private static final int MAX_TEXT_PROBE_BYTES = 96 * 1024;
     private static final int MAX_LOGGED_PROBE_LINES = 40;
-    private static final String SCREENRECORD_COMMAND =
-            "screenrecord --output-format=h264 --size 1920x720 "
-                    + "--bit-rate 6000000 --time-limit 5 -";
+    private static final int HARDWARE_CAPTURE_PROBE_SECONDS = 5;
     private static final String CAR_PROTOCOL_COMMAND = "getprop ro.car.protocol";
     private static final String SDK_VERSION_COMMAND = "getprop ro.build.version.sdk";
     private static final String RELEASE_VERSION_COMMAND =
@@ -199,7 +197,7 @@ public final class MainActivity extends Activity {
         addVideoButtons(root);
         addLegacyAdvancedSection(root);
 
-        captureButton = createButton("1. ADB / H.264 采集探针", view -> runCaptureProbe());
+        captureButton = createButton("1. G3 高清硬编门控（ADB / 1920×720 / 30 FPS）", view -> runCaptureProbe());
         usbButton = createButton("2. 检查 USB 枚举 / 网络接口", view -> runUsbProbe());
         capabilityButton = createButton("3. 车机 / CAN 能力证据", view -> runCapabilityProbe());
         allButton = createButton("4. 运行全部检查", view -> runAllProbes());
@@ -558,7 +556,7 @@ public final class MainActivity extends Activity {
             return;
         }
         if (!receiverInstalled.isChecked() || !adbReady) {
-            appendLog("持续投屏未启动：确认已装0.7.8 HD/DCV1/2仪表App、车辆停稳，并先授权本APK的ADB。");
+            appendLog("持续投屏未启动：确认已装0.7.9 HD/DCV1/2仪表App、车辆停稳，并先授权本APK的ADB。");
             return;
         }
         if (!captureSettingsView.benchAcknowledged()) {
@@ -581,7 +579,7 @@ public final class MainActivity extends Activity {
             return;
         }
         new AlertDialog.Builder(this).setTitle("持续小窗投屏：停稳验证")
-                .setMessage("采集模式：" + options + "。需要配套0.7.8 HD/DCV1/2仪表App。"
+                .setMessage("采集模式：" + options + "。需要配套0.7.9 HD/DCV1/2仪表App。"
                         + "视频与仪表窗口为1920×720，Surface无新画面时按33,333微秒重复节奏，车机端再按编码PTS限流并重定时到30FPS；实际编码输出尺寸不匹配时会立即失败，并记录编码PTS FPS/墙钟 FPS；固件告警隔离未完成，禁止行驶使用。"
                         + "先600秒再1800秒；切到导航不会停止，可回应用或通知栏点停止。"
                         + "不保存视频文件，不自动切Host，不自动重连。普通ADB/USB授权仍保留。"
@@ -975,22 +973,39 @@ public final class MainActivity extends Activity {
         AdbShellClient client = authorizedAdbClient();
         File outputFile = new File(getCacheDir(),
                 "dashcast_probe_" + System.currentTimeMillis() + ".h264");
+        String command = ShellCaptureCommand.create(getApplicationInfo().sourceDir,
+                HARDWARE_CAPTURE_PROBE_SECONDS);
+        boolean[] codecEvidence = {false};
+        boolean[] formatEvidence = {false};
+        boolean[] fpsEvidence = {false};
+        boolean[] completeEvidence = {false};
         appendLog("ADB endpoint: " + ADB_HOST + ":" + ADB_PORT);
-        appendLog("Command: " + SCREENRECORD_COMMAND);
+        appendLog("G3_CAPTURE_COMMAND: " + command);
         appendLog("Output: " + outputFile.getAbsolutePath());
         try (FileOutputStream outputStream = new FileOutputStream(outputFile)) {
             H264StreamAnalyzer analyzer = new H264StreamAnalyzer(outputStream);
-            client.executeShellV2(SCREENRECORD_COMMAND, analyzer);
+            client.executeShellV2(command, analyzer, diagnostics -> {
+                appendLog(diagnostics);
+                codecEvidence[0] |= diagnostics.contains("SHELL_CAPTURE_CODEC ");
+                formatEvidence[0] |= diagnostics.contains("SHELL_CAPTURE_FORMAT ");
+                fpsEvidence[0] |= diagnostics.contains("SHELL_CAPTURE_FPS_GATE status=PASS");
+                completeEvidence[0] |= diagnostics.contains("SHELL_CAPTURE_COMPLETE ");
+            });
             analyzer.flush();
             H264StreamAnalyzer.Statistics statistics = analyzer.snapshot();
             appendLog("H.264: " + statistics);
             if (statistics.getSpsCount() == 0
                     || statistics.getPpsCount() == 0
                     || statistics.getIdrCount() == 0) {
-                appendLog("H.264 CHECK FAIL: missing SPS/PPS/IDR");
-            } else {
-                appendLog("H.264 CHECK PASS: Annex-B key frames detected");
+                throw new IOException("G3_RUNTIME_H264_NAL_GATE missing SPS/PPS/IDR");
             }
+            if (!codecEvidence[0] || !formatEvidence[0] || !fpsEvidence[0] || !completeEvidence[0]) {
+                throw new IOException("G3_RUNTIME_EVIDENCE_INCOMPLETE codec=" + codecEvidence[0]
+                        + " format=" + formatEvidence[0] + " fps=" + fpsEvidence[0]
+                        + " complete=" + completeEvidence[0]);
+            }
+            appendLog("G3_RUNTIME_HARDWARE_AVC_PASS 1920x720/30; H.264 keyframes and encoder FPS gate passed"
+                    + "; QNX decode/display remains a separate gate");
         }
     }
 
