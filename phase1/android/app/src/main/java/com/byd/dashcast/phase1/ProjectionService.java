@@ -54,9 +54,17 @@ public final class ProjectionService extends Service {
     };
 
     static void start(Context context, int seconds) {
+        start(context, seconds, CaptureOptions.of(CaptureOptions.Mode.STRETCH));
+    }
+
+    static void start(Context context, int seconds, CaptureOptions options) {
         ProjectionLimits.requireSeconds(seconds);
+        if (options == null) {
+            throw new IllegalArgumentException("Capture selection required");
+        }
         context.startForegroundService(new Intent(context, ProjectionService.class).setAction(START)
-                .putExtra("seconds", seconds).putExtra("parked_matching_firmware", true));
+                .putExtra("seconds", seconds).putExtra("parked_matching_firmware", true)
+                .putExtra("capture_selection", options.token()));
     }
 
     static void requestStop(Context context) {
@@ -156,6 +164,9 @@ public final class ProjectionService extends Service {
             }
             int seconds = intent.getIntExtra("seconds", 0);
             ProjectionLimits.requireSeconds(seconds);
+            CaptureOptions options = CaptureOptions.parse(intent.getStringExtra("capture_selection"));
+            JOURNAL.append("PROJECTION_CONFIG=" + options
+                    + "; encoded=640x240 native_rect=[640,240,1280,480]; stationary validation only");
             UsbDevice device = UsbNcmSession.findDevice(this);
             UsbManager usb = (UsbManager)getSystemService(USB_SERVICE);
             if (usb == null || !usb.hasPermission(device)) {
@@ -171,7 +182,7 @@ public final class ProjectionService extends Service {
             }
             wakeLock = power.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "dashcast:continuous");
             wakeLock.acquire((seconds + 30L) * 1000);
-            ContinuousProjectionTask task = new ContinuousProjectionTask(this, seconds, JOURNAL::append);
+            ContinuousProjectionTask task = new ContinuousProjectionTask(this, seconds, JOURNAL::append, options);
             ownedLease = lease;
             boolean accepted = controller.start((stop, abort, streaming, cleaning) -> {
                 task.run(stop, abort, streaming, cleaning);

@@ -30,7 +30,8 @@ public final class ShellScreenCapture {
 
     public static void main(String[] args) {
         try {
-            boolean live = args.length == 2 && "live".equals(args[1]);
+            CaptureOptions options = CaptureOptions.fromShellArguments(args);
+            boolean live = args.length >= 2 && "live".equals(args[1]);
             if ((args.length != 1 && !live) || Process.myUid() != 2000 || Build.VERSION.SDK_INT != 29) {
                 throw new IOException("SHELL_CAPTURE_REQUIRES_AUTHORIZED_UID2000_ANDROID10");
             }
@@ -41,10 +42,10 @@ public final class ShellScreenCapture {
             if (live) {
                 try (CaptureStopControl control = new CaptureStopControl(System.in)) {
                     control.start();
-                    capture(seconds, control);
+                    capture(seconds, control, options);
                 }
             } else {
-                capture(seconds, null);
+                capture(seconds, null, options);
             }
         } catch (Exception error) {
             System.err.println("SHELL_CAPTURE_FAILED " + error);
@@ -82,7 +83,7 @@ public final class ShellScreenCapture {
         throw new IOException("SHELL_CAPTURE_NO_HARDWARE_BASELINE_ENCODER");
     }
 
-    private static void capture(int seconds, CaptureStopControl control) throws Exception {
+    private static void capture(int seconds, CaptureStopControl control, CaptureOptions options) throws Exception {
         MediaCodec codec = encoder();
         Surface surface = null;
         Mirror mirror = null;
@@ -93,7 +94,7 @@ public final class ShellScreenCapture {
             surface = codec.createInputSurface();
             codec.start();
             started = true;
-            mirror = new Mirror(surface);
+            mirror = new Mirror(surface, options);
             stream(codec, seconds, control);
         } catch (Exception error) {
             failure = error;
@@ -226,7 +227,7 @@ public final class ShellScreenCapture {
         private final Class<?> control = Class.forName("android.view.SurfaceControl");
         private IBinder token;
 
-        Mirror(Surface surface) throws Exception {
+        Mirror(Surface surface, CaptureOptions options) throws Exception {
             Class<?> manager = Class.forName("android.hardware.display.DisplayManagerGlobal");
             Object global = manager.getMethod("getInstance").invoke(null);
             Object display = manager.getMethod("getDisplayInfo", int.class).invoke(global, 0);
@@ -239,6 +240,7 @@ public final class ShellScreenCapture {
             if (width < 1 || height < 1 || width > 4096 || height > 4096 || stack < 0) {
                 throw new IOException("SHELL_CAPTURE_UNEXPECTED_DISPLAY");
             }
+            CaptureGeometry geometry = CaptureGeometry.create(width, height, options);
             token = (IBinder) control.getMethod("createDisplay", String.class, boolean.class)
                     .invoke(null, "dashcast-phase1-capture", false);
             if (token == null) {
@@ -250,11 +252,13 @@ public final class ShellScreenCapture {
                     method("setDisplaySurface", IBinder.class, Surface.class).invoke(null, token, surface);
                     method("setDisplayLayerStack", IBinder.class, int.class).invoke(null, token, stack);
                     method("setDisplayProjection", IBinder.class, int.class, Rect.class, Rect.class)
-                            .invoke(null, token, 0, new Rect(0, 0, width, height), new Rect(0, 0, 640, 240));
+                            .invoke(null, token, 0, rect(geometry.source()), rect(geometry.destination()));
                 } finally {
                     control.getMethod("closeTransaction").invoke(null);
                 }
                 System.err.println("SHELL_CAPTURE_MIRROR " + width + "x" + height + " layerStack=" + stack);
+                System.err.println("SHELL_CAPTURE_GEOMETRY mode=" + options + " " + geometry
+                        + "; native window unchanged; HMI occlusion not certified");
             } catch (Exception error) {
                 try {
                     close();
@@ -263,6 +267,10 @@ public final class ShellScreenCapture {
                 }
                 throw error;
             }
+        }
+
+        private static Rect rect(CaptureGeometry.Bounds bounds) {
+            return new Rect(bounds.left(), bounds.top(), bounds.right(), bounds.bottom());
         }
 
         private Method method(String name, Class<?>... parameters) throws NoSuchMethodException {

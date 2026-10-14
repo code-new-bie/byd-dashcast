@@ -87,6 +87,7 @@ public final class MainActivity extends Activity {
     private EditText secondsField;
     private EditText continuousSecondsField;
     private TextView continuousStatusView;
+    private CaptureSettingsView captureSettingsView;
     private volatile boolean taskRunning;
     private volatile boolean adbReady;
     private volatile boolean adbAuthorizationOnly;
@@ -185,6 +186,8 @@ public final class MainActivity extends Activity {
         root.addView(scopeView, new LinearLayout.LayoutParams(-1, -2));
 
         addControlSection(root);
+        captureSettingsView = new CaptureSettingsView(this, this::appendLog);
+        root.addView(captureSettingsView.view());
         continuousSecondsField = createField(root, "持续投屏时长 1..1800 秒（先600秒，再1800秒）", "600");
         root.addView(createButton("开始持续投屏（可切到导航，最多30分钟）", view -> startContinuousProjection()));
         continuousStatusView = new TextView(this);
@@ -553,11 +556,17 @@ public final class MainActivity extends Activity {
             return;
         }
         if (!receiverInstalled.isChecked() || !adbReady) {
-            appendLog("持续投屏未启动：确认匹配0.5.0仪表App、车辆停稳，并先授权本APK的ADB。");
+            appendLog("持续投屏未启动：确认已装0.5.0 DCV1/2仪表App、车辆停稳，并先授权本APK的ADB。");
+            return;
+        }
+        if (!captureSettingsView.benchAcknowledged()) {
+            appendLog("持续投屏未启动：请确认仅停稳/台架验证，中央区域含动态告警，不能用于行驶。");
             return;
         }
         final int seconds;
+        final CaptureOptions options;
         try {
+            options = captureSettingsView.snapshot();
             seconds = Integer.parseInt(continuousSecondsField.getText().toString().trim());
             ProjectionLimits.requireSeconds(seconds);
             UsbDevice device = UsbNcmSession.findDevice(this);
@@ -570,15 +579,18 @@ public final class MainActivity extends Activity {
             return;
         }
         new AlertDialog.Builder(this).setTitle("持续小窗投屏：停稳验证")
-                .setMessage("匹配0.5.0仪表App；仍是中央640×240小窗，不保证不遮挡仪表安全信息。"
+                .setMessage("采集模式：" + options + "。兼容已验证0.5.0仪表App，无需为比例/裁剪重刷仪表。"
+                        + "仍是中央640×240小窗；固件中央有动态告警，未完成全状态告警隔离，禁止行驶使用。"
                         + "先600秒再1800秒；切到导航不会停止，可回应用或通知栏点停止。"
                         + "不保存视频文件，不自动切Host，不自动重连。普通ADB/USB授权仍保留。"
                         + "若窗口未退出或清理不确认，停止测试并正常重启，不重复发切换命令。")
                 .setNegativeButton("取消", null)
                 .setPositiveButton("已停稳，开始", (dialog, which) -> {
                     try {
-                        ProjectionService.start(this, seconds);
-                        appendLog("CONTINUOUS_START_REQUEST seconds=" + seconds + "; Service owns the session");
+                        captureSettingsView.remember(options);
+                        ProjectionService.start(this, seconds, options);
+                        appendLog("CONTINUOUS_START_REQUEST seconds=" + seconds + " capture=" + options
+                                + "; user_ack=stationary_only; Service owns the frozen session configuration");
                         setBusy(true);
                     } catch (RuntimeException error) {
                         appendLog("持续服务启动未确认：" + error);
@@ -1146,6 +1158,9 @@ public final class MainActivity extends Activity {
 
     private void setBusy(boolean busy) {
         mainHandler.post(() -> {
+            if (captureSettingsView != null) {
+                captureSettingsView.controlsEnabled(!busy);
+            }
             for (Button button : taskButtons) {
                 button.setEnabled(!busy);
             }

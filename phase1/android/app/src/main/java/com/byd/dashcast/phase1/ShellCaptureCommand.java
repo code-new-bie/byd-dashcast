@@ -17,6 +17,13 @@ final class ShellCaptureCommand {
         return create(apk, seconds, true);
     }
 
+    static String continuous(String apk, int seconds, CaptureOptions options) {
+        if (options == null) {
+            throw new IllegalArgumentException("Explicit capture selection required");
+        }
+        return continuous(apk, seconds) + " " + options.shellArguments();
+    }
+
     private static String create(String apk, int seconds, boolean continuous) {
         if (seconds < 1 || seconds > (continuous ? ProjectionLimits.MAX_SECONDS : 10)
                 || apk == null || !apk.startsWith("/data/app/")

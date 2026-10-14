@@ -56,9 +56,19 @@ final class AdbScreenVideoSource {
 
     void runContinuous(int seconds, String installedApk, AtomicBoolean stopRequested, Runnable finishReceiver)
             throws IOException {
+        runContinuous(seconds, installedApk, stopRequested, finishReceiver, null);
+    }
+
+    void runContinuous(int seconds, String installedApk, AtomicBoolean stopRequested, Runnable finishReceiver,
+            CaptureOptions options) throws IOException {
         FramedCaptureReader reader = new FramedCaptureReader(observer, finishReceiver);
         log.accept("VIDEO_SOURCE=authorized_ADB_DCS1; timestamps=encoder_PTS; no video file recorded");
-        client.executeShellV2Controlled(ShellCaptureCommand.continuous(installedApk, seconds), reader, log,
+        String command = options == null ? ShellCaptureCommand.continuous(installedApk, seconds)
+                : ShellCaptureCommand.continuous(installedApk, seconds, options);
+        if (options != null) {
+            log.accept("CAPTURE_SELECTION=" + options + "; immutable for this session; instrument rectangle unchanged");
+        }
+        client.executeShellV2Controlled(command, reader, log,
                 Objects.requireNonNull(stopRequested), finishReceiver);
         exitConfirmed = true;
         reader.finish(stopRequested.get());

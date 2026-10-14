@@ -5,6 +5,17 @@ import static org.junit.Assert.*;
 
 public final class ShellCaptureCommandTest {
     @Test
+    public void explicitGeometryUsesFixedWordsAndStillQuotesInstalledApk() {
+        String fit = ShellCaptureCommand.continuous("/data/app/x'$y/base.apk", 600,
+                CaptureOptions.of(CaptureOptions.Mode.FIT));
+        assertTrue(fit.contains("x'\\''$y"));
+        assertTrue(fit.endsWith("ShellScreenCapture 600 live fit"));
+        assertTrue(ShellCaptureCommand.continuous("/data/app/x/base.apk", 1800,
+                CaptureOptions.region(10, 15, 95, 90)).endsWith("1800 live region 10 15 95 90"));
+        assertThrows(IllegalArgumentException.class,
+                () -> ShellCaptureCommand.continuous("/data/app/x/base.apk", 600, null));
+    }
+    @Test
     public void continuousModeIsSeparateAndStillQuotesOnlyAnInstalledApk() {
         assertTrue(ShellCaptureCommand.continuous("/data/app/x'$y/base.apk", 1800)
                 .endsWith("ShellScreenCapture 1800 live"));

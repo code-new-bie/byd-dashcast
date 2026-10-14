@@ -1,6 +1,6 @@
 {
-  "snapshot_version": "0.5.0",
-  "snapshot_date": "2026-10-13",
+  "snapshot_version": "0.6.0",
+  "snapshot_date": "2026-10-14",
   "ncm_original_author_confirmed": true,
   "project_license": "NOT_SELECTED_BY_OWNER",
   "original_runtime_java_semantics_changed": false,
@@ -61,8 +61,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "bytes": 2808,
-      "sha256": "8043caea806714f6672d6946a5dc5a59511d7c515dcf9cf7bc5b42e2c2c43d1f",
+      "bytes": 4307,
+      "sha256": "fce7123ec6c767ef82a1602586385f83bb188356c4178111d8de4c16a2249647",
       "origin": "publication/template/CHANGELOG.md",
       "transformations": []
     },
@@ -82,8 +82,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 3672,
-      "sha256": "a61365794369b8ea137b4693a99f7c5d3d2b12f1c9dff3c30e5fa9e0e27fb236",
+      "bytes": 4267,
+      "sha256": "3c64a7cf5562aadc69a39055688fd741ac59653dc95a5fed0a74093033dcb9e2",
       "origin": "publication/template/README.md",
       "transformations": []
     },
@@ -126,22 +126,22 @@
     },
     {
       "path": "docs/ARCHITECTURE.md",
-      "bytes": 4949,
-      "sha256": "e37e1708a6fb24ef985713a41e50ac82971d979dc56bd8fba3bf17b7be44ef53",
+      "bytes": 6844,
+      "sha256": "ce2f97ec2b6471c0cc7e5d6daef636bf68727ee6aca471adb34f563932ddb285",
       "origin": "publication/template/docs/ARCHITECTURE.md",
       "transformations": []
     },
     {
       "path": "docs/BUILD.md",
-      "bytes": 3313,
-      "sha256": "01c107947c76e161e760465d8f4b30b8bda3de5f7b659163f677dd7cfbe2a4e2",
+      "bytes": 3554,
+      "sha256": "f243c6430e98e6a0841af4b8abbd87469beb504a189fa1712c8a77d54865a9b6",
       "origin": "publication/template/docs/BUILD.md",
       "transformations": []
     },
     {
       "path": "docs/PUBLISHING.md",
-      "bytes": 2095,
-      "sha256": "1881d660f369f02926b89d3ba72f23b4d6bf207a849060159b1525382738922f",
+      "bytes": 2290,
+      "sha256": "0df56daa017335478cf18a6639279d46fe5712468b69c6dead135b46a0f290e0",
       "origin": "publication/template/docs/PUBLISHING.md",
       "transformations": []
     },
@@ -153,16 +153,23 @@
       "transformations": []
     },
     {
+      "path": "docs/TASKS_0.6.0.md",
+      "bytes": 2606,
+      "sha256": "febe5e66a699603e9f82ccf2cd1b7496857b5f2a839aa08a0f64dabe6c2cd6d5",
+      "origin": "publication/template/docs/TASKS_0.6.0.md",
+      "transformations": []
+    },
+    {
       "path": "docs/USAGE.md",
-      "bytes": 3474,
-      "sha256": "3b39eedb035358e3179a759a54205ef577575bfbf0ab621368cff592f4a5d244",
+      "bytes": 5297,
+      "sha256": "b4e0fed9dc779bdcd53e7e508d3fb48dc3eff249353c20dd08c297551f7b9acb",
       "origin": "publication/template/docs/USAGE.md",
       "transformations": []
     },
     {
       "path": "docs/VALIDATION.md",
-      "bytes": 5685,
-      "sha256": "0c464c624c0bfbba5c860994eca233dfa0ad8886ea5a2a46895a52afaeab1cbe",
+      "bytes": 8868,
+      "sha256": "80b11d280dfb3eb23cb9a9ed4ff99a97271d3f90068b0cced8c64ff71cd32d68",
       "origin": "publication/template/docs/VALIDATION.md",
       "transformations": []
     },
@@ -176,7 +183,7 @@
     {
       "path": "phase1/android/app/build.gradle",
       "bytes": 1106,
-      "sha256": "bce5274cc6597701d73a8572810735990dfc99acd152ad4a89c9bb1bf61a00e3",
+      "sha256": "07bf53887cb1cdbdda461996329687f3eef459cdf5018088449fa22099eee221",
       "origin": "phase1/android/app/build.gradle",
       "transformations": []
     },
@@ -217,8 +224,8 @@
     },
     {
       "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/AdbScreenVideoSource.java",
-      "bytes": 3843,
-      "sha256": "e19b93c0bd67ba3deb4181ff9794ef076fd0435f75ed24bb43b5d5e7c401a380",
+      "bytes": 4396,
+      "sha256": "e9ab802ed95771ac067ad533395a316afe5e989a848a7b045ce9b11221eeeb20",
       "origin": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/AdbScreenVideoSource.java",
       "transformations": []
     },
@@ -272,6 +279,27 @@
       "transformations": []
     },
     {
+      "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/CaptureGeometry.java",
+      "bytes": 4492,
+      "sha256": "67d70516a37b36491c3696e712da9ffed38817caa8bc3f073c807599d5516603",
+      "origin": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/CaptureGeometry.java",
+      "transformations": []
+    },
+    {
+      "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/CaptureOptions.java",
+      "bytes": 5582,
+      "sha256": "417981a4d4567dc1de3c6a9c9be25dd09478550244c454e630da331cf9b80f58",
+      "origin": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/CaptureOptions.java",
+      "transformations": []
+    },
+    {
+      "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/CaptureSettingsView.java",
+      "bytes": 5679,
+      "sha256": "9841d8c6714b8f0ee3a10d898a7dd88a31f076bbfaede1012e7bee2ac445fbb5",
+      "origin": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/CaptureSettingsView.java",
+      "transformations": []
+    },
+    {
       "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/CaptureStopControl.java",
       "bytes": 2067,
       "sha256": "481c7501878a271b22d06ba5f199710ba29226bd88951297ff1b15afd64c550d",
@@ -280,8 +308,8 @@
     },
     {
       "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/ContinuousProjectionTask.java",
-      "bytes": 6521,
-      "sha256": "9def8506b24030f2d29773b8168d5c0161bf34523692683952bf96c43ffe933f",
+      "bytes": 6837,
+      "sha256": "b1fc02a4fdd50ccbf2085502d453fbdb78ebac4c5cc31d069af34c3af8c32849",
       "origin": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/ContinuousProjectionTask.java",
       "transformations": []
     },
@@ -336,8 +364,8 @@
     },
     {
       "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/MainActivity.java",
-      "bytes": 59364,
-      "sha256": "0c482ce00e519f154f50c2ee489705a25e874227842e1df4a855a8707ff3596b",
+      "bytes": 60315,
+      "sha256": "47ef310ec79aea32ebada0b940e0645a8009de4a5d8051be734dc76aa0b30fc1",
       "origin": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/MainActivity.java",
       "transformations": []
     },
@@ -420,8 +448,8 @@
     },
     {
       "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/ProjectionService.java",
-      "bytes": 10103,
-      "sha256": "7213cfd6bfb62d200ca25a8025e256d5614b81b4e991b33be44d0fc0492359c0",
+      "bytes": 10725,
+      "sha256": "e151b2a38197e983a0ab6a3a4696f6341390c1a24e74a25a65a1c4fe86451f9a",
       "origin": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/ProjectionService.java",
       "transformations": []
     },
@@ -448,15 +476,15 @@
     },
     {
       "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/ShellCaptureCommand.java",
-      "bytes": 1239,
-      "sha256": "622cc4e4c3f60af774f560da3703a361e9782cc0385d20b81311edb99237a175",
+      "bytes": 1528,
+      "sha256": "68eb7bf69ffc805a2a6578b5a14d65e21bf2b1a18cfe989b77baa9607b9aec3a",
       "origin": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/ShellCaptureCommand.java",
       "transformations": []
     },
     {
       "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/ShellScreenCapture.java",
-      "bytes": 12487,
-      "sha256": "d983be1e3d0b4bb0f842e9f6790cfc4a43e707b7d932e7dbde0f71dc3009dd5a",
+      "bytes": 13071,
+      "sha256": "99a27713be43704abd48e5bef719b91c8d3b6766fdd36055a296005560dfae64",
       "origin": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/ShellScreenCapture.java",
       "transformations": []
     },
@@ -637,8 +665,8 @@
     },
     {
       "path": "phase1/android/app/src/main/res/values/strings.xml",
-      "bytes": 1681,
-      "sha256": "66797af7cd4fdc23905b805dd032e0846915a1c1aa9a8cb2b1a39f42fabdef14",
+      "bytes": 2806,
+      "sha256": "4e784e4b556c5d9fdc0f37b6c4b5ac1d5b0b22820a5524dd6a2e2ba5e364d573",
       "origin": "phase1/android/app/src/main/res/values/strings.xml",
       "transformations": []
     },
@@ -698,6 +726,27 @@
       "bytes": 3682,
       "sha256": "60994498291f2da32f0b78cbb2baad13f2fe492025b6a0bfb7397927fb5d6ec4",
       "origin": "phase1/android/app/src/test/java/com/byd/dashcast/phase1/AvcReceiverContractTest.java",
+      "transformations": []
+    },
+    {
+      "path": "phase1/android/app/src/test/java/com/byd/dashcast/phase1/CaptureGeometryOfflineCheck.java",
+      "bytes": 970,
+      "sha256": "729c263cb8c89e8ed3d674146378da81e40a3232ce9318ee0a7852731f16eb71",
+      "origin": "phase1/android/app/src/test/java/com/byd/dashcast/phase1/CaptureGeometryOfflineCheck.java",
+      "transformations": []
+    },
+    {
+      "path": "phase1/android/app/src/test/java/com/byd/dashcast/phase1/CaptureGeometryTest.java",
+      "bytes": 4310,
+      "sha256": "eb20603c6f184e55705caad8e7ad99b575ce568d2f6f6650531a74e7d23a72a9",
+      "origin": "phase1/android/app/src/test/java/com/byd/dashcast/phase1/CaptureGeometryTest.java",
+      "transformations": []
+    },
+    {
+      "path": "phase1/android/app/src/test/java/com/byd/dashcast/phase1/CaptureOptionsTest.java",
+      "bytes": 4201,
+      "sha256": "d9f5439bcc2687d2ecbfc94377ac3a44f309fff1faf5b9f1f94c0c331eacb197",
+      "origin": "phase1/android/app/src/test/java/com/byd/dashcast/phase1/CaptureOptionsTest.java",
       "transformations": []
     },
     {
@@ -828,8 +877,8 @@
     },
     {
       "path": "phase1/android/app/src/test/java/com/byd/dashcast/phase1/ShellCaptureCommandTest.java",
-      "bytes": 1789,
-      "sha256": "e29ef708d7bb11bcaa6a1d83a953aac57fc00159e5dcb2ca0246644d65a44808",
+      "bytes": 2463,
+      "sha256": "58e9e4f0a7b9f6ce0e572a7a2243e5b370c4c4e2744ebd09c0862d8476d030be",
       "origin": "phase1/android/app/src/test/java/com/byd/dashcast/phase1/ShellCaptureCommandTest.java",
       "transformations": []
     },

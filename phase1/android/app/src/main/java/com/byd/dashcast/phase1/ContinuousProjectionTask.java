@@ -16,12 +16,18 @@ final class ContinuousProjectionTask implements ProjectionSessionController.Task
     private final Context context;
     private final int seconds;
     private final Consumer<String> log;
+    private final CaptureOptions options;
 
     ContinuousProjectionTask(Context context, int seconds, Consumer<String> log) {
+        this(context, seconds, log, CaptureOptions.of(CaptureOptions.Mode.STRETCH));
+    }
+
+    ContinuousProjectionTask(Context context, int seconds, Consumer<String> log, CaptureOptions options) {
         ProjectionLimits.requireSeconds(seconds);
         this.context = context.getApplicationContext();
         this.seconds = seconds;
         this.log = log;
+        this.options = java.util.Objects.requireNonNull(options);
     }
 
     @Override
@@ -89,7 +95,7 @@ final class ContinuousProjectionTask implements ProjectionSessionController.Task
                     AndroidAdbIdentity.load(), log, abort);
             source = new AdbScreenVideoSource(adb, frames, log);
             captureAttempted = true;
-            source.runContinuous(seconds, context.getApplicationInfo().sourceDir, stop, finishReceiver);
+            source.runContinuous(seconds, context.getApplicationInfo().sourceDir, stop, finishReceiver, options);
             if (receiverFailure[0] != null) {
                 throw receiverFailure[0];
             }
