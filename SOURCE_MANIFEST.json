@@ -1,5 +1,5 @@
 {
-  "snapshot_version": "0.7.3",
+  "snapshot_version": "0.7.4",
   "snapshot_date": "2026-10-14",
   "ncm_original_author_confirmed": true,
   "project_license": "NOT_SELECTED_BY_OWNER",
@@ -61,8 +61,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "bytes": 6687,
-      "sha256": "809b51ff85337e309ca16b281b6c2a39d90afa4a50fd1342ce7ee61a3dda163f",
+      "bytes": 7201,
+      "sha256": "aede17fa2b842b57bf46ac8bf08292dd330957fa43971ecacfd9c9244918d92c",
       "origin": "publication/template/CHANGELOG.md",
       "transformations": []
     },
@@ -82,8 +82,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 5300,
-      "sha256": "f626449d4a60acd861d9d97777d2470fd9413ff16d1b0e0c1e50a79012131558",
+      "bytes": 5559,
+      "sha256": "a0708f86b10db744319acaf9c251b3fe038feabf79ebdd555aafbda6665e49e4",
       "origin": "publication/template/README.md",
       "transformations": []
     },
@@ -126,22 +126,22 @@
     },
     {
       "path": "docs/ARCHITECTURE.md",
-      "bytes": 2098,
-      "sha256": "2293d4c17e95e95a46cc380f82cb6f85124f03537224833ae2cc656fb271d835",
+      "bytes": 2164,
+      "sha256": "d32af9721080a2b74cacdc3ea35b28e48211641c753b7e4fbedf86a0f3bdce06",
       "origin": "publication/template/docs/ARCHITECTURE.md",
       "transformations": []
     },
     {
       "path": "docs/BUILD.md",
-      "bytes": 1351,
-      "sha256": "d907a3d4aa30b2873bcc66d9eadc326e46e8d32bd083d00092e6bf9d3426c96c",
+      "bytes": 1391,
+      "sha256": "a9e6de54f142e11dbd19039acee01b58b594c229e2d2b269dffcdceae244e930",
       "origin": "publication/template/docs/BUILD.md",
       "transformations": []
     },
     {
       "path": "docs/PUBLISHING.md",
       "bytes": 2312,
-      "sha256": "33d00d6956c53c07cb0ae0651f881f77cb3ae7afe2c599456509fb456feddea8",
+      "sha256": "2c3c3cd3fc4dbc8ee68092d066cf72317c781b3c1c12721e147f254303c3e9d1",
       "origin": "publication/template/docs/PUBLISHING.md",
       "transformations": []
     },
@@ -188,16 +188,23 @@
       "transformations": []
     },
     {
+      "path": "docs/TASKS_0.7.4.md",
+      "bytes": 1485,
+      "sha256": "8d4e93c2bde0a46eebcf3eda2d432f39b060268473d86c5b711e63cda0366f06",
+      "origin": "publication/template/docs/TASKS_0.7.4.md",
+      "transformations": []
+    },
+    {
       "path": "docs/USAGE.md",
-      "bytes": 5854,
-      "sha256": "96ff75f8a22c781bf062efe728d8e4cf40db0cb416143fd9ff357f753962ac5a",
+      "bytes": 5892,
+      "sha256": "103d819f289c1e6ca02040683d31cc5611bcdeda3f6423bf289a3663258b219e",
       "origin": "publication/template/docs/USAGE.md",
       "transformations": []
     },
     {
       "path": "docs/VALIDATION.md",
-      "bytes": 1727,
-      "sha256": "36b7521d68a7868c2cbe419e2f5b1893b11f41d05aba150b27acfd3c428e3680",
+      "bytes": 1794,
+      "sha256": "5a7fb02a73a7b833f1989ccfbd83554df50b685f4e4824340afb4a1abb334672",
       "origin": "publication/template/docs/VALIDATION.md",
       "transformations": []
     },
@@ -211,7 +218,7 @@
     {
       "path": "phase1/android/app/build.gradle",
       "bytes": 1106,
-      "sha256": "62e9caca6c2276abdf70edd228d989d1e7bba4b31b06cebe8a6f16b3e7b78009",
+      "sha256": "4177a5fabf862e91b6c8d39c227943ff15bb7ce9e76380434eae0ac4ec670cfe",
       "origin": "phase1/android/app/build.gradle",
       "transformations": []
     },
@@ -399,8 +406,8 @@
     },
     {
       "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/MainActivity.java",
-      "bytes": 60569,
-      "sha256": "d008e1b1f9dcf5826e006ca5043586b98a4e63bde7c91b41a34c9ab646484131",
+      "bytes": 60605,
+      "sha256": "69b1c7269c11a506effced12a0c3a220e321e76c572510f737c1a6353f3d9a28",
       "origin": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/MainActivity.java",
       "transformations": []
     },
@@ -518,8 +525,8 @@
     },
     {
       "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/ShellScreenCapture.java",
-      "bytes": 15220,
-      "sha256": "e4e59162aa85753de0cf000434ab6d14f6cd80df3f54b4a67bca59ef0d82a420",
+      "bytes": 16504,
+      "sha256": "35f67174fbaa622879c3217af5f8d848cfe3b4f373ee9eff2cd0a5b7f48ca61a",
       "origin": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/ShellScreenCapture.java",
       "transformations": []
     },
@@ -700,8 +707,8 @@
     },
     {
       "path": "phase1/android/app/src/main/res/values/strings.xml",
-      "bytes": 2911,
-      "sha256": "3fcc305ee81ba64670c3814cadc7a7dedae2c756acd6326a09e726e4c16c3796",
+      "bytes": 2952,
+      "sha256": "f88bb9748b5745a3fe404dbc76530278ec58c5f61cd2ea72033342b115d53e09",
       "origin": "phase1/android/app/src/main/res/values/strings.xml",
       "transformations": []
     },
