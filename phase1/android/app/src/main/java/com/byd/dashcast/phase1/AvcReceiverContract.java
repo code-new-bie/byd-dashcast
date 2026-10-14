@@ -60,7 +60,9 @@ final class AvcReceiverContract {
                 bits.read(1);
                 int macroWidth = bits.ue();
                 int macroHeight = bits.ue();
-                if (macroWidth > 119 || macroHeight > 44 || bits.read(1) != 1) {
+                int maxMacroWidth = (NoAuthVideoProtocol.WIDTH + 15) / 16 - 1;
+                int maxMacroHeight = (NoAuthVideoProtocol.HEIGHT + 15) / 16 - 1;
+                if (macroWidth > maxMacroWidth || macroHeight > maxMacroHeight || bits.read(1) != 1) {
                     throw new IOException("AVC_CONTRACT_PROGRESSIVE_SIZE");
                 }
                 bits.read(1);
@@ -73,7 +75,8 @@ final class AvcReceiverContract {
                 }
                 int width = (macroWidth + 1) * 16 - 2 * (left + right);
                 int height = (macroHeight + 1) * 16 - 2 * (top + bottom);
-                if (width != 640 || height != 240 || left + right >= (macroWidth + 1) * 8
+                if (width != NoAuthVideoProtocol.WIDTH || height != NoAuthVideoProtocol.HEIGHT
+                        || left + right >= (macroWidth + 1) * 8
                         || top + bottom >= (macroHeight + 1) * 8) {
                     throw new IOException("AVC_CONTRACT_SIZE_MISMATCH " + width + "x" + height);
                 }

@@ -1,4 +1,4 @@
-# 当前架构（0.6.0几何开发 / 0.5.0接收端及实车基线）
+# 当前架构（0.7.0高清候选 / 0.5.0实车基线）
 
 控制与视频分离。阶段一已经采用用户态NCM/TCP/DCV1；早期方案的RTP/UDP/video-service路线不是当前验证包的实现。
 
@@ -19,7 +19,7 @@ APK能记录广播提交、导航处理尝试和USB枚举，但这些不是CAN�
 
 USB最小协商：ALT0 → GET_NTB_PARAMETERS → 合法4字节SET_NTB_INPUT_SIZE → ALT1；结束时ALT0，再释放两个接口。无能力的format/CRC/filter请求不发送。
 
-DCV1/1使用HELLO、START、FRAME、HEARTBEAT、STOP及接收端状态回复。源尺寸/显示窗口640×240、Baseline/progressive门禁保留；Screen visible/提交帧数不能当成真实解码帧计数。视频无激活授权，不代表ADB/USB访问可以绕过许可。
+DCV1/1使用HELLO、START、FRAME、HEARTBEAT、STOP及接收端状态回复。0.7.0持续模式请求1920×720/30 FPS Baseline，发送端用编码PTS在DCV1前限流；Screen visible/提交帧数不能当成真实解码帧计数。视频无激活授权，不代表ADB/USB访问可以绕过许可。
 
 ## 0.5.0持续会话
 
@@ -32,6 +32,12 @@ Activity仅发起/停止并展示状态；非导出的ProjectionService持有前
 保留仪表原1.5秒视频空闲保护：用户停止时先在同一TCP上STOP并记录清理结果，再发所属ADB shell-v2 stdin固定STOP行；自然结束时DCS1显式EOS在Android显示/编码器拆除之前触发接收端STOP。之后仍须确认shell EXIT=0，再ALT0/释放两接口。采集停止排空最多10秒，从发stdin STOP开始计时，不被QNX媒体清理预算占用。任一步不确认则隔离本进程后续操作；日志保留，不删仪表guard、不按进程名kill共享服务。进程互斥在结果/隔离状态公布之后释放。
 
 Service代码与这些上限通过本地构建/契约测试；0.5.0两次动态画面、后台、停止/窗口退出及拔线Host/U盘已有现场通过。完整10/30分钟、自然结束/异常仍待回归，见[验证状态](VALIDATION.md)。
+
+## 0.7.0高清采集
+
+持续采集的 MediaCodec 参数为 1920×720、6 Mbps、Baseline、Level 4、30 FPS 请求。`FrameRateGate` 只按编码器 PTS 保证发送不超过目标间隔，并记录实际输入/输出 PTS 统计；低于30 FPS的硬件编码器不会被软件补帧。仪表接收器的两个高清范围修改必须与APK成对使用。
+
+0.6.0 的 fit/crop/region/stretched 取景实现保留为历史配置能力，不能改变仪表窗口或宣称告警安全区。
 
 ## 0.6.0采集几何
 
@@ -61,6 +67,8 @@ fit显示完整源并保持比例；crop从中心裁成8:3填满；region按实�
 
 0.5.0相对0.4.4只改仪表receiver的四个已审计区域，共122字节（版本/心跳状态、帧上限、总时限）；USB模块、四脚本与原媒体/AVC解析/清理保持原字节。App SHA256为bf8446491f0277a66e25fbb96a6355b403735ae5ad8dfbe079cd34958a2b5641。本地FULL首测ZIP复制参考OS和原国内MCU原件；“内容不改”不等于“不刷写”。
 
-0.6.0相对0.5.0仪表端零变更，以上App/OS/MCU/Boot及模块hash全部保留。新几何只在APK和授权shell中处理；已装匹配0.5.0仪表无需再次升级，不能把老0.4.4 App当兼容长接收端。
+0.6.0相对0.5.0仪表端零变更，以上App/OS/MCU/Boot及模块hash全部保留。
+
+0.7.0相对0.5.0只在接收器的高清几何和720行AVC边界增加适配，USB/角色模块、媒体/清理分发、参考2 OS和国内MCU不改。0.7.0 APK不能与0.5/0.6仪表App混用；公开源码不提供固件原件。
 
 ARM适配是对匹配输入的哈希固定、范围审计补丁，不是假称从头QNX编译或通用固件支持。

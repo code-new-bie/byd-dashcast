@@ -135,7 +135,9 @@ public final class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(createContentView());
         appendLog("APK " + BuildConfig.VERSION_NAME
-                + "; NCM capability-driven initialization / alternate-0 cleanup; DCV1/1 short + DCV1/2 continuous, 640x240."
+                + "; NCM capability-driven initialization / alternate-0 cleanup; DCV1/1 short + DCV1/2 continuous, "
+                + NoAuthVideoProtocol.WIDTH + "x" + NoAuthVideoProtocol.HEIGHT + "/"
+                + NoAuthVideoProtocol.FPS + "fps."
                 + " Instrument installed version is not remotely verified; runtime not yet certified.");
         appendLog("Legacy app BYDAuto grants: " + InstrumentUsbController.permissionSummary(this)
                 + "; not required by the original navigation relay; direct setBuffer removed.");
@@ -539,7 +541,7 @@ public final class MainActivity extends Activity {
         new AlertDialog.Builder(this).setTitle("阶段一 USB 视频验证")
                 .setMessage("确认仅连接目标仪表、已停稳且有独立恢复手段。"
                         + "测试暂时接管该 NCM 设备，可能让它的系统网卡消失；不修改车机 IP/路由。"
-                        + "本包强制仪表中央 640×240 小窗（不保证不遮挡），编码也为 640×240，请观察并随时停止。"
+                        + "本包使用仪表 1920×720 视频窗口，车机硬件编码为 1920×720/30FPS；告警隔离尚未完成，请观察并随时停止。"
                         + "视频无需激活授权；系统 USB 访问许可和 ADB 授权仍按正常流程允许。"
                         + (screenCapture ? "发送当前车机画面，可能含个人信息；录像样本仅保存在应用缓存，"
                                 + "不会随一键日志导出，只有手动另存样本才导出。"
@@ -556,7 +558,7 @@ public final class MainActivity extends Activity {
             return;
         }
         if (!receiverInstalled.isChecked() || !adbReady) {
-            appendLog("持续投屏未启动：确认已装0.5.0 DCV1/2仪表App、车辆停稳，并先授权本APK的ADB。");
+            appendLog("持续投屏未启动：确认已装0.7.0 HD/DCV1/2仪表App、车辆停稳，并先授权本APK的ADB。");
             return;
         }
         if (!captureSettingsView.benchAcknowledged()) {
@@ -579,8 +581,8 @@ public final class MainActivity extends Activity {
             return;
         }
         new AlertDialog.Builder(this).setTitle("持续小窗投屏：停稳验证")
-                .setMessage("采集模式：" + options + "。兼容已验证0.5.0仪表App，无需为比例/裁剪重刷仪表。"
-                        + "仍是中央640×240小窗；固件中央有动态告警，未完成全状态告警隔离，禁止行驶使用。"
+                .setMessage("采集模式：" + options + "。需要配套0.7.0 HD/DCV1/2仪表App。"
+                        + "视频与仪表窗口为1920×720，车机端按编码PTS限流到30FPS；固件告警隔离未完成，禁止行驶使用。"
                         + "先600秒再1800秒；切到导航不会停止，可回应用或通知栏点停止。"
                         + "不保存视频文件，不自动切Host，不自动重连。普通ADB/USB授权仍保留。"
                         + "若窗口未退出或清理不确认，停止测试并正常重启，不重复发切换命令。")

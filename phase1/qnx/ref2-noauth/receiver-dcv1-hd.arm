@@ -1,0 +1,481 @@
+// Auditable ARMv7 substitutions for the EXACT reference-2 ELF (hash pinned by builder).
+// SLOT name VA capacity. No linker, QNX CRT/header or media ABI is invented.
+// All arguments use the original AAPCS call sites; r4-r11 are preserved.
+// Network magic changes separately to DCV1. HELLO is version negotiation, not authorization.
+
+// SLOT connection_deadline_no_license 0x101bfc 156
+// Original inline LICENSE-expiry arithmetic is also replaced (not just cast_valid).
+// Deadline = min(last heartbeat+15s, session start+31min), purely monotonic and bounded.
+ldrd r2, r3, [sp, #0xe8]
+movw ip, #15000
+adds r2, r2, ip
+adc r3, r3, #0
+ldrd r0, r1, [sp, #0xd8]
+movw ip, #0x61a0
+movt ip, #0x1c
+adds r0, r0, ip
+adc r1, r1, #0
+cmp r3, r1
+cmpeq r2, r0
+movhi r2, r0
+movhi r3, r1
+strd r2, r3, [sp, #0x28]
+b #0x1018f4
+
+// SLOT crypto_close 0x1029d0 84
+bx lr
+
+// SLOT crypto_open 0x102a24 12
+mov r0, #0
+bx lr
+
+// SLOT acknowledge_dcv1 0x102a30 420
+push {r4, r5, r6, r7, r8, r9, lr}
+sub sp, sp, #60
+mov r4, r0
+mov r5, r1
+mov r8, r2
+ldrd r6, r7, [sp, #88]
+// FRAME errors are terminal: run the original owned cleanup BEFORE the negative
+// ACK, then report the actual state (including sticky cleanup failure).
+ldr r3, [r5]
+cmp r3, #2
+bne ack_payload
+cmp r8, #0
+beq ack_payload
+bl #0x107ef4
+mov r0, #2
+add r1, sp, #8
+bl #0x100e98
+ldr r0, [sp, #12]
+mov r1, #0
+movw r2, #0x4240
+movt r2, #0xf
+mov r3, #0
+bl #0x10aa68
+ldr r2, [sp, #8]
+mov r3, #1000
+umlal r0, r1, r2, r3
+adds r6, r0, #1000
+adc r7, r1, #0
+ack_payload:
+movw r3, #0x4344
+movt r3, #0x3156
+str r3, [sp, #8]
+ldr r3, [r5]
+orr r3, r3, #0x80
+rev r3, r3
+str r3, [sp, #12]
+mov r3, #0x10000000
+str r3, [sp, #16]
+ldr r3, [r5, #8]
+rev r3, r3
+str r3, [sp, #20]
+ldr r3, [r5, #12]
+rev r3, r3
+str r3, [sp, #24]
+mov r3, #0
+str r3, [sp, #28]
+cmp r8, #0
+movge r3, r8
+rsblt r3, r8, #0
+rev r3, r3
+str r3, [sp, #32]
+movw r9, #0xefa4
+movt r9, #0x10
+ldr r3, [r5]
+cmp r3, #2
+cmpeq r8, #0
+ldr r3, [r9]
+addeq r3, r3, #1
+str r3, [r9]
+rev r3, r3
+str r3, [sp, #40]
+bl #0x103090
+rev r0, r0
+str r0, [sp, #36]
+movw r3, #0xec08
+movt r3, #0x10
+ldr r3, [r3, #0x310]
+rev r3, r3
+str r3, [sp, #44]
+strd r6, r7, [sp]
+mov r0, r4
+add r1, sp, #8
+mov r2, #40
+mov r3, #1
+bl #0x101578
+add sp, sp, #60
+pop {r4, r5, r6, r7, r8, r9, pc}
+
+// SLOT session_init 0x102bd4 76
+push {r4, lr}
+mov r4, r0
+mov r1, #0
+mov r2, #64
+bl #0x101078
+movw r1, #0xefa4
+movt r1, #0x10
+mov r0, #0
+str r0, [r1]
+pop {r4, pc}
+
+// SLOT hello_prefix 0x102c20 168
+cmp r2, #24
+bne prefix_fail
+ldr r3, [r0, #0x34]
+cmp r3, #0
+bne prefix_fail
+mov r2, #6
+prefix_loop:
+ldr r3, [r1], #4
+cmp r3, #0
+bne prefix_fail
+subs r2, r2, #1
+bne prefix_loop
+ldrd r2, r3, [sp]
+strd r2, r3, [r0, #0x18]
+mov r2, #1
+str r2, [r0, #0x34]
+mov r0, #0
+bx lr
+prefix_fail:
+mvn r0, #0
+bx lr
+
+// SLOT hello_version 0x102cc8 160
+cmp r2, #8
+bne version_fail
+ldr r3, [r0, #0x34]
+cmp r3, #1
+bne version_fail
+ldr r3, [r0, #0x38]
+cmp r3, #0
+bne version_fail
+ldr r2, [r1]
+movw r3, #0x4344
+movt r3, #0x3156
+cmp r2, r3
+bne version_fail
+ldr r2, [r1, #4]
+cmp r2, #0x01000000
+cmpne r2, #0x02000000
+bne version_fail
+rev ip, r2
+ldrd r2, r3, [sp]
+strd r2, r3, [r0, #0x28]
+mov r1, #0
+str r1, [r0, #0x30]
+str ip, [r0, #0x38]
+mov r0, #0
+bx lr
+version_fail:
+mvn r0, #0
+bx lr
+
+// SLOT frame_parser_stage 0x102d68 84
+// Keep the original AVC parser; identify rejection as code=2.
+push {r4, lr}
+mov r4, r1
+bl #0x104500
+cmp r0, #0
+beq parser_stage_done
+ldr r3, [r4]
+cmp r3, #2
+mvneq r0, #1
+parser_stage_done:
+pop {r4, pc}
+
+// SLOT frame_media_stage 0x102dbc 84
+push {r4, lr}
+bl #0x107cf4
+cmp r0, #0
+beq media_stage_done
+cmn r0, #3
+cmnne r0, #5
+mvnne r0, #3
+media_stage_done:
+pop {r4, pc}
+
+// SLOT frame_submit_error 0x102e10 12
+mvn r0, #2
+b #0x107e6c
+
+// SLOT unused_old_license_tail 0x102e1c 124
+bx lr
+
+// SLOT session_valid 0x102e98 176
+ldr r1, [r0, #0x38]
+cmp r1, #1
+cmpne r1, #2
+bne valid_fail
+push {r4, r5}
+ldrd r4, r5, [r0, #0x28]
+cmp r3, r5
+cmpeq r2, r4
+blo valid_saved_fail
+subs r2, r2, r4
+sbc r3, r3, r5
+cmp r3, #0
+bne valid_saved_fail
+movw r1, #14999
+cmp r2, r1
+bhi valid_saved_fail
+mov r0, #1
+pop {r4, r5}
+bx lr
+valid_saved_fail:
+pop {r4, r5}
+valid_fail:
+mov r0, #0
+bx lr
+
+// SLOT heartbeat 0x102f48 260
+cmp r2, #20
+bne heartbeat_fail
+push {r4, r5, r6, r7, r8, lr}
+mov r4, r0
+mov r5, r1
+ldrd r6, r7, [sp, #24]
+mov r2, r6
+mov r3, r7
+bl #0x102e98
+cmp r0, #1
+bne heartbeat_saved_fail
+mov r2, #4
+heartbeat_loop:
+ldr r3, [r5], #4
+cmp r3, #0
+bne heartbeat_saved_fail
+subs r2, r2, #1
+bne heartbeat_loop
+ldr r3, [r5]
+rev r3, r3
+ldr r2, [r4, #0x30]
+cmn r2, #1
+beq heartbeat_saved_fail
+add r2, r2, #1
+cmp r3, r2
+bne heartbeat_saved_fail
+str r3, [r4, #0x30]
+strd r6, r7, [r4, #0x28]
+mov r0, #0
+pop {r4, r5, r6, r7, r8, pc}
+heartbeat_saved_fail:
+pop {r4, r5, r6, r7, r8, lr}
+heartbeat_fail:
+mvn r0, #0
+bx lr
+
+// SLOT identity_disabled 0x10304c 68
+// Blank capability/identity area: no MAC, unique ID, wall clock, or crypto dependency.
+push {r4, lr}
+mov r1, #0
+mov r2, #64
+bl #0x101078
+mov r0, #0
+pop {r4, pc}
+
+// SLOT media_flags 0x103090 400
+// Flags: 1=context, 2=submitted, 4=owned video window, 8=cleanup error,
+// 16=SCREEN_PROPERTY_VISIBLE queried successfully. NOT a decoded/post-frame counter.
+push {r4, r5, r6, lr}
+sub sp, sp, #24
+movw r4, #0xec08
+movt r4, #0x10
+mov r5, #0
+ldr r3, [r4, #0xb4]
+cmp r3, #0
+orrne r5, r5, #1
+ldr r3, [r4, #0x314]
+cmp r3, #0
+orrne r5, r5, #2
+movw r3, #0xafc8
+movt r3, #0x14
+ldr r3, [r3]
+cmp r3, #0
+orrne r5, r5, #8
+ldr r0, [r4, #0xa8]
+cmp r0, #0
+beq flags_done
+orr r5, r5, #4
+ldr r3, [r4, #0x28]
+cmp r3, #0
+beq flags_done
+mov r6, #0
+str r6, [sp]
+str r6, [sp, #8]
+movw r3, #0x6500
+movt r3, #0x1dcd
+str r3, [sp, #16]
+str r6, [sp, #20]
+mov r0, #2
+mov r1, #0x50
+mov r2, #0
+add r3, sp, #16
+bl #0x101174
+cmp r0, #0
+bne flags_reset
+ldr r0, [r4, #0xa8]
+mov r1, #0x33
+add r2, sp, #8
+ldr r3, [r4, #0x28]
+blx r3
+cmp r0, #0
+bne flags_reset
+ldr r3, [sp, #8]
+cmp r3, #1
+orreq r5, r5, #16
+flags_reset:
+mov r0, #2
+mov r1, #0
+mov r2, #0
+mov r3, #0
+str r1, [sp]
+bl #0x101174
+flags_done:
+mov r0, r5
+add sp, sp, #24
+pop {r4, r5, r6, pc}
+
+// SLOT header_whitelist 0x103fc8 484
+push {r4, r5, r6, lr}
+mov r4, r0
+mov r5, r1
+ldr r2, [r4]
+movw r3, #0x4344
+movt r3, #0x3156
+cmp r2, r3
+bne header_fail
+add r4, r4, #4
+mov r6, #5
+header_words:
+mov r0, r4
+bl #0x103f84
+str r0, [r5], #4
+add r4, r4, #4
+subs r6, r6, #1
+bne header_words
+sub r5, r5, #20
+ldr r0, [r5]
+ldr r1, [r5, #4]
+ldr r2, [r5, #8]
+ldr r3, [r5, #12]
+ldr ip, [r5, #16]
+cmp r0, #2
+beq header_frame
+orr r2, r2, r3
+orrs r2, r2, ip
+bne header_fail
+cmp r0, #1
+beq header_start
+cmp r0, #3
+cmpne r0, #4
+beq header_empty
+cmp r0, #7
+beq header_hello
+cmp r0, #8
+beq header_heartbeat
+b header_fail
+header_start:
+cmp r1, #24
+b header_result
+header_empty:
+cmp r1, #0
+b header_result
+header_hello:
+cmp r1, #16
+b header_result
+header_heartbeat:
+cmp r1, #20
+b header_result
+header_frame:
+sub r1, r1, #1
+cmp r1, #0x200000
+bhs header_fail
+cmp ip, #1
+bhi header_fail
+cmp r2, #0
+beq header_fail
+movw r1, #65000
+cmp r2, r1
+bhi header_fail
+mov r0, #0
+pop {r4, r5, r6, pc}
+header_result:
+bne header_fail
+mov r0, #0
+pop {r4, r5, r6, pc}
+header_fail:
+mvn r0, #0
+pop {r4, r5, r6, pc}
+
+// SLOT fixed_hd_rect 0x1041ac 316
+push {r4, r5, r6, r7, r8, lr}
+mov r4, r0
+mov r5, r1
+mov r6, #0
+rect_words:
+add r0, r4, r6
+bl #0x103f84
+cmp r6, #0
+ bne rect_field_4
+movw r7, #1920
+b rect_compare
+rect_field_4:
+cmp r6, #4
+ bne rect_field_8
+movw r7, #720
+b rect_compare
+rect_field_8:
+cmp r6, #8
+ bne rect_field_12
+movw r7, #1920
+b rect_compare
+rect_field_12:
+cmp r6, #12
+ bne rect_field_16
+movw r7, #720
+b rect_compare
+rect_field_16:
+cmp r6, #16
+ bne rect_field_20
+mov r7, #30
+b rect_compare
+rect_field_20:
+cmp r6, #20
+mov r7, #0
+rect_compare:
+cmp r0, r7
+bne rect_fail
+cmp r6, #20
+strlo r0, [r5, r6]
+add r6, r6, #4
+cmp r6, #24
+blo rect_words
+mov r0, #0
+pop {r4, r5, r6, r7, r8, pc}
+
+rect_fail:
+mvn r0, #0
+pop {r4, r5, r6, r7, r8, pc}
+
+// SLOT frame_parser_hd_height_limit 0x103ca8 4
+// The reference AVC parser accepts the 1920-pixel width but its original
+// height guard stops at 704 lines. 720-line Baseline input is otherwise
+// parsed by the same untouched SPS/profile/cropping checks.
+cmp fp, #0x2c
+
+// SLOT no_layout 0x1042e8 512
+cmp r1, #24
+bne layout_fail
+push {r4, lr}
+mov r0, r2
+mov r1, #0
+mov r2, #0x144
+bl #0x101078
+mov r0, #0
+pop {r4, pc}
+layout_fail:
+mvn r0, #0
+bx lr

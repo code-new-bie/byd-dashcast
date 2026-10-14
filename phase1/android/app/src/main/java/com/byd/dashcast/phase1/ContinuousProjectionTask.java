@@ -35,6 +35,7 @@ final class ContinuousProjectionTask implements ProjectionSessionController.Task
         UsbNcmSession session = null;
         NoAuthVideoClient client = null;
         AdbScreenVideoSource source = null;
+        FrameRateGate frameRateGate = new FrameRateGate(NoAuthVideoProtocol.FPS);
         IOException failure = null;
         boolean usbClean = true;
         boolean captureAttempted = false;
@@ -81,6 +82,9 @@ final class ContinuousProjectionTask implements ProjectionSessionController.Task
                     if (stop.get()) {
                         return;
                     }
+                    if (!frameRateGate.accept(pts)) {
+                        return;
+                    }
                     contract.accept(data, log);
                     if (!begun[0]) {
                         ownedClient.begin();
@@ -103,6 +107,7 @@ final class ContinuousProjectionTask implements ProjectionSessionController.Task
         } catch (IOException | RuntimeException error) {
             failure = new IOException("Continuous projection failed: " + error, error);
         } finally {
+            log.accept(frameRateGate.statistics());
             cleaning.run();
             if (client != null) {
                 try {

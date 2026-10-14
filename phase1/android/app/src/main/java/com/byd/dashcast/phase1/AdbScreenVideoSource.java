@@ -26,28 +26,23 @@ final class AdbScreenVideoSource {
     }
 
     static String command(int seconds) {
-        return command(seconds, false);
-    }
-
-    static String smallWindowCommand(int seconds) {
-        return command(seconds, true);
-    }
-
-    private static String command(int seconds, boolean smallWindow) {
         if (seconds < 1 || seconds > 10) {
             throw new IllegalArgumentException("ADB screen verification must be 1..10 seconds");
         }
-        return "screenrecord --output-format=h264 --size "
-                + (smallWindow ? "640x240 --bit-rate 1000000" : "1920x720 --bit-rate 6000000")
+        return "screenrecord --output-format=h264 --size 1920x720 --bit-rate 6000000"
                 + " --time-limit " + seconds + " -";
     }
 
+    static String smallWindowCommand(int seconds) {
+        return command(seconds);
+    }
+
     void run(int seconds) throws IOException {
-        run(seconds, false);
+        runCommand(command(seconds));
     }
 
     void runSmallWindow(int seconds) throws IOException {
-        run(seconds, true);
+        runCommand(command(seconds));
     }
 
     void runSmallWindow(int seconds, String installedApk) throws IOException {
@@ -77,11 +72,6 @@ final class AdbScreenVideoSource {
 
     boolean exitConfirmed() {
         return exitConfirmed;
-    }
-
-    private void run(int seconds, boolean smallWindow) throws IOException {
-        String command = command(seconds, smallWindow);
-        runCommand(command);
     }
 
     private void runCommand(String command) throws IOException {

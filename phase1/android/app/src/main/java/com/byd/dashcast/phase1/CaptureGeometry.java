@@ -2,13 +2,13 @@ package com.byd.dashcast.phase1;
 
 import java.util.Objects;
 
-/** Pure, bounded source/destination geometry for the unchanged 640x240 encoder surface.
+/** Pure, bounded source/destination geometry for the 1920x720 encoder surface.
  * @author Codex
  * @date 2026/10/14
  */
 final class CaptureGeometry {
-    static final int ENCODED_WIDTH = 640;
-    static final int ENCODED_HEIGHT = 240;
+    static final int ENCODED_WIDTH = NoAuthVideoProtocol.WIDTH;
+    static final int ENCODED_HEIGHT = NoAuthVideoProtocol.HEIGHT;
     private static final int MAX_DISPLAY_SIZE = 4096;
     private static final int PERCENT_SCALE = 100;
     private final Bounds source;
@@ -113,6 +113,7 @@ final class CaptureGeometry {
 
     @Override
     public String toString() {
-        return "source=" + source + " destination=" + destination + " encoded=640x240";
+        return "source=" + source + " destination=" + destination + " encoded="
+                + ENCODED_WIDTH + "x" + ENCODED_HEIGHT;
     }
 }

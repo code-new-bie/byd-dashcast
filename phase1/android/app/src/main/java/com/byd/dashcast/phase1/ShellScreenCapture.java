@@ -57,10 +57,11 @@ public final class ShellScreenCapture {
     }
 
     private static MediaFormat format() {
-        MediaFormat format = MediaFormat.createVideoFormat("video/avc", 640, 240);
+        MediaFormat format = MediaFormat.createVideoFormat("video/avc", NoAuthVideoProtocol.WIDTH,
+                NoAuthVideoProtocol.HEIGHT);
         format.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
-        format.setInteger(MediaFormat.KEY_BIT_RATE, 1_000_000);
-        format.setInteger(MediaFormat.KEY_FRAME_RATE, 30);
+        format.setInteger(MediaFormat.KEY_BIT_RATE, 6_000_000);
+        format.setInteger(MediaFormat.KEY_FRAME_RATE, NoAuthVideoProtocol.FPS);
         format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1);
         format.setInteger(MediaFormat.KEY_PROFILE, MediaCodecInfo.CodecProfileLevel.AVCProfileBaseline);
         format.setInteger(MediaFormat.KEY_LEVEL, MediaCodecInfo.CodecProfileLevel.AVCLevel4);
@@ -75,7 +76,8 @@ public final class ShellScreenCapture {
             }
             for (String mime : info.getSupportedTypes()) {
                 if ("video/avc".equalsIgnoreCase(mime) && info.getCapabilitiesForType(mime).isFormatSupported(format())) {
-                    System.err.println("SHELL_CAPTURE_CODEC " + info.getName() + " baseline level4 640x240");
+                    System.err.println("SHELL_CAPTURE_CODEC " + info.getName() + " baseline level4 "
+                            + NoAuthVideoProtocol.WIDTH + "x" + NoAuthVideoProtocol.HEIGHT + "/30");
                     return MediaCodec.createByCodecName(info.getName());
                 }
             }
@@ -180,7 +182,7 @@ public final class ShellScreenCapture {
                         config = AvcByteStream.normalizeConfiguration(buffer);
                     } else {
                         if ((info.flags & MediaCodec.BUFFER_FLAG_PARTIAL_FRAME) != 0 || info.presentationTimeUs <= lastPts
-                                || ++frames > (control == null ? 360 : ProjectionLimits.MAX_FRAMES)) {
+                                || ++frames > (control == null ? 360 : ProjectionLimits.MAX_CAPTURE_FRAMES)) {
                             throw new IOException("SHELL_CAPTURE_PARTIAL_B_FRAME_OR_FRAME_LIMIT");
                         }
                         boolean key = (info.flags & MediaCodec.BUFFER_FLAG_KEY_FRAME) != 0;
