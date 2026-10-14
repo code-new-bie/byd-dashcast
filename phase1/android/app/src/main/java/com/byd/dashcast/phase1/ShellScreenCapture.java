@@ -171,7 +171,12 @@ public final class ShellScreenCapture {
             }
             int index = codec.dequeueOutputBuffer(info, 10_000);
             if (index == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
-                System.err.println("SHELL_CAPTURE_FORMAT " + codec.getOutputFormat());
+                MediaFormat output = codec.getOutputFormat();
+                verifyOutputFormat(output);
+                System.err.println("SHELL_CAPTURE_FORMAT " + output
+                        + " target=" + NoAuthVideoProtocol.WIDTH + "x" + NoAuthVideoProtocol.HEIGHT
+                        + "/" + NoAuthVideoProtocol.FPS
+                        + " repeat_previous_frame_after_us=" + REPEAT_PREVIOUS_FRAME_AFTER_US);
                 continue;
             }
             if (index < 0) {
@@ -230,6 +235,29 @@ public final class ShellScreenCapture {
             }
         }
         throw new IOException("SHELL_CAPTURE_EOS_TIMEOUT");
+    }
+
+    /**
+     * The requested format is only a negotiation input. Validate the first actual output format
+     * before forwarding any access unit, so a vendor crop/alignment or encoder fallback cannot be
+     * mistaken for the requested 1920x720 stream.
+     */
+    private static void verifyOutputFormat(MediaFormat output) throws IOException {
+        if (output == null || !output.containsKey(MediaFormat.KEY_WIDTH)
+                || !output.containsKey(MediaFormat.KEY_HEIGHT)) {
+            throw new IOException("SHELL_CAPTURE_OUTPUT_FORMAT_MISSING_SIZE");
+        }
+        int width = output.getInteger(MediaFormat.KEY_WIDTH);
+        int height = output.getInteger(MediaFormat.KEY_HEIGHT);
+        if (width != NoAuthVideoProtocol.WIDTH || height != NoAuthVideoProtocol.HEIGHT) {
+            throw new IOException("SHELL_CAPTURE_OUTPUT_SIZE_MISMATCH expected="
+                    + NoAuthVideoProtocol.WIDTH + "x" + NoAuthVideoProtocol.HEIGHT
+                    + " actual=" + width + "x" + height);
+        }
+        if (output.containsKey(MediaFormat.KEY_FRAME_RATE)
+                && output.getInteger(MediaFormat.KEY_FRAME_RATE) < 1) {
+            throw new IOException("SHELL_CAPTURE_OUTPUT_FRAME_RATE_INVALID");
+        }
     }
 
     private static final class Mirror implements AutoCloseable {
