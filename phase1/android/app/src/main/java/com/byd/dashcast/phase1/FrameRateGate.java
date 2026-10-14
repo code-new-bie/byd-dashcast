@@ -7,7 +7,9 @@ import java.io.IOException;
  *
  * <p>The source encoder may produce more than the requested rate on the Android head unit.
  * Dropping before DCV1 keeps the instrument stream bounded without queueing stale pictures.
- * This class measures the resulting PTS cadence; it does not claim decoded-display timing.</p>
+ * Accepted pictures are re-timestamped to a fixed target cadence before they enter DCV1. This
+ * removes small source-clock jitter without inventing pictures when the encoder is slow. The
+ * class measures the resulting PTS cadence; it does not claim decoded-display timing.</p>
  *
  * @author Codex
  * @date 2026/10/14
@@ -34,7 +36,12 @@ final class FrameRateGate {
         intervalMicros = MICROS_PER_SECOND / targetFps;
     }
 
-    boolean accept(long ptsMicros) throws IOException {
+    /**
+     * Returns the fixed output PTS for an accepted picture, or {@code -1} when the source picture
+     * is intentionally dropped. The input PTS remains the selection clock; the returned PTS is
+     * the transport clock.
+     */
+    long outputPts(long ptsMicros) throws IOException {
         if (ptsMicros < 0L || lastInputPts >= 0L && ptsMicros <= lastInputPts) {
             throw new IOException("FRAME_RATE_GATE_NON_MONOTONIC_PTS");
         }
@@ -45,15 +52,22 @@ final class FrameRateGate {
         inputFrames++;
         if (nextOutputPts >= 0L && ptsMicros < nextOutputPts) {
             droppedFrames++;
-            return false;
+            return -1L;
         }
         if (firstOutputPts < 0L) {
             firstOutputPts = ptsMicros;
+            lastOutputPts = ptsMicros;
+        } else {
+            lastOutputPts = advanceOutputPts(lastOutputPts);
         }
-        lastOutputPts = ptsMicros;
         outputFrames++;
         nextOutputPts = advanceDeadline(ptsMicros);
-        return true;
+        return lastOutputPts;
+    }
+
+    /** Compatibility helper for tests and callers that only need the selection decision. */
+    boolean accept(long ptsMicros) throws IOException {
+        return outputPts(ptsMicros) >= 0L;
     }
 
     private long advanceDeadline(long ptsMicros) throws IOException {
@@ -62,6 +76,14 @@ final class FrameRateGate {
             throw new IOException("FRAME_RATE_GATE_PTS_OVERFLOW");
         }
         return deadline;
+    }
+
+    private long advanceOutputPts(long ptsMicros) throws IOException {
+        long next = ptsMicros + intervalMicros;
+        if (next <= ptsMicros) {
+            throw new IOException("FRAME_RATE_GATE_OUTPUT_PTS_OVERFLOW");
+        }
+        return next;
     }
 
     long inputFrames() {
@@ -83,7 +105,8 @@ final class FrameRateGate {
                 + " dropped_frames=" + droppedFrames
                 + " input_pts_fps_x100=" + rateX100(inputFrames, firstInputPts, lastInputPts)
                 + " output_pts_fps_x100=" + rateX100(outputFrames, firstOutputPts, lastOutputPts)
-                + "; PTS cadence only, instrument decoded/display FPS not measured";
+                + " output_interval_us=" + intervalMicros
+                + " retimed=true; PTS cadence only, instrument decoded/display FPS not measured";
     }
 
     private static long rateX100(long frames, long firstPts, long lastPts) {

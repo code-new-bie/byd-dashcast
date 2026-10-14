@@ -82,7 +82,8 @@ final class ContinuousProjectionTask implements ProjectionSessionController.Task
                     if (stop.get()) {
                         return;
                     }
-                    if (!frameRateGate.accept(pts)) {
+                    long outputPts = frameRateGate.outputPts(pts);
+                    if (outputPts < 0L) {
                         return;
                     }
                     contract.accept(data, log);
@@ -91,7 +92,7 @@ final class ContinuousProjectionTask implements ProjectionSessionController.Task
                         begun[0] = true;
                     }
                     // Synchronous ACK provides backpressure: never queue an unbounded list of old frames.
-                    ownedClient.frame(data, pts);
+                    ownedClient.frame(data, outputPts);
                     streaming.run();
                 }
             };

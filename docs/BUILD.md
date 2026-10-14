@@ -13,9 +13,9 @@ bash gradlew testDebugUnitTest assembleDebug lintDebug --console=plain
 
 Windows对应`gradlew.bat`。APK位于`app/build/outputs/apk/debug/app-debug.apk`，测试/ lint在`app/build`。新机器首次下载依赖，不能直接假设`--offline`可用。
 
-当前开发APK版本0.7.0/code17，配套高清仪表接收端请求1920×720/30 FPS；公开Release0.4.4保留。文本行尾统一LF。历史参考包1的10个旧夹具/辅助类不公开（其中3个测试套共32项），AnnexB测试调用当前无凭据DCV1短契约；其余及新长会话/几何/PTS限流测试保留。
+当前开发APK版本0.7.1/code18，配套高清仪表接收端请求1920×720/30 FPS；发送端PTS选帧后固定33,333微秒重定时；公开Release0.4.4保留。文本行尾统一LF。历史参考包1的10个旧夹具/辅助类不公开（其中3个测试套共32项），AnnexB测试调用当前无凭据DCV1短契约；其余及新长会话/几何/PTS限流测试保留。
 
-0.7.0工作区279测试/40套、公开版会在对应源码快照中独立构建；工作区build/lint为0错误，高清桌面H.264/Java DCV1/ARM离线契约和成品审计通过，见[验证状态](VALIDATION.md)。这些检查不替代Android MediaCodec、QNX IVA-HD或实车显示验证。
+0.7.1工作区279测试/40套、公开版会在对应源码快照中独立构建；工作区build/lint为0错误，高清桌面H.264/Java DCV1/ARM离线契约和成品审计通过，见[验证状态](VALIDATION.md)。这些检查不替代Android MediaCodec、QNX IVA-HD或实车显示验证。
 
 ## 自备输入的仪表App离线包装
 

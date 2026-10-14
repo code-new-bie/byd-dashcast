@@ -1,4 +1,4 @@
-# 当前架构（0.7.0高清候选 / 0.5.0实车基线）
+# 当前架构（0.7.1高清时间轴候选 / 0.5.0实车基线）
 
 控制与视频分离。阶段一已经采用用户态NCM/TCP/DCV1；早期方案的RTP/UDP/video-service路线不是当前验证包的实现。
 
@@ -19,7 +19,7 @@ APK能记录广播提交、导航处理尝试和USB枚举，但这些不是CAN�
 
 USB最小协商：ALT0 → GET_NTB_PARAMETERS → 合法4字节SET_NTB_INPUT_SIZE → ALT1；结束时ALT0，再释放两个接口。无能力的format/CRC/filter请求不发送。
 
-DCV1/1使用HELLO、START、FRAME、HEARTBEAT、STOP及接收端状态回复。0.7.0持续模式请求1920×720/30 FPS Baseline，发送端用编码PTS在DCV1前限流；Screen visible/提交帧数不能当成真实解码帧计数。视频无激活授权，不代表ADB/USB访问可以绕过许可。
+DCV1/1使用HELLO、START、FRAME、HEARTBEAT、STOP及接收端状态回复。0.7.1持续模式请求1920×720/30 FPS Baseline，发送端用编码PTS选帧并在DCV1前重定时到固定33,333微秒；Screen visible/提交帧数不能当成真实解码帧计数。视频无激活授权，不代表ADB/USB访问可以绕过许可。
 
 ## 0.5.0持续会话
 
@@ -33,9 +33,9 @@ Activity仅发起/停止并展示状态；非导出的ProjectionService持有前
 
 Service代码与这些上限通过本地构建/契约测试；0.5.0两次动态画面、后台、停止/窗口退出及拔线Host/U盘已有现场通过。完整10/30分钟、自然结束/异常仍待回归，见[验证状态](VALIDATION.md)。
 
-## 0.7.0高清采集
+## 0.7.1高清采集时间轴
 
-持续采集的 MediaCodec 参数为 1920×720、6 Mbps、Baseline、Level 4、30 FPS 请求。`FrameRateGate` 只按编码器 PTS 保证发送不超过目标间隔，并记录实际输入/输出 PTS 统计；低于30 FPS的硬件编码器不会被软件补帧。仪表接收器的两个高清范围修改必须与APK成对使用。
+持续采集的 MediaCodec 参数为 1920×720、6 Mbps、Baseline、Level 4、30 FPS 请求。`FrameRateGate` 按编码器PTS选帧，接受后按固定33,333微秒递增重定时，并记录输入/输出PTS统计；低于30 FPS的硬件编码器不会被软件补帧。仪表接收器的两个高清范围修改必须与APK成对使用。
 
 0.6.0 的 fit/crop/region/stretched 取景实现保留为历史配置能力，不能改变仪表窗口或宣称告警安全区。
 
