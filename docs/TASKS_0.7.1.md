@@ -9,7 +9,7 @@
 
 ## 已通过的离线门禁
 
-Android 279 JVM测试/40套、assemble、lint；真实Baseline H.264、Java DCV1、固定PTS门控测试、高清ARM解析、ACK/STOP清理、OEM DEX入口和0.7.1完整两文件成品审计均通过。
+Android 280 JVM测试/40套、assemble、lint；真实Baseline H.264、Java DCV1、固定PTS门控测试、高清ARM解析、ACK/STOP清理、OEM DEX入口和0.7.1完整两文件成品审计均通过。
 
 这些检查不等于 Android MediaCodec真机、QNX IVA-HD/Screen、USB NCM吞吐或仪表真实显示通过。
 

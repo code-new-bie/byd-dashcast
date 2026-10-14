@@ -6,7 +6,7 @@
 
 | 检查 | 当前结论 |
 |---|---|
-| Android源码 | 279个JVM测试、40套测试、assemble和lint通过，lint无 Error |
+| Android源码 | 280个JVM测试、40套测试、assemble和lint通过，lint无 Error |
 | H.264/DCV1 | 真实Baseline H.264、Java封装、帧率门控和软件解码契约通过 |
 | 接收器适配 | 高清几何与高度边界的离线解析契约通过；媒体/显示为模拟环境 |
 | 公开副本 | 文件范围检查、工具测试和隔离构建通过 |
