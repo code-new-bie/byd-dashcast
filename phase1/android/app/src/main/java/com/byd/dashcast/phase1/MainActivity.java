@@ -558,7 +558,7 @@ public final class MainActivity extends Activity {
             return;
         }
         if (!receiverInstalled.isChecked() || !adbReady) {
-            appendLog("持续投屏未启动：确认已装0.7.4 HD/DCV1/2仪表App、车辆停稳，并先授权本APK的ADB。");
+            appendLog("持续投屏未启动：确认已装0.7.5 HD/DCV1/2仪表App、车辆停稳，并先授权本APK的ADB。");
             return;
         }
         if (!captureSettingsView.benchAcknowledged()) {
@@ -581,7 +581,7 @@ public final class MainActivity extends Activity {
             return;
         }
         new AlertDialog.Builder(this).setTitle("持续小窗投屏：停稳验证")
-                .setMessage("采集模式：" + options + "。需要配套0.7.4 HD/DCV1/2仪表App。"
+                .setMessage("采集模式：" + options + "。需要配套0.7.5 HD/DCV1/2仪表App。"
                         + "视频与仪表窗口为1920×720，Surface无新画面时按33,333微秒重复节奏，车机端再按编码PTS限流并重定时到30FPS；实际编码输出尺寸不匹配时会立即失败，并记录编码PTS FPS/墙钟 FPS；固件告警隔离未完成，禁止行驶使用。"
                         + "先600秒再1800秒；切到导航不会停止，可回应用或通知栏点停止。"
                         + "不保存视频文件，不自动切Host，不自动重连。普通ADB/USB授权仍保留。"
