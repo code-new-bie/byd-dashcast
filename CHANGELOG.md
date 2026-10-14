@@ -1,5 +1,11 @@
 # 改动摘要
 
+## 0.7.8 · 2026-10-14 高清编码器 30 FPS 门控
+
+- 新增 `OutputFrameRateEvidence`，自然结束且至少 3 秒的采集必须有 60 个编码输出帧，并通过 PTS/墙钟 28.5～31.5 FPS及PTS间隔门控。
+- 增加 `SHELL_CAPTURE_FPS_GATE` 日志与 JVM 回归测试；APK为0.7.8/code25。
+- 仪表接收端、OS、MCU、USB角色脚本和DCV1协议不改；真实QNX解码、实际仪表显示和运动画面仍需实车验证。
+
 ## 0.7.7 · 2026-10-14 高清传输节奏可观测性
 
 - `FRAME_PACER`新增`min_transport_interval_us`、`max_transport_interval_us`和`burst_intervals`，现场可直接检查是否发生低于目标间隔的发送突发。
