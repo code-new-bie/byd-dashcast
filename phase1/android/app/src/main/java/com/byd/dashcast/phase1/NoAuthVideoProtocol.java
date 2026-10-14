@@ -18,8 +18,8 @@ final class NoAuthVideoProtocol {
     static final int OFFER_BYTES = 80;
     static final int MAX_FRAME_BYTES = 0x200000;
     static final int MAX_TEST_FRAMES = 1800;
-    static final int WIDTH = 640;
-    static final int HEIGHT = 240;
+    static final int WIDTH = 1920;
+    static final int HEIGHT = 720;
     static final int FPS = 30;
     static final int START = 1;
     static final int FRAME = 2;
@@ -43,7 +43,7 @@ final class NoAuthVideoProtocol {
 
     static byte[] start() {
         ByteBuffer payload = ByteBuffer.allocate(24).order(ByteOrder.BIG_ENDIAN);
-        payload.putInt(640).putInt(240).putInt(WIDTH).putInt(HEIGHT).putInt(FPS).putInt(0);
+        payload.putInt(WIDTH).putInt(HEIGHT).putInt(WIDTH).putInt(HEIGHT).putInt(FPS).putInt(0);
         return packet(START, 0, 0, 0, payload.array());
     }
 

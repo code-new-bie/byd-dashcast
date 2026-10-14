@@ -10,7 +10,7 @@ import static org.junit.Assert.assertThrows;
 public final class AdbScreenVideoSourceTest {
     @Test
     public void dcv1CommandMatchesReceiverSmallWindowWithoutExtraAuthorization() {
-        assertEquals("screenrecord --output-format=h264 --size 640x240 --bit-rate 1000000 --time-limit 5 -",
+        assertEquals("screenrecord --output-format=h264 --size 1920x720 --bit-rate 6000000 --time-limit 5 -",
                 AdbScreenVideoSource.smallWindowCommand(5));
         assertThrows(IllegalArgumentException.class, () -> AdbScreenVideoSource.smallWindowCommand(11));
     }

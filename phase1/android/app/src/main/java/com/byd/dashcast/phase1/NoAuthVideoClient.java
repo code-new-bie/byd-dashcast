@@ -85,7 +85,9 @@ final class NoAuthVideoClient implements Closeable {
             }
             started = true;
             logger.log("RECEIVER_READY DCV1/" + (continuous ? 2 : 1)
-                    + " no video authorization; 640x240; NOT picture confirmation");
+                    + " no video authorization; " + NoAuthVideoProtocol.WIDTH + "x"
+                    + NoAuthVideoProtocol.HEIGHT + "/" + NoAuthVideoProtocol.FPS
+                    + "fps; NOT picture confirmation");
         } catch (IOException error) {
             try {
                 close();

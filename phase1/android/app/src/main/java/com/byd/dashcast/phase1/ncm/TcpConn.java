@@ -14,7 +14,8 @@ import java.util.List;
  *   <li>不做乱序重组——USB NCM 链路本身不丢不乱序，真出现缺口就按缺 ACK 处理（会告警）；</li>
  *   <li>不做 SACK / 时间戳 / 窗口扩大；对端 SYN 里的 MSS 选项会被采纳；</li>
  *   <li>重传用「累积确认 + 回退 N」：收到 ACK 就裁剪未确认队列，超时或三重复 ACK 就重发队首起全部未确认段；</li>
- *   <li>发送窗口 = min(对端通告窗口, 拥塞窗口)；拥塞窗口从 1 段起，每个 ACK 翻倍到 8 段封顶。</li>
+ *   <li>发送窗口 = min(对端通告窗口, 拥塞窗口)；拥塞窗口从 1 段起，每个 ACK 翻倍到 32 段封顶，
+ *       以容纳1920×720/30的高分辨率码率。</li>
  * </ul>
  * 这些取舍在直连测试场景下足够，且行为可解释——出问题时日志能直接指出卡在哪一步。
  */
@@ -37,7 +38,7 @@ public final class TcpConn {
     private static final int MSS = 1460;
     private static final long RTO_MIN = 400;
     private static final long RTO_MAX = 4000;
-    private static final int CWND_MAX_SEGS = 8;
+    private static final int CWND_MAX_SEGS = 32;
 
     private static final class Seg {
         long seq;

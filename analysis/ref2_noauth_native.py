@@ -59,7 +59,10 @@ class Patch:
                                 before_sha256=digest(before), after_sha256=digest(data)))
 
     def arm(self, name, address, capacity, source):
-        assembled, _ = Ks(KS_ARCH_ARM, KS_MODE_ARM | KS_MODE_LITTLE_ENDIAN).asm(source, addr=address)
+        try:
+            assembled, _ = Ks(KS_ARCH_ARM, KS_MODE_ARM | KS_MODE_LITTLE_ENDIAN).asm(source, addr=address)
+        except Exception as error:
+            raise ValueError(f"ARM assembly failed: {name}: {error}") from error
         code = bytes(assembled)
         if len(code) > capacity or len(code) % 4 or capacity % 4:
             raise ValueError(f"ARM source exceeds its pinned slot: {name}, {len(code)}/{capacity}")
@@ -83,9 +86,12 @@ class Patch:
                                        qnx_runtime_tested=False)
 
 
-def build_receiver(source):
+def build_receiver(source, arm_source_path=SOURCE):
     patch = Patch(source, RECEIVER_HASH)
-    arm_source = SOURCE.read_text(encoding="utf-8")
+    arm_source_path = Path(arm_source_path)
+    if not arm_source_path.is_absolute():
+        arm_source_path = ROOT / arm_source_path
+    arm_source = arm_source_path.read_text(encoding="utf-8")
     blocks = re.split(r"(?m)^// SLOT (\w+) (0x[0-9a-f]+) (\d+)\s*$", arm_source)
     for index in range(1, len(blocks), 4):
         name, address, size, code = blocks[index:index + 4]
@@ -114,6 +120,7 @@ def build_receiver(source):
     patch.put("unused_public_key_removed", 0x10ae68, bytes(270))
     result, report = patch.finish()
     report["arm_source_sha256"] = digest(arm_source.encode("utf-8"))
+    report["arm_source_path"] = arm_source_path.relative_to(ROOT).as_posix()
     report["protocol"] = "DCV1/1 short + DCV1/2 bounded continuous, TCP31707, no crypto/activation/identity"
     report["continuous_limits"] = dict(session_seconds=1860, heartbeat_ms=15000,
                                        frames=65000, frame_bytes=0x200000)

@@ -13,27 +13,27 @@ public final class CaptureGeometryTest {
     public void fullHdFitPreservesTheEntireSourceAndDoesNotStretchToEightToThree() {
         CaptureGeometry geometry = CaptureGeometry.create(1920, 1080, CaptureOptions.of(CaptureOptions.Mode.FIT));
         assertBounds(geometry.source(), 0, 0, 1920, 1080);
-        assertBounds(geometry.destination(), 107, 0, 533, 240);
+        assertBounds(geometry.destination(), 320, 0, 1600, 720);
     }
 
     @Test
     public void fullHdCenterCropUsesThe720LineMiddleWithoutChangingTheEncoderSize() {
         CaptureGeometry geometry = CaptureGeometry.create(1920, 1080, CaptureOptions.of(CaptureOptions.Mode.CROP));
         assertBounds(geometry.source(), 0, 180, 1920, 900);
-        assertBounds(geometry.destination(), 0, 0, 640, 240);
+        assertBounds(geometry.destination(), 0, 0, 1920, 720);
     }
 
     @Test
     public void customRegionIsRelativeToTheDetectedDisplayNotHardcodedFullHd() {
         CaptureGeometry geometry = CaptureGeometry.create(1280, 720, CaptureOptions.region(25, 10, 100, 90));
         assertBounds(geometry.source(), 320, 72, 1280, 648);
-        assertBounds(geometry.destination(), 120, 0, 520, 240);
+        assertBounds(geometry.destination(), 360, 0, 1560, 720);
     }
 
     @Test
     public void portraitAndUltrawideFitAndCropStayInsideTheirOwnBounds() {
         CaptureGeometry portrait = CaptureGeometry.create(1080, 1920, CaptureOptions.of(CaptureOptions.Mode.FIT));
-        assertBounds(portrait.destination(), 252, 0, 387, 240);
+        assertBounds(portrait.destination(), 757, 0, 1162, 720);
         CaptureGeometry wide = CaptureGeometry.create(3840, 720, CaptureOptions.of(CaptureOptions.Mode.CROP));
         assertBounds(wide.source(), 960, 0, 2880, 720);
     }
@@ -43,7 +43,7 @@ public final class CaptureGeometryTest {
         for (CaptureOptions.Mode mode : new CaptureOptions.Mode[] {CaptureOptions.Mode.FIT, CaptureOptions.Mode.CROP}) {
             CaptureGeometry geometry = CaptureGeometry.create(1920, 720, CaptureOptions.of(mode));
             assertBounds(geometry.source(), 0, 0, 1920, 720);
-            assertBounds(geometry.destination(), 0, 0, 640, 240);
+            assertBounds(geometry.destination(), 0, 0, 1920, 720);
         }
     }
 
@@ -51,7 +51,7 @@ public final class CaptureGeometryTest {
     public void stretchIsByteGeometryCompatibleWithTheObservedOldMirror() {
         CaptureGeometry geometry = CaptureGeometry.create(1920, 1080, CaptureOptions.of(CaptureOptions.Mode.STRETCH));
         assertBounds(geometry.source(), 0, 0, 1920, 1080);
-        assertBounds(geometry.destination(), 0, 0, 640, 240);
+        assertBounds(geometry.destination(), 0, 0, 1920, 720);
     }
 
     @Test
@@ -73,7 +73,7 @@ public final class CaptureGeometryTest {
                         CaptureOptions.Mode.FIT, CaptureOptions.Mode.CROP, CaptureOptions.Mode.STRETCH}) {
                     CaptureGeometry geometry = CaptureGeometry.create(width, height, CaptureOptions.of(mode));
                     assertInside(geometry.source(), width, height);
-                    assertInside(geometry.destination(), 640, 240);
+                    assertInside(geometry.destination(), 1920, 720);
                 }
             }
         }

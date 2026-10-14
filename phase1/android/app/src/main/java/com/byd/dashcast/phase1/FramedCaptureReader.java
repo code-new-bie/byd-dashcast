@@ -41,7 +41,7 @@ final class FramedCaptureReader implements AdbShellClient.ShellOutputHandler {
         if (finished || failed || ended && length > 0) {
             throw new IOException("DCS1_CLOSED_OR_BYTE_LIMIT");
         }
-        if (length > ProjectionLimits.MAX_BYTES - bytes) {
+        if (length > ProjectionLimits.MAX_CAPTURE_BYTES - bytes) {
             failed = true;
             throw new IOException("DCS1_BYTE_LIMIT");
         }
@@ -98,7 +98,7 @@ final class FramedCaptureReader implements AdbShellClient.ShellOutputHandler {
             endHandler.run();
             return;
         }
-        if (frames >= ProjectionLimits.MAX_FRAMES || pts <= lastPts) {
+        if (frames >= ProjectionLimits.MAX_CAPTURE_FRAMES || pts <= lastPts) {
             throw new IOException("DCS1_FRAME_COUNT_OR_NON_MONOTONIC_ENCODER_PTS");
         }
         frame = new byte[size];

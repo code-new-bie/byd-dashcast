@@ -31,6 +31,7 @@ adbkey*
 # Dependency/runtime caches and generated outputs.
 .gradle*/
 .android-sdk/
+.android-user/
 .downloads/
 .native-deps/
 .idea/

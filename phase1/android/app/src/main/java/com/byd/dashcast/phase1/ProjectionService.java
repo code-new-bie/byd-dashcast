@@ -166,7 +166,7 @@ public final class ProjectionService extends Service {
             ProjectionLimits.requireSeconds(seconds);
             CaptureOptions options = CaptureOptions.parse(intent.getStringExtra("capture_selection"));
             JOURNAL.append("PROJECTION_CONFIG=" + options
-                    + "; encoded=640x240 native_rect=[640,240,1280,480]; stationary validation only");
+                    + "; encoded=1920x720/30fps native_rect=[0,0,1920,720]; HMI occlusion and decoded FPS require vehicle validation");
             UsbDevice device = UsbNcmSession.findDevice(this);
             UsbManager usb = (UsbManager)getSystemService(USB_SERVICE);
             if (usb == null || !usb.hasPermission(device)) {

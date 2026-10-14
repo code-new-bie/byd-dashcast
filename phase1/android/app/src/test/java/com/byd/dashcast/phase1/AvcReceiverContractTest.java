@@ -47,17 +47,17 @@ public final class AvcReceiverContractTest {
     public void baselineProgressiveGeometryAndFirstIdrPassWithHeaderDiagnostics() throws Exception {
         AvcReceiverContract contract = new AvcReceiverContract();
         ArrayList<String> log = new ArrayList<>();
-        contract.accept(frame(66, 640, 240, 0, 0, true), log::add);
+        contract.accept(frame(66, 1920, 720, 0, 0, true), log::add);
         contract.accept(new Bits().ue(0).ue(0).ue(0).nal(1), log::add);
         assertTrue(log.stream().anyMatch(text -> text.contains("profile=66")));
-        assertTrue(log.stream().anyMatch(text -> text.contains("640x240")));
+        assertTrue(log.stream().anyMatch(text -> text.contains("1920x720")));
     }
 
     @Test
     public void mainHighWrongSizeIdsOrInterlaceFailBeforeAnyMediaOperation() {
-        byte[][] invalid = {frame(77, 640, 240, 0, 0, true), frame(100, 640, 240, 0, 0, true),
+        byte[][] invalid = {frame(77, 1920, 720, 0, 0, true), frame(100, 1920, 720, 0, 0, true),
                 frame(66, 1280, 720, 0, 0, true), frame(66, 640, 240, 1, 0, true),
-                frame(66, 640, 240, 0, 1, true), frame(66, 640, 240, 0, 0, false),
+                frame(66, 1920, 720, 0, 1, true), frame(66, 1920, 720, 0, 0, false),
                 new Bits().ue(0).ue(2).ue(0).nal(5)};
         for (byte[] data : invalid) {
             assertThrows(IOException.class, () -> new AvcReceiverContract().accept(data, text -> {}));
@@ -71,7 +71,7 @@ public final class AvcReceiverContractTest {
             assertThrows(IOException.class, () -> new AvcReceiverContract().accept(data, text -> {}));
         }
         AvcReceiverContract contract = new AvcReceiverContract();
-        contract.accept(frame(66, 640, 240, 0, 0, true), text -> {});
+        contract.accept(frame(66, 1920, 720, 0, 0, true), text -> {});
         assertThrows(IOException.class, () -> contract.accept(new Bits().ue(0).ue(1).ue(0).nal(1), text -> {}));
     }
 }
