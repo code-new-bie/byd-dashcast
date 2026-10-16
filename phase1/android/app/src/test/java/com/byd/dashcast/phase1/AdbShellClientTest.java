@@ -327,6 +327,67 @@ public final class AdbShellClientTest {
     }
 
     @Test
+    public void failedFrameConsumerRequestsOwnedStopAndDrainsTheSameAdbStream() throws Exception {
+        Harness harness = new Harness(null);
+        AtomicBoolean userStop = new AtomicBoolean();
+        int[] consumerCalls = {0};
+        int[] receiverStops = {0};
+        byte[] peer = concat(packet(CNXN, 0x01000000, 4096,
+                "device::features=shell_v2\0".getBytes(StandardCharsets.US_ASCII)),
+                packet(OKAY, 7, 1, EMPTY), packet(WRTE, 7, 1, new byte[] {1, 1, 0, 0, 0, 42}),
+                packet(OKAY, 7, 1, EMPTY), packet(WRTE, 7, 1, new byte[] {1, 1, 0, 0, 0, 43}),
+                packet(WRTE, 7, 1, new byte[] {2, 2, 0, 0, 0, 'o', 'k'}),
+                packet(WRTE, 7, 1, new byte[] {3, 1, 0, 0, 0, 0}), packet(CLSE, 7, 1, EMPTY));
+        ByteArrayInputStream input = new ByteArrayInputStream(peer);
+        IOException error = assertThrows(IOException.class, () -> harness.client.executeControlledProtocol(
+                input, harness.sent, "owned", (data, length) -> {
+                    consumerCalls[0]++;
+                    throw new IOException("MEDIA_SUBMIT rejected");
+                }, userStop, () -> receiverStops[0]++));
+        assertEquals("MEDIA_SUBMIT rejected", error.getMessage());
+        assertEquals(0, input.available());
+        assertEquals(1, consumerCalls[0]);
+        assertEquals(1, receiverStops[0]);
+        assertFalse(userStop.get());
+        assertEquals(1, harness.sentPackets().stream().filter(item -> item.command == WRTE).count());
+        assertTrue(harness.log.stream().anyMatch(item -> item.startsWith("CAPTURE_STOP_STDIN_SENT")));
+    }
+
+    @Test
+    public void failedConsumerCannotExtendStopDeadlineWithEndlessOutputAndKeepsOriginalCause() throws Exception {
+        java.util.concurrent.atomic.AtomicLong clock = new java.util.concurrent.atomic.AtomicLong();
+        AtomicBoolean failed = new AtomicBoolean();
+        AdbShellClient client = new AdbShellClient("127.0.0.1", 5555, 20000, null,
+                message -> {}, new AtomicBoolean(), clock::get);
+        ByteArrayOutputStream peer = new ByteArrayOutputStream();
+        peer.write(packet(CNXN, 0x01000000, 4096,
+                "device::features=shell_v2\0".getBytes(StandardCharsets.US_ASCII)));
+        peer.write(packet(OKAY, 7, 1, EMPTY));
+        for (int index = 0; index < 100; index++) {
+            peer.write(packet(WRTE, 7, 1, new byte[] {1, 1, 0, 0, 0, 42}));
+        }
+        InputStream input = new FilterInputStream(new ByteArrayInputStream(peer.toByteArray())) {
+            @Override
+            public int read(byte[] data, int offset, int length) throws IOException {
+                if (failed.get()) {
+                    clock.addAndGet(1_000_000_000L);
+                }
+                return super.read(data, offset, length);
+            }
+        };
+        IOException root = new IOException("MEDIA_SUBMIT rejected");
+        IOException result = assertThrows(IOException.class, () -> client.executeControlledProtocol(input,
+                new ByteArrayOutputStream(), "owned", (bytes, length) -> {
+                    failed.set(true);
+                    throw root;
+                }, new AtomicBoolean()));
+        assertEquals(root, result);
+        assertTrue(Arrays.stream(result.getSuppressed())
+                .anyMatch(item -> "CAPTURE_STOP_EXIT_UNCONFIRMED".equals(item.getMessage())));
+        assertTrue(clock.get() < 20_000_000_000L);
+    }
+
+    @Test
     public void stopDrainCannotBeKeptAliveForeverByFurtherStdout() throws Exception {
         java.util.concurrent.atomic.AtomicLong clock = new java.util.concurrent.atomic.AtomicLong();
         AtomicBoolean stop = new AtomicBoolean();

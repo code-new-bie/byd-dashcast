@@ -10,6 +10,14 @@ import java.util.List;
 import static org.junit.Assert.*;
 
 public final class FramedCaptureReaderTest {
+    @Test
+    public void wrongProtocolReportsOnlyTheFourStructuralBytes() throws Exception {
+        byte[] header = "HotFixRoot: synthetic-test".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        IOException error = assertThrows(IOException.class,
+                () -> CaptureFrameProtocol.parse(java.util.Arrays.copyOf(header, 24)));
+        assertEquals("DCS1_WRONG_CAPTURE_PROTOCOL magic_hex=486f7446", error.getMessage());
+    }
+
     private static final class Sink implements VideoPatternProbe.Observer {
         final List<Long> pts = new ArrayList<>();
         final List<byte[]> frames = new ArrayList<>();

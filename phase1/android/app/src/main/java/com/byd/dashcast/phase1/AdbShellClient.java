@@ -115,14 +115,17 @@ public final class AdbShellClient {
 
     void executeShellV2Controlled(String command, ShellOutputHandler outputHandler, Consumer<String> diagnostics,
             AtomicBoolean stopRequested, Runnable beforeStop, Consumer<Boolean> exitConfirmation) throws IOException {
-        ShellV2Output output = new ShellV2Output(outputHandler, diagnostics);
+        ShellV2Output output = new ShellV2Output(outputHandler, diagnostics, stopRequested != null);
         try {
             executeNetwork(command, output, true, stopRequested, beforeStop);
             output.requireSuccess();
             log.accept("ADB_SHELL_V2_EXIT=0 stderr_bytes=" + output.stderrBytes());
+        } catch (IOException error) {
+            throw output.preserveConsumerFailure(error);
         } finally {
             // Preserve already received capture evidence even when the frame consumer rejects.
             output.reportDiagnostics();
+            log.accept(output.completionStatus());
             exitConfirmation.accept(output.exitConfirmed());
         }
     }
@@ -179,9 +182,13 @@ public final class AdbShellClient {
 
     void executeControlledProtocol(InputStream input, OutputStream output, String command,
             ShellOutputHandler handler, AtomicBoolean stopRequested, Runnable beforeStop) throws IOException {
-        ShellV2Output decoded = new ShellV2Output(handler);
-        executeProtocol(input, output, command, decoded, true, stopRequested, beforeStop);
-        decoded.requireSuccess();
+        ShellV2Output decoded = new ShellV2Output(handler, message -> {}, true);
+        try {
+            executeProtocol(input, output, command, decoded, true, stopRequested, beforeStop);
+            decoded.requireSuccess();
+        } catch (IOException error) {
+            throw decoded.preserveConsumerFailure(error);
+        }
     }
 
     private void executeProtocol(InputStream input, OutputStream output, String command,
@@ -208,7 +215,7 @@ public final class AdbShellClient {
         checkCancelled();
         renewReadDeadline();
         sendPacket(output, COMMAND_OPEN, 1, 0, service);
-        ShellControl control = new ShellControl(output, stopRequested, beforeStop);
+        ShellControl control = new ShellControl(output, stopRequested, beforeStop, handler);
         readPulse = control::beforeRead;
         try {
             readShellPackets(input, output, handler, 1, control);
@@ -405,18 +412,22 @@ public final class AdbShellClient {
         private final OutputStream output;
         private final AtomicBoolean stop;
         private final Runnable beforeStop;
+        private final ShellOutputHandler handler;
         private int remoteId;
         private boolean sent;
         private long deadline;
 
-        ShellControl(OutputStream output, AtomicBoolean stop, Runnable beforeStop) {
+        ShellControl(OutputStream output, AtomicBoolean stop, Runnable beforeStop, ShellOutputHandler handler) {
             this.output = output;
             this.stop = stop;
             this.beforeStop = java.util.Objects.requireNonNull(beforeStop);
+            this.handler = handler;
         }
 
         void beforeRead() throws IOException {
-            if (stop != null && stop.get() && remoteId != 0 && !sent) {
+            boolean consumerFailed = handler instanceof ShellV2Output && ((ShellV2Output)handler).consumerFailed();
+            boolean exited = handler instanceof ShellV2Output && ((ShellV2Output)handler).exitConfirmed();
+            if ((stop != null && stop.get() || consumerFailed) && !exited && remoteId != 0 && !sent) {
                 beforeStop.run();
                 // shell-v2 channel 0=stdin, LE32 length=5, then a fixed owned-process control line.
                 sendPacket(output, COMMAND_WRTE, 1, remoteId,

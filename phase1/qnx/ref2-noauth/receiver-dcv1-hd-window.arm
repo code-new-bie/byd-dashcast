@@ -463,3 +463,17 @@ mov r3, #1920
 
 // SLOT encoded_hd_height 0x103d78 4
 mov r3, #720
+
+// SLOT push_hd_height 0x107170 4
+// H264 push input configuration must describe the encoded frame, not the Screen window.
+mov r2, #720
+
+// SLOT push_hd_width 0x107174 4
+mov r1, #1920
+
+// SLOT media_uri_hd_height 0x106838 4
+// mm-renderer input attachment reads the same encoded dimensions before push_configure.
+mov ip, #720
+
+// SLOT media_uri_hd_width 0x10683c 4
+mov r1, #1920

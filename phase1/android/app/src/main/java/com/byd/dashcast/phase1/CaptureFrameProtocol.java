@@ -35,8 +35,10 @@ final class CaptureFrameProtocol {
             throw new IOException("DCS1_HEADER_LENGTH");
         }
         ByteBuffer values = ByteBuffer.wrap(header).order(ByteOrder.BIG_ENDIAN);
-        if (values.getInt() != MAGIC) {
-            throw new IOException("DCS1_WRONG_CAPTURE_PROTOCOL");
+        int magic = values.getInt();
+        if (magic != MAGIC) {
+            // Four structural bytes only, not a dump of video, OEM paths or arbitrary stdout.
+            throw new IOException("DCS1_WRONG_CAPTURE_PROTOCOL magic_hex=" + Integer.toHexString(magic));
         }
         requireValues(values.getInt(), values.getLong(), values.getInt(), values.getInt());
         values.position(4);

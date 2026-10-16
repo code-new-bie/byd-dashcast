@@ -5,6 +5,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -17,6 +19,52 @@ import static org.junit.Assert.assertThrows;
 
 /** Binary video never contains shell-v2 STDERR/EXIT framing, even across arbitrary ADB chunks. */
 public final class ShellV2OutputTest {
+    @Test
+    public void controlledSinkFailureDrainsDiagnosticsAndExitWithoutDeliveringMoreVideo() throws Exception {
+        IOException rejected = new IOException("MEDIA_SUBMIT rejected");
+        List<String> logs = new ArrayList<>();
+        int[] calls = {0};
+        ShellV2Output decoder = new ShellV2Output((bytes, count) -> {
+            calls[0]++;
+            throw rejected;
+        }, logs::add, true);
+        byte[] wire = join(frame(1, new byte[] {1}), frame(1, new byte[] {2}),
+                frame(2, "SHELL_CAPTURE_RESOURCES_RELEASED\n".getBytes(StandardCharsets.UTF_8)),
+                frame(3, new byte[] {0}));
+        for (byte value : wire) {
+            decoder.onOutput(new byte[] {value}, 1);
+        }
+        assertEquals(1, calls[0]);
+        assertTrue(decoder.consumerFailed());
+        assertTrue(decoder.exitConfirmed());
+        assertSame(rejected, assertThrows(IOException.class, decoder::requireSuccess));
+        assertTrue(logs.get(0).contains("SHELL_CAPTURE_RESOURCES_RELEASED"));
+        assertTrue(decoder.completionStatus().contains("consumer_failed=true"));
+    }
+
+    @Test
+    public void controlledFailureStillRejectsTruncatedExitAndMalformedShellFraming() throws Exception {
+        ShellV2Output decoder = new ShellV2Output((bytes, count) -> {
+            throw new IOException("DCS1_WRONG_CAPTURE_PROTOCOL");
+        }, text -> {}, true);
+        byte[] wire = join(frame(1, new byte[] {1}), header(3, 1));
+        decoder.onOutput(wire, wire.length);
+        assertFalse(decoder.exitConfirmed());
+        assertThrows(IOException.class, decoder::requireSuccess);
+        assertThrows(IOException.class, () -> decoder.onOutput(new byte[] {0, 1}, 2));
+        assertFalse(decoder.exitConfirmed());
+    }
+
+    @Test
+    public void controlledRuntimeFailureKeepsCauseAndStillDrainsNonzeroExit() throws Exception {
+        IllegalStateException cause = new IllegalStateException("sink unavailable");
+        ShellV2Output decoder = new ShellV2Output((bytes, count) -> { throw cause; }, text -> {}, true);
+        byte[] wire = join(frame(1, new byte[] {1}), frame(3, new byte[] {1}));
+        decoder.onOutput(wire, wire.length);
+        assertTrue(decoder.exitConfirmed());
+        assertSame(cause, assertThrows(IOException.class, decoder::requireSuccess).getCause());
+    }
+
     @Test
     public void nonzeroExitIsConfirmedTerminationButStillCommandFailure() throws Exception {
         ShellV2Output decoder = new ShellV2Output((bytes, count) -> {});

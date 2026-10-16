@@ -20,6 +20,7 @@ final class ShellV2Output implements AdbShellClient.ShellOutputHandler {
     private static final int DIAGNOSTIC_TAIL_BYTES = DIAGNOSTIC_BYTES / 2;
     private final AdbShellClient.ShellOutputHandler stdout;
     private final Consumer<String> diagnostics;
+    private final boolean drainConsumerFailure;
     private final ByteArrayOutputStream stderr = new ByteArrayOutputStream();
     private byte[] stderrTail = new byte[0];
     private final byte[] header = new byte[5];
@@ -30,14 +31,21 @@ final class ShellV2Output implements AdbShellClient.ShellOutputHandler {
     private Integer exitCode;
     private boolean failed;
     private boolean diagnosticsReported;
+    private IOException consumerFailure;
 
     ShellV2Output(AdbShellClient.ShellOutputHandler stdout) {
         this(stdout, message -> {});
     }
 
     ShellV2Output(AdbShellClient.ShellOutputHandler stdout, Consumer<String> diagnostics) {
+        this(stdout, diagnostics, false);
+    }
+
+    ShellV2Output(AdbShellClient.ShellOutputHandler stdout, Consumer<String> diagnostics,
+            boolean drainConsumerFailure) {
         this.stdout = Objects.requireNonNull(stdout);
         this.diagnostics = Objects.requireNonNull(diagnostics);
+        this.drainConsumerFailure = drainConsumerFailure;
     }
 
     @Override
@@ -59,16 +67,16 @@ final class ShellV2Output implements AdbShellClient.ShellOutputHandler {
                     continue;
                 }
                 int count = Math.min(remaining, length - offset);
-                if (channel == 1) {
+                if (channel == 1 && consumerFailure == null) {
                     byte[] chunk = new byte[count];
                     System.arraycopy(data, offset, chunk, 0, count);
-                    stdout.onOutput(chunk, count);
+                    consumeStdout(chunk);
                 } else if (channel == 2) {
                     stderrBytes = (int)Math.min((long)stderrBytes + count, Integer.MAX_VALUE);
                     int keep = Math.min(count, DIAGNOSTIC_BYTES - stderr.size());
                     stderr.write(data, offset, keep);
                     keepDiagnosticTail(data, offset, count);
-                } else {
+                } else if (channel == 3) {
                     exitCode = data[offset] & 255;
                 }
                 offset += count;
@@ -80,6 +88,20 @@ final class ShellV2Output implements AdbShellClient.ShellOutputHandler {
         } catch (IOException error) {
             failed = true;
             throw error;
+        }
+    }
+
+    private void consumeStdout(byte[] chunk) throws IOException {
+        try {
+            stdout.onOutput(chunk, chunk.length);
+        } catch (IOException | RuntimeException error) {
+            if (!drainConsumerFailure) {
+                throw error;
+            }
+            consumerFailure = error instanceof IOException ? (IOException)error
+                    : new IOException("Capture consumer failed", error);
+            // The ADB control loop sends owned stdin STOP before its next read, then drains
+            // only for the existing finite stop budget. No further video reaches the sink.
         }
     }
 
@@ -100,6 +122,9 @@ final class ShellV2Output implements AdbShellClient.ShellOutputHandler {
 
     void requireSuccess() throws IOException {
         reportDiagnostics();
+        if (consumerFailure != null) {
+            throw consumerFailure;
+        }
         if (failed || headerBytes != 0 || remaining != 0 || exitCode == null || exitCode != 0) {
             throw new IOException("ADB capture not successfully completed: shell-v2 EXIT="
                     + (exitCode == null ? "UNKNOWN" : exitCode) + " stderr_bytes=" + stderrBytes);
@@ -132,6 +157,23 @@ final class ShellV2Output implements AdbShellClient.ShellOutputHandler {
     /** A nonzero status is a failed command, but a complete EXIT still proves that the child ended. */
     boolean exitConfirmed() {
         return !failed && headerBytes == 0 && remaining == 0 && exitCode != null;
+    }
+
+    boolean consumerFailed() {
+        return consumerFailure != null;
+    }
+
+    IOException preserveConsumerFailure(IOException transportFailure) {
+        if (consumerFailure == null || consumerFailure == transportFailure) {
+            return transportFailure;
+        }
+        consumerFailure.addSuppressed(transportFailure);
+        return consumerFailure;
+    }
+
+    String completionStatus() {
+        return "ADB_CAPTURE_COMPLETION exit=" + (exitCode == null ? "UNKNOWN" : exitCode)
+                + " exit_confirmed=" + exitConfirmed() + " consumer_failed=" + consumerFailed();
     }
 
     int stderrBytes() {

@@ -12,8 +12,6 @@ import android.os.Process;
 import android.view.Surface;
 
 import java.io.IOException;
-import java.io.FileDescriptor;
-import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
@@ -37,6 +35,9 @@ public final class ShellScreenCapture {
     }
 
     public static void main(String[] args) {
+        // Context/LoadedApk initialization on the OEM ROM can print hot-fix diagnostics to System.out.
+        // Binary DCS1/AVC uses FileDescriptor.out directly and must never share that PrintStream.
+        ShellCaptureOutput.isolateFrameworkDiagnostics();
         try {
             CaptureOptions options = CaptureOptions.fromShellArguments(args);
             ProjectionTarget target = ProjectionTarget.fromShellArguments(args);
@@ -173,7 +174,7 @@ public final class ShellScreenCapture {
     private static void stream(MediaCodec codec, int seconds, CaptureStopControl control) throws IOException {
         long stopAt = System.nanoTime() + seconds * 1_000_000_000L;
         long drainUntil = stopAt + 2_000_000_000L;
-        OutputStream stdout = new FileOutputStream(FileDescriptor.out);
+        OutputStream stdout = ShellCaptureOutput.videoStream();
         long lastPts = -1;
         int frames = 0;
         boolean eos = false;

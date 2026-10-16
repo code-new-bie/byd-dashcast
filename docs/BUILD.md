@@ -11,7 +11,7 @@ bash gradlew testDebugUnitTest assembleDebug lintDebug --console=plain
 
 Windows 使用 `gradlew.bat`。APK位于 `app/build/outputs/apk/debug/app-debug.apk`，测试和 lint 报告位于 `app/build`。首次构建需要按操作者环境准备依赖；`--offline`只适用于缓存已经就绪的机器。
 
-当前源码版本为0.8.1/code28。APK需匹配0.8.1仪表App；START窗口位置/大小与1920×720编码尺寸独立。远程目标预先准备Looper，FPS偏差只记录诊断，编码后不丢参考帧，完整EXIT和资源释放分别确认。构建成功仍需现场确认跨屏启动、仪表动态画面和实际30FPS。
+当前源码版本为0.8.2/code29。APK需匹配0.8.2仪表App；窗口640×240，SPS、媒体输入URI与push输入均为1920×720。框架Java文字与二进制视频通道隔离，消费者失败后受控停止并有限排空EXIT。私有工程309项测试/45套、公开工程277项/42套及assemble/lint均通过；32项历史凭据测试不进公开源码。构建成功不代表跨屏启动、仪表实显或实际30FPS已通过。
 
 ## 测试范围
 

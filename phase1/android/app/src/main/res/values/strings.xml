@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">BYD 仪表 USB 投屏</string>
-    <string name="screen_title">BYD → QNX 仪表投屏 0.8.1 显示修复</string>
+    <string name="screen_title">BYD → QNX 仪表投屏 0.8.2 高清接入修复</string>
     <string name="control_initial_status">待连接 ADB；原厂导航中继版本、USB 枚举与视频需分别验证。</string>
-    <string name="screen_scope">0.8.1 需配套仪表 App：先授权 ADB，再切 NCM、接数据线并允许 USB 访问。可选择车机主屏或已安装应用；选择应用时先运行远程副屏探针。画面以1920×720编码，显示在仪表原640×240小窗；持续投屏先短时确认动态画面、停止退出和再次启动，再验证600秒和1800秒。帧率偏差只记入日志，不再提前结束视频；硬件30FPS与仪表实际显示分别核对。通知栏或本页可停止，退出后拔线再切Host并检查U盘。日志可一键导出到下载目录。动态告警隔离仍未完成，仅用于停稳或台架验证。</string>
+    <string name="screen_scope">0.8.2 需配套仪表 App：修正高清解码入口尺寸，并隔离车机系统文字与视频数据。先授权 ADB，再切 NCM、接线并允许 USB 访问。先做10秒测试图及主屏，再验证指定应用副屏；三项通过后才延长时长。画面编码1920×720，显示在原640×240小窗。失败后会受控停止并核对资源释放，清理未确认仍阻止再次投屏。停止退出后拔线再切Host、检查U盘。一键导出日志到下载目录。动态告警隔离未完成，仅用于停稳或台架验证。</string>
     <string name="continuous_status">持续投屏：%1$s</string>
-    <string name="matching_firmware">已刷入0.8.1显示修复仪表App/固件，车辆停稳</string>
+    <string name="matching_firmware">已刷入0.8.2高清接入修复仪表App/固件，车辆停稳</string>
     <string name="capture_geometry_scope">采集设置只改变车机1920×720源的取景方式，不改变仪表窗口、层级或编码尺寸。地图区域由你指定，不自动识别导航应用；发送端目标30FPS。</string>
     <string name="capture_fit">保持比例：完整车机画面，必要时留黑边</string>
     <string name="capture_crop">中心裁剪：保持比例，填满原小窗</string>
