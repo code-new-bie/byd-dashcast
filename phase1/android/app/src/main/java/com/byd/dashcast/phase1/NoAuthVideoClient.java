@@ -43,6 +43,7 @@ final class NoAuthVideoClient implements Closeable {
     private boolean cleanupConfirmed = true;
     private long maxAckNanos;
     private long totalAckNanos;
+    private InstrumentDisplayProbe displayProbe;
 
     NoAuthVideoClient(Connector connector, AtomicBoolean cancelled, Logger logger) {
         this(connector, cancelled, logger, System::nanoTime);
@@ -65,6 +66,14 @@ final class NoAuthVideoClient implements Closeable {
         this.continuous = continuous;
     }
 
+    /** Explicit F1 diagnostic only; normal projection never sends the new operation. */
+    void enableDisplayReadback() throws IOException {
+        if (video != null || closed || continuous) {
+            throw new IOException("F1_REQUIRES_FRESH_SHORT_DIAGNOSTIC");
+        }
+        displayProbe = new InstrumentDisplayProbe(cancelled, logger, nanoTime);
+    }
+
     void begin() throws IOException {
         checkCancellation();
         if (video != null || closed) {
@@ -75,6 +84,9 @@ final class NoAuthVideoClient implements Closeable {
             byte[] header = video.readExact(NoAuthVideoProtocol.HEADER_BYTES);
             byte[] offer = video.readExact(NoAuthVideoProtocol.OFFER_BYTES);
             NoAuthVideoProtocol.validateOffer(header, offer);
+            if (displayProbe != null) {
+                displayProbe.negotiate(video);
+            }
             exchange(NoAuthVideoProtocol.hello(continuous), NoAuthVideoProtocol.HELLO, 0, 0);
             negotiated = true;
             cleanupConfirmed = false;
@@ -123,6 +135,9 @@ final class NoAuthVideoClient implements Closeable {
         acknowledged++;
         previousPtsMillis = relativeMillis;
         payloadBytes += annexB.length;
+        if (displayProbe != null) {
+            displayProbe.step(video);
+        }
         if (acknowledged == 1 || acknowledged % (continuous ? 150 : 30) == 0) {
             logger.log(evidence.summary());
             if (continuous) {
@@ -197,6 +212,9 @@ final class NoAuthVideoClient implements Closeable {
             return;
         }
         closed = true;
+        if (displayProbe != null) {
+            displayProbe.end();
+        }
         if (video == null) {
             return;
         }

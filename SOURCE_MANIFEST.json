@@ -1,6 +1,6 @@
 {
-  "snapshot_version": "0.8.2",
-  "snapshot_date": "2026-10-16",
+  "snapshot_version": "0.9.0",
+  "snapshot_date": "2026-10-19",
   "ncm_original_author_confirmed": true,
   "project_license": "NOT_SELECTED_BY_OWNER",
   "original_runtime_java_semantics_changed": false,
@@ -61,8 +61,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "bytes": 11762,
-      "sha256": "e5bc4921f00724e351a191594fb444fa1cb9f42b05cc4451d7b7d129bea681ed",
+      "bytes": 12523,
+      "sha256": "7d419fc0f64336fe5ef8cbca0ee71c4fdeca43c1637f1cf521934fd5a5f503ef",
       "origin": "publication/template/CHANGELOG.md",
       "transformations": []
     },
@@ -82,8 +82,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 8353,
-      "sha256": "005acc6b87f4ee5c7439ae8271b8bd44531b549461926a484b2bccab76e180fe",
+      "bytes": 8560,
+      "sha256": "744af230791d580d8789e92c63890c81d1df28c0db996f8a8f999212c7899ffc",
       "origin": "publication/template/README.md",
       "transformations": []
     },
@@ -100,6 +100,15 @@
       "sha256": "808d22b323f7ef571959062361660196c7c8ecf86a87698fd58ff4daffe3715a",
       "origin": "publication/template/THIRD_PARTY_NOTICES.md",
       "transformations": []
+    },
+    {
+      "path": "analysis/f1_display_probe_native.py",
+      "bytes": 4025,
+      "sha256": "cbb27c0652f12b29b83712ba5b98db9a41fe05e2b074cd37f1c83e2bbbb8ef28",
+      "origin": "analysis/f1_display_probe_native.py",
+      "transformations": [
+        "EXTRACT_PURE_F1_OVERLAY_NO_PRIVATE_INPUT_ACCESS"
+      ]
     },
     {
       "path": "analysis/inspect_qnx_elf.py",
@@ -126,22 +135,22 @@
     },
     {
       "path": "docs/ARCHITECTURE.md",
-      "bytes": 3283,
-      "sha256": "fe6ad752e41cc186bccf78a5c596f1b7002109c2536cb03c4453f5ecc0f3cdc1",
+      "bytes": 3711,
+      "sha256": "858815d279b1b06f26457f8260b4c307f686d1bd93b2ede3197bdcdcdcf0102d",
       "origin": "publication/template/docs/ARCHITECTURE.md",
       "transformations": []
     },
     {
       "path": "docs/BUILD.md",
-      "bytes": 1456,
-      "sha256": "77dfc0e3fe4be1d2dbb4278bb2966f4eb63aee4e76525db502c1ff2b2beed939",
+      "bytes": 1939,
+      "sha256": "8608b3c7172d2314d02db2560e77804d340d9bea7842bc310609def5902112f8",
       "origin": "publication/template/docs/BUILD.md",
       "transformations": []
     },
     {
       "path": "docs/PUBLISHING.md",
-      "bytes": 2210,
-      "sha256": "49a584366bc31c4a5b8a7d99e455381761ae2c830c23816daf25b39928b347de",
+      "bytes": 2235,
+      "sha256": "b6a860afa7b0e32b93cf1910e6ac8c1851b2da681cb3da72996e7d544c01330f",
       "origin": "publication/template/docs/PUBLISHING.md",
       "transformations": []
     },
@@ -251,16 +260,23 @@
       "transformations": []
     },
     {
+      "path": "docs/TASKS_0.9.0.md",
+      "bytes": 2581,
+      "sha256": "d7e9622ad2f70d9dee384013a6a72addd56e02349921e99579da54d0163bcf95",
+      "origin": "publication/template/docs/TASKS_0.9.0.md",
+      "transformations": []
+    },
+    {
       "path": "docs/USAGE.md",
-      "bytes": 7404,
-      "sha256": "6cfbe4ee8bbd302a2399e86a1e8fc7b0d4e7d57df9eb869170034bcf23cbe0fd",
+      "bytes": 7745,
+      "sha256": "0c4d63b24ff3e3642be924789b52773d60b6b2391da19b83c6533c91a880687a",
       "origin": "publication/template/docs/USAGE.md",
       "transformations": []
     },
     {
       "path": "docs/VALIDATION.md",
-      "bytes": 2201,
-      "sha256": "20190be41a0aa03038a00241f908a4b58f40ebd1fb7cd8ab4a5033057accd2a3",
+      "bytes": 2950,
+      "sha256": "0c6a059a3b570328b43ffacf0786523b87232495509ea7a8854d5ae54e27e86d",
       "origin": "publication/template/docs/VALIDATION.md",
       "transformations": []
     },
@@ -274,7 +290,7 @@
     {
       "path": "phase1/android/app/build.gradle",
       "bytes": 1106,
-      "sha256": "bb9e24ec068cf42f9b6e78580199d0dcb5e3bf34734dfeadc325a54f975af8fa",
+      "sha256": "4aaa12cf28ca0b0c6b587e93159cb01d8065f9135bb754bd936955c1177b9a0a",
       "origin": "phase1/android/app/build.gradle",
       "transformations": []
     },
@@ -454,6 +470,13 @@
       "transformations": []
     },
     {
+      "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/InstrumentDisplayProbe.java",
+      "bytes": 13400,
+      "sha256": "ac0921ee52aab154ed24f910e91adc25bd70ac30f53f8ae08fd7309aafdfa5af",
+      "origin": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/InstrumentDisplayProbe.java",
+      "transformations": []
+    },
+    {
       "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/InstrumentUsbCommand.java",
       "bytes": 841,
       "sha256": "e040cab9a3118ab29a68bad62188c75185ba286eee86bc3c97e8e9767225f0c9",
@@ -476,8 +499,8 @@
     },
     {
       "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/MainActivity.java",
-      "bytes": 69537,
-      "sha256": "b91cfab36f38802952065fdaf08eec9fa5b37e1df049051a661df4b00b50c252",
+      "bytes": 72592,
+      "sha256": "4fc21f85245f91fef41adbecec0a6f6f810f532d060ddd6620b78537c95c83de",
       "origin": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/MainActivity.java",
       "transformations": []
     },
@@ -525,8 +548,8 @@
     },
     {
       "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/NoAuthVideoClient.java",
-      "bytes": 9381,
-      "sha256": "3333f2858415488227da64b92796065b7303fe88331c8f55f42c76f01ad60562",
+      "bytes": 10059,
+      "sha256": "110b684f325228cfa7588987f9e2240063ca6cc36fc945f010187542c7b905f4",
       "origin": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/NoAuthVideoClient.java",
       "transformations": []
     },
@@ -805,8 +828,8 @@
     },
     {
       "path": "phase1/android/app/src/main/res/values/strings.xml",
-      "bytes": 2775,
-      "sha256": "dffc722ef9ac5f5b61f5c66cb279b804b7d087f7f8d2265689ba9851c11099f1",
+      "bytes": 2655,
+      "sha256": "3400e99f59aef0ced3bb5c3bc5211eb618fe56c6f2a30b47636cc8f67a5573e3",
       "origin": "phase1/android/app/src/main/res/values/strings.xml",
       "transformations": []
     },
@@ -932,6 +955,13 @@
       "transformations": []
     },
     {
+      "path": "phase1/android/app/src/test/java/com/byd/dashcast/phase1/InstrumentDisplayProbeTest.java",
+      "bytes": 9352,
+      "sha256": "3642bc771e737be2fb7ed2b0155e43ddfac9de10399b9d0f23f2376c05c77f7e",
+      "origin": "phase1/android/app/src/test/java/com/byd/dashcast/phase1/InstrumentDisplayProbeTest.java",
+      "transformations": []
+    },
+    {
       "path": "phase1/android/app/src/test/java/com/byd/dashcast/phase1/KernelUsbEvidenceTest.java",
       "bytes": 5633,
       "sha256": "964ea1039304a27f86a39bb5c6f03f548b1c9e85c3115e0b02334a412fa92b35",
@@ -989,8 +1019,8 @@
     },
     {
       "path": "phase1/android/app/src/test/java/com/byd/dashcast/phase1/NoAuthVideoClientTest.java",
-      "bytes": 11128,
-      "sha256": "5386a54fc1e91b21c7ef5c298558e22b43687e366dba83fa5ad231388809e61f",
+      "bytes": 13145,
+      "sha256": "c77744939e9297b9bf798ded8e8725a681ae7e3a64cacb7deb0df602d332eff6",
       "origin": "phase1/android/app/src/test/java/com/byd/dashcast/phase1/NoAuthVideoClientTest.java",
       "transformations": []
     },
@@ -1230,6 +1260,13 @@
       "transformations": []
     },
     {
+      "path": "phase1/qnx/ref2-noauth/receiver-display-probe.arm",
+      "bytes": 6311,
+      "sha256": "4147f0395d942e8f2ac983edf2e83c07538f65db53caf0fa5f0cc610c93f0f39",
+      "origin": "phase1/qnx/ref2-noauth/receiver-display-probe.arm",
+      "transformations": []
+    },
+    {
       "path": "phase1/qnx/ref2-noauth/run-cast.ksh",
       "bytes": 1590,
       "sha256": "268ee0e537d6f78dc9715d44d5c3c8e5504aad794480a9708cfb77c9515f6b83",
@@ -1300,6 +1337,13 @@
       "transformations": []
     },
     {
+      "path": "tools/apply_f1_display_overlay.py",
+      "bytes": 1810,
+      "sha256": "17bdb9e0639cf93a311af11bf2296fcf0c95f162c2ec947ce5a956d8373d3c14",
+      "origin": "publication/template/tools/apply_f1_display_overlay.py",
+      "transformations": []
+    },
+    {
       "path": "tools/build_instrument_app.py",
       "bytes": 7139,
       "sha256": "07b6eba506f3a5db8663ed635ca1b996dd362c6dac3e91ef163b389b90afe90c",
@@ -1311,6 +1355,13 @@
       "bytes": 7828,
       "sha256": "c64c9673b958d80435cf4c70e4539799035578ddb4ad252cf7cb1e052f829c90",
       "origin": "publication/template/tools/check_public_tree.py",
+      "transformations": []
+    },
+    {
+      "path": "tools/tests/test_f1_overlay_cli.py",
+      "bytes": 2479,
+      "sha256": "f34f527700f53faf3aeae7a34934dfb68b162b50ae17fa7a3a0dc9a182ddbf30",
+      "origin": "publication/template/tools/tests/test_f1_overlay_cli.py",
       "transformations": []
     },
     {

@@ -1,0 +1,364 @@
+// F1 read-only extension, applied AFTER the hash-pinned 0.8.2 receiver.
+// Does not expose a shell, Screen setters, HMI pointers or a fullscreen START.
+// Preserve mask_open's LIVE early guard/return: start_video still calls it.
+// Only its nonzero-layout body is retired by the all-zero no_layout contract.
+
+// SLOT display_query_dispatch 0x102e1c 124
+ldr r3, [sp, #0x70]
+cmp r3, #9
+bne query_legacy
+ldr r0, [sp, #0x24]
+mov r1, r8
+bl #0x108898
+cmp r0, #0
+beq #0x10185c
+b #0x101abc
+query_legacy:
+ldr r3, [r4, #4]
+b #0x10199c
+
+// SLOT display_query 0x108898 3232
+// r0 socket, r1 existing 2MiB payload buffer. 20-byte fixed request.
+// Reply: DCV1/0x89, 40-byte F1P1 metadata, <=4096 text bytes.
+push {r4, r5, r6, r7, r8, r9, r10, r11, lr}
+sub sp, sp, #188
+mov r4, r0
+mov r5, r1
+mov r0, #2
+add r1, sp, #176
+bl #0x100e98
+cmp r0, #0
+bne query_clock_fail
+ldr r0, [sp, #180]
+movw r1, #0x6500
+movt r1, #0x1dcd
+add r0, r0, r1
+movw r1, #0xca00
+movt r1, #0x3b9a
+cmp r0, r1
+subhs r0, r0, r1
+ldr r1, [sp, #176]
+addhs r1, r1, #1
+str r1, [sp, #176]
+str r0, [sp, #180]
+mov r0, #0
+str r0, [sp, #24]
+str r0, [sp, #28]
+str r0, [sp, #32]
+str r0, [sp, #36]
+str r0, [sp, #40]
+mvn r0, #0
+str r0, [sp, #20]
+ldr r0, [r5]
+cmp r0, #0x01000000
+bne query_invalid
+ldr r6, [r5, #4]
+rev r6, r6
+ldr r7, [r5, #8]
+rev r7, r7
+ldr r8, [r5, #12]
+rev r8, r8
+ldr r9, [r5, #16]
+rev r9, r9
+cmp r9, #3
+bhi query_invalid
+cmp r6, #0
+bne query_file
+orr r0, r7, r8
+orrs r0, r0, r9
+bne query_invalid
+mov r0, #1
+str r0, [sp, #32]
+b query_reply
+query_file:
+cmp r6, #1
+bne query_process_file
+cmp r7, #0
+bne query_invalid
+cmp r8, #1
+blo query_invalid
+cmp r8, #8
+bhi query_invalid
+adr r2, query_display_path
+mov r3, r8
+b query_format
+query_process_file:
+cmp r6, #2
+cmpne r6, #3
+bne query_invalid
+cmp r7, #0
+blt query_invalid
+movw r0, #65535
+cmp r8, r0
+bhi query_invalid
+cmp r6, #2
+adreq r2, query_window_path
+adrne r2, query_stream_path
+mov r3, r7
+str r8, [sp]
+str r8, [sp, #4]
+query_format:
+add r0, sp, #48
+mov r1, #128
+bl #0x100eec
+cmp r0, #0
+blt query_invalid
+cmp r0, #128
+bge query_invalid
+adr r0, query_libc
+mov r1, #2
+bl #0x10100c
+movs r10, r0
+beq query_api_error
+adr r1, query_read_name
+bl #0x101048
+movs r11, r0
+beq query_api_error
+bl query_bound_ipc
+cmp r0, #0
+bne query_timeout
+add r0, sp, #48
+mov r1, #0
+bl #0x101150
+str r0, [sp, #20]
+cmp r0, #0
+blt query_open_error
+mov r0, #0
+str r0, [sp, #36]
+str r9, [sp, #40]
+query_page:
+mov r0, #0
+str r0, [sp, #36]
+query_read_more:
+bl query_bound_ipc
+cmp r0, #0
+bne query_timeout
+ldr r0, [sp, #20]
+ldr r3, [sp, #36]
+add r1, r5, #64
+add r1, r1, r3
+rsb r2, r3, #4096
+blx r11
+cmp r0, #0
+blt query_read_error
+beq query_eof
+ldr r3, [sp, #36]
+add r3, r3, r0
+cmp r3, #4096
+bhi query_read_error
+str r3, [sp, #36]
+blo query_read_more
+ldr r0, [sp, #40]
+subs r0, r0, #1
+str r0, [sp, #40]
+bpl query_page
+mov r0, #4096
+str r0, [sp, #28]
+cmp r9, #3
+moveq r0, #2
+movne r0, #0
+str r0, [sp, #32]
+b query_cleanup
+query_eof:
+ldr r0, [sp, #40]
+cmp r0, #0
+ldrle r0, [sp, #36]
+movgt r0, #0
+str r0, [sp, #28]
+mov r0, #1
+str r0, [sp, #32]
+b query_cleanup
+query_invalid:
+mov r6, #0
+mov r7, #0
+mov r8, #0
+mov r9, #0
+mov r0, #1
+str r0, [sp, #24]
+mov r10, #0
+b query_cleanup
+query_api_error:
+mov r0, #4
+b query_set_error
+query_open_error:
+mov r0, #2
+b query_set_error
+query_read_error:
+mov r0, #3
+b query_set_error
+query_timeout:
+mov r0, #5
+query_set_error:
+str r0, [sp, #24]
+mov r0, #0
+str r0, [sp, #28]
+str r0, [sp, #32]
+query_cleanup:
+ldr r0, [sp, #20]
+cmp r0, #0
+blt query_unload
+bl query_cleanup_bound
+cmp r0, #0
+bne query_close_unconfirmed
+ldr r0, [sp, #20]
+bl #0x10118c
+cmp r0, #0
+beq query_unload
+query_close_unconfirmed:
+// Unknown descriptor cleanup ends this client; never claim a complete probe.
+mov r0, #6
+str r0, [sp, #24]
+mov r0, #0
+str r0, [sp, #28]
+str r0, [sp, #32]
+query_unload:
+cmp r10, #0
+beq query_reply
+mov r0, r10
+bl #0x100f7c
+query_reply:
+// Reset the thread-local IPC timeout before writing the ordered TCP reply.
+mov r0, #2
+mov r1, #0
+mov r2, #0
+mov r3, #0
+str r1, [sp]
+bl #0x101174
+movw r0, #0x4344
+movt r0, #0x3156
+str r0, [r5]
+mov r0, #0x89000000
+str r0, [r5, #4]
+ldr r0, [sp, #28]
+add r0, r0, #40
+rev r0, r0
+str r0, [r5, #8]
+mov r0, #0
+str r0, [r5, #12]
+str r0, [r5, #16]
+str r0, [r5, #20]
+mov r0, #0x01000000
+str r0, [r5, #24]
+movw r0, #0x3146
+movt r0, #0x3150
+str r0, [r5, #28]
+ldr r0, [sp, #24]
+rev r0, r0
+str r0, [r5, #32]
+rev r0, r6
+str r0, [r5, #36]
+rev r0, r7
+str r0, [r5, #40]
+rev r0, r8
+str r0, [r5, #44]
+rev r0, r9
+str r0, [r5, #48]
+ldr r0, [sp, #28]
+rev r0, r0
+str r0, [r5, #52]
+ldr r0, [sp, #32]
+rev r0, r0
+str r0, [r5, #56]
+mov r0, #0
+str r0, [r5, #60]
+mov r0, #2
+add r1, sp, #8
+bl #0x100e98
+ldr r0, [sp, #12]
+mov r1, #0
+movw r2, #0x4240
+movt r2, #0xf
+mov r3, #0
+bl #0x10aa68
+ldr r2, [sp, #8]
+mov r3, #1000
+umlal r0, r1, r2, r3
+adds r0, r0, #1000
+adc r1, r1, #0
+strd r0, r1, [sp]
+mov r0, r4
+mov r1, r5
+ldr r2, [sp, #28]
+add r2, r2, #64
+mov r3, #1
+bl #0x101578
+ldr r3, [sp, #24]
+cmp r3, #6
+// After sending the error, request the ORIGINAL receiver's own orderly exit.
+// Process exit closes an ambiguously closed diagnostic FD; never kill HMI/WM.
+movw r2, #0xef90
+movt r2, #0x10
+mov r1, #1
+streq r1, [r2]
+mvneq r0, #0
+add sp, sp, #188
+pop {r4, r5, r6, r7, r8, r9, r10, r11, pc}
+query_bound_ipc:
+push {lr}
+sub sp, sp, #20
+mov r0, #2
+add r1, sp, #8
+bl #0x100e98
+cmp r0, #0
+bne query_bound_fail
+ldr r0, [sp, #200]
+ldr r1, [sp, #8]
+sub r0, r0, r1
+cmp r0, #0
+blt query_bound_fail
+cmp r0, #1
+bhi query_bound_fail
+movw r1, #0xca00
+movt r1, #0x3b9a
+mul r0, r0, r1
+ldr r1, [sp, #204]
+add r0, r0, r1
+ldr r1, [sp, #12]
+subs r0, r0, r1
+ble query_bound_fail
+movw r1, #0x6500
+movt r1, #0x1dcd
+cmp r0, r1
+bhi query_bound_fail
+b query_arm_timeout
+query_cleanup_bound:
+push {lr}
+sub sp, sp, #20
+movw r0, #0x6500
+movt r0, #0x1dcd
+query_arm_timeout:
+str r0, [sp, #8]
+mov r0, #0
+str r0, [sp]
+str r0, [sp, #12]
+mov r0, #2
+mov r1, #0x50
+mov r2, #0
+add r3, sp, #8
+bl #0x101174
+add sp, sp, #20
+pop {pc}
+query_bound_fail:
+mvn r0, #0
+add sp, sp, #20
+pop {pc}
+query_clock_fail:
+mvn r0, #0
+add sp, sp, #188
+pop {r4, r5, r6, r7, r8, r9, r10, r11, pc}
+.align 2
+query_libc:
+.asciz "libc.so.3"
+.align 2
+query_read_name:
+.asciz "read"
+.align 2
+query_display_path:
+.asciz "/dev/screen/0/dpy-%u"
+.align 2
+query_window_path:
+.asciz "/dev/screen/%u/win-%u"
+.align 2
+query_stream_path:
+.asciz "/dev/screen/%u/str-%u/str-%u"
+.align 2

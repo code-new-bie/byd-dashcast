@@ -14,6 +14,49 @@ import static org.junit.Assert.*;
 /** Independent scripted binary receiver; tests cancellation/error/cleanup, not QNX display. */
 public final class NoAuthVideoClientTest {
     @Test
+    public void f1IsExplicitShortOnlyAndChecksCapabilityBeforeHello() throws Exception {
+        Link link = new Link().offer();
+        link.reads.add(header(0x89, 40, 0, 0));
+        link.reads.add(f1State(0, 0, 0, 0, 1));
+        link.ack(7, 0, 0, 0, 0, 0).ack(1, 0, 0, 1, 0, 0)
+                .ack(2, 1, 0, 7, 1, 0);
+        link.reads.add(header(0x89, 40, 0, 0));
+        link.reads.add(f1State(1, 0, 1, 2, 0));
+        link.ack(3, 0, 0, 0, 1, 0);
+        NoAuthVideoClient client = client(link, new AtomicBoolean(), new ArrayList<>());
+        client.enableDisplayReadback();
+        client.begin();
+        assertThrows(IOException.class, client::enableDisplayReadback);
+        client.frame(IDR, 0);
+        client.close();
+        assertTrue(client.cleanupConfirmed());
+        int[] expected = {9, 7, 1, 2, 9, 3};
+        assertEquals(expected.length, link.writes.size());
+        for (int i = 0; i < expected.length; i++) {
+            assertEquals(expected[i], link.writes.get(i)[7]);
+        }
+        NoAuthVideoClient continuous = new NoAuthVideoClient((p, f) -> new Link(),
+                new AtomicBoolean(), s -> { }, true);
+        assertThrows(IOException.class, continuous::enableDisplayReadback);
+    }
+
+    @Test
+    public void oldReceiverF1RejectionNeverSendsHelloStartOrVideo() throws Exception {
+        Link link = new Link().offer();
+        NoAuthVideoClient client = client(link, new AtomicBoolean(), new ArrayList<>());
+        client.enableDisplayReadback();
+        assertThrows(IOException.class, client::begin);
+        assertEquals(1, link.writes.size());
+        assertEquals(9, link.writes.get(0)[7]);
+        assertTrue(link.closed && client.cleanupConfirmed());
+    }
+
+    private static byte[] f1State(int kind, int owner, int id, int status, int flags) {
+        return java.nio.ByteBuffer.allocate(40).putInt(1).putInt(0x46315031).putInt(status)
+                .putInt(kind).putInt(owner).putInt(id).putInt(0).putInt(0).putInt(flags).putInt(0).array();
+    }
+
+    @Test
     public void continuousClientNegotiatesVersionTwoAndStopConfirmsCleanup() throws Exception {
         Link link = new Link().ready().ack(3, 0, 0, 0, 0, 0);
         NoAuthVideoClient client = new NoAuthVideoClient((port, flag) -> link,

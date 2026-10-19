@@ -219,6 +219,10 @@ public final class MainActivity extends Activity {
         root.addView(usbButton);
         root.addView(capabilityButton);
         root.addView(allButton);
+        root.addView(createButton("F1. 只读仪表显示检查（不切模式 / 不改图层）",
+                view -> startDisplayReadback(false)));
+        root.addView(createButton("F1. 小窗测试图＋显示检查（10秒，非全屏）",
+                view -> startDisplayReadback(true)));
         Button downloadButton = new Button(this);
         downloadButton.setText(R.string.export_session_logs);
         downloadButton.setOnClickListener(view -> exportLogsToDownloads());
@@ -683,6 +687,54 @@ public final class MainActivity extends Activity {
     }
 
     private void performReferenceVideo(int seconds, boolean screenCapture) throws IOException {
+        performReferenceVideo(seconds, screenCapture, false);
+    }
+
+    private void startDisplayReadback(boolean withVideo) {
+        if (!receiverInstalled.isChecked()) {
+            appendLog("F1未开始：需要0.9.0配套仪表App；0.8.2不支持只读扩展。未发送命令。");
+            return;
+        }
+        try {
+            UsbDevice device = UsbNcmSession.findDevice(this);
+            if (!Usb.hasPermission(this, device)) {
+                appendLog("F1未开始：请先允许访问已枚举的仪表USB。");
+                return;
+            }
+        } catch (IOException | SecurityException error) {
+            appendLog("F1未开始：" + describe(error));
+            return;
+        }
+        new AlertDialog.Builder(this).setTitle("F1 显示合成取证：仅停稳/台架")
+                .setMessage("需要本次0.9.0仪表App。" + (withVideo
+                        ? "会发送10秒动态测试图，仍是原640×240小窗，每帧后最多读取一页窗口属性。"
+                        : "只读取显示与原生窗口属性，不采集车机画面、不创建视频窗口。")
+                        + "不切USB模式、不改HMI背景/透明度/层级、不启用全屏。"
+                        + "未知或读取失败不是全屏验证通过。结束后点一键导出日志到下载目录。")
+                .setNegativeButton("取消", null)
+                .setPositiveButton("已停稳，检查", (dialog, which) -> executeProbe("F1 display readback", () -> {
+                    if (withVideo) {
+                        performReferenceVideo(10, false, true);
+                    } else {
+                        performDisplayReadback();
+                    }
+                })).show();
+    }
+
+    private void performDisplayReadback() throws IOException {
+        try (UsbNcmSession session = UsbNcmSession.open(this, cancelled);
+                NoAuthVideoTransport channel = session.connect(NoAuthVideoProtocol.PORT, cancelled)) {
+            NoAuthVideoProtocol.validateOffer(channel.readExact(NoAuthVideoProtocol.HEADER_BYTES),
+                    channel.readExact(NoAuthVideoProtocol.OFFER_BYTES));
+            InstrumentDisplayProbe probe = new InstrumentDisplayProbe(cancelled, this::appendLog);
+            probe.negotiate(channel);
+            probe.run(channel);
+            appendLog(session.statistics());
+        }
+        appendLog("F1只读连接已退出；未创建视频/未切模式。属性采样不等于全屏或安全验收。");
+    }
+
+    private void performReferenceVideo(int seconds, boolean screenCapture, boolean displayReadback) throws IOException {
         LogHub.banner("VIDEO_ATTEMPT " + System.currentTimeMillis()
                 + " screenCapture=" + screenCapture + "; prior attempts retained");
         File sample = new File(getCacheDir(), "reference_video_" + System.currentTimeMillis() + ".ts");
@@ -690,6 +742,9 @@ public final class MainActivity extends Activity {
         try (UsbNcmSession session = UsbNcmSession.open(this, cancelled);
                 OutputStream output = new BufferedOutputStream(new FileOutputStream(sample));
                 NoAuthVideoClient client = new NoAuthVideoClient(session::connect, cancelled, this::appendLog)) {
+            if (displayReadback) {
+                client.enableDisplayReadback();
+            }
             appendLog("USB_USERSPACE: fixed private peer 192.168.77.1; no Wi-Fi/mobile fallback");
             long[] lastTables = {-1};
             boolean[] begun = {false};
