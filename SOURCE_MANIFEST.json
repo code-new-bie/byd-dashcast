@@ -1,6 +1,6 @@
 {
   "snapshot_version": "0.9.0",
-  "snapshot_date": "2026-10-19",
+  "snapshot_date": "2026-10-20",
   "ncm_original_author_confirmed": true,
   "project_license": "NOT_SELECTED_BY_OWNER",
   "original_runtime_java_semantics_changed": false,
@@ -47,8 +47,8 @@
     },
     {
       "path": ".github/workflows/check.yml",
-      "bytes": 1220,
-      "sha256": "fdeef214f3ea48be141e5118fe8cc23ea1a75dcd3c25dcaa658e4121e9492653",
+      "bytes": 1387,
+      "sha256": "37e93ad8949f52786c160820cd4e5a314f41e7dafd14e1b544e4181345d3d51e",
       "origin": "publication/template/.github/workflows/check.yml",
       "transformations": []
     },
@@ -61,8 +61,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "bytes": 12523,
-      "sha256": "7d419fc0f64336fe5ef8cbca0ee71c4fdeca43c1637f1cf521934fd5a5f503ef",
+      "bytes": 13201,
+      "sha256": "3f14a9f96e27da229f6548d99f12aef138b53910d6dab5caee929d38bf01a0a8",
       "origin": "publication/template/CHANGELOG.md",
       "transformations": []
     },
@@ -82,8 +82,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 8560,
-      "sha256": "744af230791d580d8789e92c63890c81d1df28c0db996f8a8f999212c7899ffc",
+      "bytes": 8992,
+      "sha256": "87f8f46ca585ea3cd944449938456c7911b997807ebc3ecc91e8a2a3b3a54951",
       "origin": "publication/template/README.md",
       "transformations": []
     },
@@ -142,8 +142,8 @@
     },
     {
       "path": "docs/BUILD.md",
-      "bytes": 1939,
-      "sha256": "8608b3c7172d2314d02db2560e77804d340d9bea7842bc310609def5902112f8",
+      "bytes": 2581,
+      "sha256": "9ea1057d43b50ff6da38bc6475e4c49cbb37598bde94e9d141ba94d596927295",
       "origin": "publication/template/docs/BUILD.md",
       "transformations": []
     },
@@ -275,8 +275,8 @@
     },
     {
       "path": "docs/VALIDATION.md",
-      "bytes": 2950,
-      "sha256": "0c6a059a3b570328b43ffacf0786523b87232495509ea7a8854d5ae54e27e86d",
+      "bytes": 3445,
+      "sha256": "a9d0a9df0141f498886e778311c18c413cb8765a1a07f74ee0140c69d1cbb5e4",
       "origin": "publication/template/docs/VALIDATION.md",
       "transformations": []
     },
@@ -1232,6 +1232,34 @@
       "transformations": []
     },
     {
+      "path": "phase1/qnx/native-hmi/README.md",
+      "bytes": 4982,
+      "sha256": "3e6abbf7a5f87d0f655c70850c5dc56ae4e66c816b0cff5942ec87d2acbb1345",
+      "origin": "phase1/qnx/native-hmi/README.md",
+      "transformations": []
+    },
+    {
+      "path": "phase1/qnx/native-hmi/projection_background_controller.c",
+      "bytes": 12030,
+      "sha256": "d4fc99d87faf46340e51395c63c31e099a02a67dbe6f025d7062953e0e8f7065",
+      "origin": "phase1/qnx/native-hmi/projection_background_controller.c",
+      "transformations": []
+    },
+    {
+      "path": "phase1/qnx/native-hmi/projection_background_controller.h",
+      "bytes": 3405,
+      "sha256": "98dfabc4dc5af94ce8f73e2a3304978516e503649bb8bd1c4b98e26686a61622",
+      "origin": "phase1/qnx/native-hmi/projection_background_controller.h",
+      "transformations": []
+    },
+    {
+      "path": "phase1/qnx/native-hmi/tests/background_controller_test.c",
+      "bytes": 18398,
+      "sha256": "8800c89f8f08c9f022d9685e536f95c48340b65ea65368941339a47c0b58bcb3",
+      "origin": "phase1/qnx/native-hmi/tests/background_controller_test.c",
+      "transformations": []
+    },
+    {
       "path": "phase1/qnx/ref2-noauth/cast-mode.ksh",
       "bytes": 3637,
       "sha256": "f8cb30a9c6d9ca610ccb19c00d0360ea9e0794d2f9ad95f03a531229514d0c82",
@@ -1355,6 +1383,13 @@
       "bytes": 7828,
       "sha256": "c64c9673b958d80435cf4c70e4539799035578ddb4ad252cf7cb1e052f829c90",
       "origin": "publication/template/tools/check_public_tree.py",
+      "transformations": []
+    },
+    {
+      "path": "tools/test_native_background.py",
+      "bytes": 3215,
+      "sha256": "7fc24820cf3388cf901fd25e6ce23a5a0cda804e41b3becdc3be12fa14dddf0d",
+      "origin": "publication/template/tools/test_native_background.py",
       "transformations": []
     },
     {

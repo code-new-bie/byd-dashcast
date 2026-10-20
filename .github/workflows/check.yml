@@ -25,6 +25,8 @@ jobs:
         run: python3 tools/check_public_tree.py --verify-snapshot
       - name: Test repository tools
         run: python3 -m unittest discover -s tools/tests -p 'test_*.py' -v
+      - name: Test portable native background controller (not instrument HMI)
+        run: python3 tools/test_native_background.py --output build/native-background-ci
       - name: Set up JDK
         uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # verified official v4
         with:

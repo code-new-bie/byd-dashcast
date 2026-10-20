@@ -1,5 +1,15 @@
 # 构建与复现
 
+## 原生背景控制器（便携源码，不是仪表插件）
+
+新增源码位于`phase1/qnx/native-hmi/`，只依赖C99标准库。已有C编译器/Python 3的主机可运行：
+
+```bash
+python3 tools/test_native_background.py --output build/native-background
+```
+
+输出目录必须新建；默认启用地址/未定义行为检查。当前35项测试用假渲染端口，不依赖QNX/Kanzi SDK。**这不产生可刷HMI、不是QNX交叉编译，也不表示已在仪表内工作**；缺失的真实主线程/背景/显示桥接见[接口边界](../phase1/qnx/native-hmi/README.md)。没有因此提升APK版本或制作新配套包。
+
 ## Android源码
 
 需要 JDK 21、Android SDK 35、Android Gradle Plugin 9.3.0 和仓库声明的 Gradle Wrapper。目标运行环境为 Android 10/API 29，Java语言级别为11。

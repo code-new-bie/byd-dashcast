@@ -4,6 +4,8 @@ BYD Android 车机 → QNX 仪表 USB 投屏工程。当前开发源码 **0.9.0 
 
 此项目用于可恢复台架或车辆停稳时的验证，不是官方固件、通用车型适配包或行驶中使用的生产产品。仪表 MCU 不修改，视频不使用激活码/token/设备绑定；正常 ADB 和 USB 访问授权仍然必需。
 
+2026-10-20：新增[原生背景会话控制器源码](phase1/qnx/native-hmi/README.md)，实现准备、提交、租约、输出新鲜度和恢复阻断；真实Kanzi/Screen桥接仍未完成，**未生成新APK/仪表包、未开放全屏**。0.9.0仍只是诊断候选，不要求为取证单独升级，已验证0.8.2配套继续保留。
+
 ## 当前成果
 
 - [0.9.0 F1显示检查与技术边界](docs/TASKS_0.9.0.md)：只读取证子任务已实现，HMI受控接入和实际合成仍未闭环，不是全屏版本。
@@ -39,6 +41,7 @@ BYD Android 车机 → QNX 仪表 USB 投屏工程。当前开发源码 **0.9.0 
 ```text
 phase1/android/              APK源码、Gradle Wrapper、当前协议测试
 phase1/qnx/ref2-noauth/      QNX脚本、ARM适配源、测试替身
+phase1/qnx/native-hmi/       待接入HMI的便携C背景会话控制器及主机测试
 analysis/                   哈希固定的原生适配、ELF读取、SV容器工具
 tools/                      公开内容检查、离线App包装、工具测试
 docs/                       架构、构建、操作、验证和发布清单
