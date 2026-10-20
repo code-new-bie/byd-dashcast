@@ -200,6 +200,8 @@ public final class MainActivity extends Activity {
         captureSettingsView = new CaptureSettingsView(this, this::appendLog);
         root.addView(captureSettingsView.view());
         addProjectionTargetControls(root);
+        root.addView(createButton("全屏实车合成：视频在原生信息下方（5秒自动恢复）",
+                view -> startCompositionTrial()));
         continuousSecondsField = createField(root, "持续投屏时长 1..1800 秒（先600秒，再1800秒）", "600");
         root.addView(createButton("开始持续投屏（可切到导航，最多30分钟）", view -> startContinuousProjection()));
         continuousStatusView = new TextView(this);
@@ -667,7 +669,7 @@ public final class MainActivity extends Activity {
                         + (target.isRemote()
                         ? "将创建1920×720 Android VirtualDisplay，并用 am --display 启动所选应用，画面显示在仪表原小窗。"
                         : "使用现有车机主屏 SurfaceFlinger 采集链路。")
-                        + "视频与仪表窗口为1920×720，Surface无新画面时按33,333微秒重复节奏，车机端再按编码PTS限流并重定时到30FPS；实际编码输出尺寸不匹配时会立即失败，并记录编码PTS FPS/墙钟 FPS；固件告警隔离未完成，禁止行驶使用。"
+                        + "编码为1920×720，仪表仍显示在原640×240小窗；实际编码输出尺寸不匹配时会立即失败。目标30FPS不代表已达到实车帧率，静态画面保活不计为新视频帧；禁止行驶使用。"
                         + "先600秒再1800秒；切到导航不会停止，可回应用或通知栏点停止。"
                         + "不保存视频文件，不自动切Host，不自动重连。普通ADB/USB授权仍保留。"
                         + "若窗口未退出或清理不确认，停止测试并正常重启，不重复发切换命令。")
@@ -1020,7 +1022,48 @@ public final class MainActivity extends Activity {
             appendLog("REMOTE_DISPLAY_PROBE_BLOCKED: 请先在远程副屏目标中选择一个车机应用。");
             return;
         }
-        executeProbe("remote virtual display probe", () -> performRemoteDisplayProbe(target));
+        if (!adbReady || !captureSettingsView.benchAcknowledged() || taskRunning
+                || ProjectionService.blocksOperations()) {
+            appendLog("副屏探针未启动：请先授权ADB、确认停稳，并等待当前任务清理。");
+            return;
+        }
+        ProjectionService.startProbe(this, target);
+        appendLog("REMOTE_PROBE_SERVICE_STARTED; Activity hiding does not abort owned display cleanup");
+        setBusy(true);
+    }
+
+    private void startCompositionTrial() {
+        if (!adbReady || !receiverInstalled.isChecked() || !captureSettingsView.benchAcknowledged()
+                || taskRunning || ProjectionService.blocksOperations()) {
+            appendLog("合成未开始：需0.10.0匹配仪表包、ADB/USB授权及停稳确认，且无未清理任务。");
+            return;
+        }
+        final CaptureOptions options;
+        final ProjectionTarget target = selectedProjectionTarget();
+        try {
+            options = captureSettingsView.snapshot();
+            if (!Usb.hasPermission(this, UsbNcmSession.findDevice(this))) {
+                throw new IOException("请先允许访问仪表USB");
+            }
+        } catch (IOException | IllegalArgumentException | SecurityException error) {
+            appendLog("合成未开始：" + error.getMessage());
+            return;
+        }
+        new AlertDialog.Builder(this).setTitle("仅停车：五秒实际全屏合成")
+                .setMessage("将所选画面实际铺到1920×720仪表底层；首帧提交后抑制背景约五秒。"
+                        + "原生车速、挡位、告警必须全程可见；看到遮挡立即点停止。"
+                        + "背景由仪表独立计时恢复，正常恢复后退出视频；最长采集10秒。"
+                        + "这不是已完成安全认证的日常全屏功能，禁止行驶测试。目标：" + target.displayLabel())
+                .setNegativeButton("取消", null)
+                .setPositiveButton("已停稳，验证合成", (dialog, which) -> {
+                    try {
+                        ProjectionService.startComposition(this, options, target);
+                        appendLog("COMPOSITION_START_REQUEST fixed_rect=0,0,1920,720 hold_ms=5000");
+                        setBusy(true);
+                    } catch (RuntimeException error) {
+                        appendLog("合成服务启动失败：" + error);
+                    }
+                }).show();
     }
 
     private void performRemoteDisplayProbe(ProjectionTarget target) throws IOException {

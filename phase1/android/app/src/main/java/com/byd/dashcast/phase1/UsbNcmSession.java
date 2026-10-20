@@ -148,7 +148,8 @@ public final class UsbNcmSession implements Closeable {
         public void write(byte[] data) throws IOException {
             checkCancellation();
             if (connection.send(data, data.length, 5000) != data.length) {
-                throw new IOException("NCM TCP write not acknowledged: " + connection.error());
+                throw new IOException("NCM TCP write not acknowledged: " + connection.statusLine()
+                        + " peer_error=" + connection.error());
             }
         }
 

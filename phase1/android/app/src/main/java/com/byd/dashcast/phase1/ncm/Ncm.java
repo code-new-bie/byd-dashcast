@@ -177,6 +177,7 @@ public final class Ncm {
                 txDrop++;
             }
             txq.addLast(copy);
+            txq.notifyAll();
         }
     }
 
@@ -189,6 +190,9 @@ public final class Ncm {
             int budget = ntbOutMax - 512;
             try {
                 synchronized (txq) {
+                    if (txq.isEmpty() && running) {
+                        txq.wait(20);
+                    }
                     while (!txq.isEmpty() && batch.size() < outMaxDatagrams) {
                         int sz = alignN(txq.peekFirst().length, outDivisor) + 64;
                         if (!batch.isEmpty() && sz > budget) break;
@@ -197,11 +201,13 @@ public final class Ncm {
                         budget -= sz;
                     }
                 }
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+                return;
             } catch (Throwable t) {
                 LogHub.throwable("ncm", "取发送队列异常", t);
             }
             if (batch.isEmpty()) {
-                sleep(20);
                 continue;
             }
             byte[] ntb;

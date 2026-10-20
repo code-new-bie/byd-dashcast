@@ -14,6 +14,57 @@ import static org.junit.Assert.*;
 /** Independent scripted binary receiver; tests cancellation/error/cleanup, not QNX display. */
 public final class NoAuthVideoClientTest {
     @Test
+    public void failedBackgroundRestoreStillSendsMediaStopButCannotClaimCleanSession() throws Exception {
+        Link link = new Link().offer().background(0, 0, 0).ack(7, 0, 0, 0, 0, 0)
+                .ack(1, 0, 0, 1, 0, 0).ack(2, 1, 0, 7, 1, 0).background(1, 1, 77)
+                .ack(3, 0, 0, 0, 1, 0);
+        link.failBackgroundRestore = true;
+        NoAuthVideoClient client = new NoAuthVideoClient((p, f) -> link,
+                new AtomicBoolean(), s -> {}, () -> 0L, true);
+        client.enableCompositionTrial(77, () -> {});
+        client.begin();
+        client.frame(IDR, 0);
+        assertThrows(IOException.class, client::close);
+        assertFalse(client.cleanupConfirmed());
+        assertTrue(link.closed && link.reads.isEmpty());
+        assertEquals(3, link.writes.get(link.writes.size() - 1)[7]);
+    }
+
+    @Test
+    public void idleMaintenanceKeepsOneRealFrameAliveAndStillConfirmsStop() throws Exception {
+        Link link = new Link().ready().ack(2, 1, 0, 7, 1, 0);
+        for (int i = 0; i < 6; i++) {
+            link.ack(8, 0, 0, 7, 1, 0);
+        }
+        link.ack(3, 0, 0, 0, 1, 0);
+        long[] clock = {0};
+        NoAuthVideoClient client = new NoAuthVideoClient((p, f) -> link,
+                new AtomicBoolean(), s -> {}, () -> clock[0], true);
+        client.begin();
+        client.frame(IDR, 0);
+        for (int i = 1; i <= 6; i++) {
+            clock[0] = i * 1_000_000_000L;
+            client.maintain();
+            client.maintain();
+        }
+        assertTrue(client.statistics().contains("acknowledged=1"));
+        client.close();
+        assertTrue(client.cleanupConfirmed());
+        assertEquals(6, link.writes.stream().filter(p -> p[7] == 8).count());
+        assertEquals(1, link.writes.stream().filter(p -> p[7] == 2).count());
+        assertTrue(link.reads.isEmpty());
+    }
+
+    @Test
+    public void compositionIsContinuousOnlyAndUsesDistinctFixedPreset() throws Exception {
+        NoAuthVideoClient shortClient = client(new Link(), new AtomicBoolean(), new ArrayList<>());
+        assertThrows(IOException.class, () -> shortClient.enableCompositionTrial(77, () -> {}));
+        int[] preset = new int[6];
+        java.nio.ByteBuffer.wrap(NoAuthVideoProtocol.start(true), 24, 24).asIntBuffer().get(preset);
+        assertArrayEquals(new int[] {0, 0, 1920, 720, 30, 1}, preset);
+    }
+
+    @Test
     public void f1IsExplicitShortOnlyAndChecksCapabilityBeforeHello() throws Exception {
         Link link = new Link().offer();
         link.reads.add(header(0x89, 40, 0, 0));
@@ -87,6 +138,21 @@ public final class NoAuthVideoClientTest {
         boolean cleanup;
         boolean closed;
         boolean failStop;
+        boolean failBackgroundRestore;
+
+        Link background(int operation, int status, int nonce) {
+            reads.add(header(0x8a, 144, 0, 0));
+            java.nio.ByteBuffer body = java.nio.ByteBuffer.allocate(144);
+            body.putInt(1).putInt(0x42475031).putInt(operation).putInt(0);
+            int[] words = new int[32];
+            words[0] = 0x31474244; words[1] = 1; words[2] = 128;
+            words[9] = status; words[10] = 123; words[18] = 1; words[21] = nonce;
+            words[14] = status == 1 ? 5 : 0;
+            for (int value : words) { body.putInt(value); }
+            reads.add(java.util.Arrays.copyOfRange(body.array(), 0, 80));
+            reads.add(java.util.Arrays.copyOfRange(body.array(), 80, 144));
+            return this;
+        }
 
         Link offer() { reads.add(header(0x85, 80, 0, 0)); reads.add(new byte[80]); return this; }
         Link ack(int type, int sequence, long pts, int flags, int count, long lastPts) {
@@ -96,6 +162,9 @@ public final class NoAuthVideoClientTest {
 
         @Override public void write(byte[] data) throws IOException {
             if (failStop && data[7] == 3) { throw new IOException("test link lost"); }
+            if (failBackgroundRestore && data[7] == 10 && data[31] == 2) {
+                throw new IOException("test background restore unavailable");
+            }
             writes.add(data.clone());
         }
         @Override public byte[] readExact(int count) throws IOException {

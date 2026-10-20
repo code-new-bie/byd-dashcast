@@ -20,6 +20,22 @@ import static org.junit.Assert.assertThrows;
 /** Binary video never contains shell-v2 STDERR/EXIT framing, even across arbitrary ADB chunks. */
 public final class ShellV2OutputTest {
     @Test
+    public void idleConsumerFailureStillAllowsOwnedExitDrainAndPreservesCause() throws Exception {
+        IOException cause = new IOException("heartbeat ACK missing");
+        ShellV2Output decoder = new ShellV2Output(new AdbShellClient.ShellOutputHandler() {
+            @Override public void onOutput(byte[] b, int length) { failUnexpectedOutput(); }
+            @Override public void onIdle() throws IOException { throw cause; }
+            private void failUnexpectedOutput() { throw new AssertionError("draining must skip video"); }
+        }, s -> {}, true);
+        decoder.onIdle();
+        assertTrue(decoder.consumerFailed());
+        byte[] wire = join(frame(1, new byte[] {1}), frame(3, new byte[] {0}));
+        decoder.onOutput(wire, wire.length);
+        assertTrue(decoder.exitConfirmed());
+        assertSame(cause, assertThrows(IOException.class, decoder::requireSuccess));
+    }
+
+    @Test
     public void controlledSinkFailureDrainsDiagnosticsAndExitWithoutDeliveringMoreVideo() throws Exception {
         IOException rejected = new IOException("MEDIA_SUBMIT rejected");
         List<String> logs = new ArrayList<>();

@@ -87,6 +87,14 @@ final class FramedCaptureReader implements AdbShellClient.ShellOutputHandler {
         pts = values.getLong();
         int flags = values.getInt();
         key = flags == 1;
+        if (flags == 3) {
+            if (pts != Math.max(0, lastPts)) {
+                throw new IOException("DCS1_IDLE_PTS_MISMATCH");
+            }
+            headerUsed = 0;
+            observer.tick();
+            return;
+        }
         if (flags == 2) {
             if (pts != Math.max(0, lastPts)) {
                 throw new IOException("DCS1_END_PTS_MISMATCH");
@@ -115,5 +123,12 @@ final class FramedCaptureReader implements AdbShellClient.ShellOutputHandler {
     String statistics() {
         return "DCS1 capture_frames=" + frames + " bytes=" + bytes
                 + " timestamps=encoder_PTS; NOT instrument decoded frames";
+    }
+
+    @Override
+    public void onIdle() throws IOException {
+        if (!failed && !finished && !ended) {
+            observer.tick();
+        }
     }
 }

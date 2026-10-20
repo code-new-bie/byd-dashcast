@@ -425,6 +425,9 @@ public final class AdbShellClient {
         }
 
         void beforeRead() throws IOException {
+            if (remoteId != 0 && !sent && (stop == null || !stop.get())) {
+                handler.onIdle();
+            }
             boolean consumerFailed = handler instanceof ShellV2Output && ((ShellV2Output)handler).consumerFailed();
             boolean exited = handler instanceof ShellV2Output && ((ShellV2Output)handler).exitConfirmed();
             if ((stop != null && stop.get() || consumerFailed) && !exited && remoteId != 0 && !sent) {
@@ -491,6 +494,10 @@ public final class AdbShellClient {
          * @throws IOException when the consumer cannot accept data
          */
         void onOutput(byte[] data, int length) throws IOException;
+
+        /** Maintain the owned video session without a second reader or fabricated video. */
+        default void onIdle() throws IOException {
+        }
     }
 
     private static final class Packet {

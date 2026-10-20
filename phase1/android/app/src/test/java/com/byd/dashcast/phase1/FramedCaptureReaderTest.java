@@ -11,6 +11,37 @@ import static org.junit.Assert.*;
 
 public final class FramedCaptureReaderTest {
     @Test
+    public void idleAndReadTicksNeverCreatePicturesOrAdvancePts() throws Exception {
+        int[] picturesAndTicks = {0, 0};
+        FramedCaptureReader reader = new FramedCaptureReader(new VideoPatternProbe.Observer() {
+            @Override public void log(String text) {}
+            @Override public void frame(byte[] b, long pts, boolean key) { picturesAndTicks[0]++; }
+            @Override public void tick() { picturesAndTicks[1]++; }
+        });
+        reader.onOutput(CaptureFrameProtocol.idle(0), 24);
+        byte[] first = frame(123, NoAuthVideoProtocolTest.IDR);
+        reader.onOutput(first, first.length);
+        reader.onOutput(CaptureFrameProtocol.idle(123), 24);
+        reader.onIdle();
+        reader.onOutput(CaptureFrameProtocol.end(123), 24);
+        assertThrows(IOException.class, () -> reader.finish(false));
+        reader.finish(true);
+        reader.onIdle();
+        assertArrayEquals(new int[] {1, 3}, picturesAndTicks);
+        assertThrows(IOException.class, () -> reader.onOutput(CaptureFrameProtocol.idle(123), 24));
+    }
+
+    @Test
+    public void idleMustMatchLastActualPictureTimestamp() throws Exception {
+        FramedCaptureReader reader = new FramedCaptureReader(new Sink());
+        byte[] first = frame(100, new byte[] {1});
+        reader.onOutput(first, first.length);
+        assertThrows(IOException.class, () -> reader.onOutput(CaptureFrameProtocol.idle(101), 24));
+        FramedCaptureReader empty = new FramedCaptureReader(new Sink());
+        assertThrows(IOException.class, () -> empty.onOutput(CaptureFrameProtocol.idle(1), 24));
+    }
+
+    @Test
     public void wrongProtocolReportsOnlyTheFourStructuralBytes() throws Exception {
         byte[] header = "HotFixRoot: synthetic-test".getBytes(java.nio.charset.StandardCharsets.UTF_8);
         IOException error = assertThrows(IOException.class,

@@ -45,6 +45,9 @@ public final class VideoPatternProbe {
         /** @param data Annex-B frame; @param ptsMicros codec PTS; @param keyFrame random access;
          * @throws IOException on storage/network failure */
         void frame(byte[] data, long ptsMicros, boolean keyFrame) throws IOException;
+        /** Same-worker maintenance during bounded encoder/socket waits. */
+        default void tick() throws IOException {
+        }
     }
 
     /** @param cancelled cancellation flag; @param observer receives encoder data */

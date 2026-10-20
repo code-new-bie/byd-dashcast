@@ -9,6 +9,24 @@ import static org.junit.Assert.*;
 
 /** Pure-JVM TCP regression tests; no device, thread scheduler or Android APIs required. */
 public final class TcpConnTest {
+    @Test
+    public void finTimeoutIsMeasuredFromFinNotEarlierIdleTraffic() throws Exception {
+        Fixture test = new Fixture();
+        // Model an already-idle connection immediately after its FIN. No real scheduler or sleep.
+        java.lang.reflect.Field state = TcpConn.class.getDeclaredField("state");
+        java.lang.reflect.Field began = TcpConn.class.getDeclaredField("closeStartedAt");
+        state.setAccessible(true);
+        began.setAccessible(true);
+        state.setInt(test.connection, TcpConn.FIN_WAIT_1);
+        began.setLong(test.connection, 20000);
+        test.connection.onTick(20001);
+        assertFalse(test.connection.isClosed());
+        test.connection.onTick(28000);
+        assertFalse(test.connection.isClosed());
+        test.connection.onTick(28001);
+        assertTrue(test.connection.isClosed());
+    }
+
     private static final class Fixture {
         final List<byte[]> sent = new ArrayList<>();
         final Net network = new Net((bytes, length) -> sent.add(bytes.clone()));

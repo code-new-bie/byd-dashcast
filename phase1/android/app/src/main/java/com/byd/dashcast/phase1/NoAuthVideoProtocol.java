@@ -47,9 +47,14 @@ final class NoAuthVideoProtocol {
     }
 
     static byte[] start() {
+        return start(false);
+    }
+
+    static byte[] start(boolean compositionTrial) {
         ByteBuffer payload = ByteBuffer.allocate(24).order(ByteOrder.BIG_ENDIAN);
-        payload.putInt(WINDOW_X).putInt(WINDOW_Y).putInt(WINDOW_WIDTH).putInt(WINDOW_HEIGHT)
-                .putInt(FPS).putInt(0);
+        payload.putInt(compositionTrial ? 0 : WINDOW_X).putInt(compositionTrial ? 0 : WINDOW_Y)
+                .putInt(compositionTrial ? WIDTH : WINDOW_WIDTH).putInt(compositionTrial ? HEIGHT : WINDOW_HEIGHT)
+                .putInt(FPS).putInt(compositionTrial ? 1 : 0);
         return packet(START, 0, 0, 0, payload.array());
     }
 

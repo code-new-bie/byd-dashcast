@@ -105,6 +105,22 @@ final class ShellV2Output implements AdbShellClient.ShellOutputHandler {
         }
     }
 
+    @Override
+    public void onIdle() throws IOException {
+        if (exitCode != null || consumerFailure != null || failed) {
+            return;
+        }
+        try {
+            stdout.onIdle();
+        } catch (IOException | RuntimeException error) {
+            if (!drainConsumerFailure) {
+                throw error;
+            }
+            consumerFailure = error instanceof IOException ? (IOException)error
+                    : new IOException("Capture idle consumer failed", error);
+        }
+    }
+
     private void readHeader() throws IOException {
         channel = header[0] & 255;
         long length = 0;

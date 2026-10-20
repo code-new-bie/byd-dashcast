@@ -176,6 +176,7 @@ public final class ShellScreenCapture {
         long drainUntil = stopAt + 2_000_000_000L;
         OutputStream stdout = ShellCaptureOutput.videoStream();
         long lastPts = -1;
+        long lastIdle = System.nanoTime();
         int frames = 0;
         boolean eos = false;
         byte[] config = new byte[0];
@@ -199,6 +200,11 @@ public final class ShellScreenCapture {
                 continue;
             }
             if (index < 0) {
+                if (control != null && System.nanoTime() - lastIdle >= 250_000_000L) {
+                    stdout.write(CaptureFrameProtocol.idle(Math.max(0, lastPts)));
+                    stdout.flush();
+                    lastIdle = System.nanoTime();
+                }
                 continue;
             }
             try {
@@ -242,6 +248,7 @@ public final class ShellScreenCapture {
                         }
                         stdout.write(picture);
                         stdout.flush();
+                        lastIdle = System.nanoTime();
                         lastPts = info.presentationTimeUs;
                     }
                 }

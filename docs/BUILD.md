@@ -1,5 +1,15 @@
 # 构建与复现
 
+## 当前0.10.0合成组件
+
+APK code32，Android构建步骤不变。自行提供精确0.9.1 receiver与原始application.cfg，安装requirements-native.txt依赖：
+
+```bash
+python3 tools/build_composition_components.py --receiver /private/instrument-receiver --config /private/application.cfg --output build/composition
+```
+
+输出receiver/cfg/审计JSON，仅组件，不是可刷FULL或QNX SDK编译。输入/已有输出不匹配拒绝；需原0.9.1 HMI/启动桥及匹配0.10.0 APK。旧包装器不能生成本版；不含固件、签名或原始日志。[操作与边界](TASKS_0.10.0.md)。以下是历史组件构建。
+
 ## 0.9.1限时背景组件
 
 需要requirements-native.txt中的依赖及自行提供的精确0.8.2 HMI/receiver。新输出的父目录必须已存在：

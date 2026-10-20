@@ -45,8 +45,14 @@ final class CaptureFrameProtocol {
         return values;
     }
 
+    static byte[] idle(long lastPicturePts) throws IOException {
+        requireValues(0, lastPicturePts, 3, 0);
+        return ByteBuffer.allocate(HEADER_BYTES).order(ByteOrder.BIG_ENDIAN)
+                .putInt(MAGIC).putInt(0).putLong(lastPicturePts).putInt(3).putInt(0).array();
+    }
+
     private static void requireValues(int bytes, long ptsMicros, int flags, int reserved) throws IOException {
-        boolean end = bytes == 0 && flags == 2;
+        boolean end = bytes == 0 && (flags == 2 || flags == 3);
         if ((!end && (bytes < 1 || flags < 0 || flags > 1)) || bytes > NoAuthVideoProtocol.MAX_FRAME_BYTES
                 || ptsMicros < 0 || reserved != 0) {
             throw new IOException("DCS1_INVALID_FRAME_VALUES");

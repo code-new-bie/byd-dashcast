@@ -1,0 +1,82 @@
+// Added only to the SHA-pinned 0.9.1 receiver; original USB/media ABI preserved.
+// Continued HELLO2 uses the 15s heartbeat/31min session deadlines, not a 1.5s
+// picture-arrival deadline. Static sources send no fake H264 frames.
+// SLOT continuous_idle_and_layer 0x1029d4 80
+ldr ip, [r5, #0x38]
+cmp ip, #2
+movw r3, #1500
+movweq r3, #0x61a0
+movteq r3, #0x1c
+bx lr
+// 0x1029ec: snprintf format selector; the original following MOVT supplies 0x10.
+movw r2, #0xcc68
+movw ip, #0xec08
+movt ip, #0x10
+ldr ip, [ip, #0xc0]
+cmp ip, #1920
+movweq r2, #0xae68
+bx lr
+
+// Set the owned fullscreen PARENT's order synchronously, before first video post.
+// Child-window local order remains 1. The window manager later gets the same -3.
+// SLOT composition_window_order 0x102c80 72
+add r2, sp, #0xc
+mov ip, #1
+ldr r0, [r5, #0xc0]
+cmp r0, #1920
+ldreq r0, [r5, #0xa4]
+cmpeq r0, r10
+mvneq ip, #2
+str ip, [r2]
+bx lr
+
+// Two exact profiles, selected by START flags. No arbitrary rect/z/pipeline.
+// SLOT composition_rect 0x1041ac 316
+push {r4, r5, r6, r7, r8, lr}
+mov r4, r0
+mov r5, r1
+ldr r8, [r4, #20]
+rev r8, r8
+cmp r8, #1
+bhi comp_rect_fail
+mov r6, #0
+comp_rect_loop:
+add r0, r4, r6
+bl #0x103f84
+cmp r8, #1
+beq comp_full_values
+cmp r6, #0
+moveq r7, #640
+cmp r6, #4
+moveq r7, #240
+cmp r6, #8
+moveq r7, #640
+cmp r6, #12
+moveq r7, #240
+b comp_common_values
+comp_full_values:
+cmp r6, #0
+moveq r7, #0
+cmp r6, #4
+moveq r7, #0
+cmp r6, #8
+moveq r7, #1920
+cmp r6, #12
+moveq r7, #720
+comp_common_values:
+cmp r6, #16
+moveq r7, #30
+cmp r6, #20
+moveq r7, r8
+cmp r0, r7
+bne comp_rect_fail
+cmp r6, #20
+strlo r0, [r5, r6]
+add r6, r6, #4
+cmp r6, #24
+blo comp_rect_loop
+mov r0, #0
+pop {r4, r5, r6, r7, r8, pc}
+comp_rect_fail:
+mvn r0, #0
+pop {r4, r5, r6, r7, r8, pc}

@@ -67,6 +67,7 @@ public final class TcpConn {
     private boolean reset;
     private int dupAcks;
     private long lastProgressAt;
+    private long closeStartedAt;
     /** 已发出但未被确认的字节数。用计数而不是 sndNxt-sndUna，避开序号回绕的坑。 */
     private int outstanding;
 
@@ -447,6 +448,7 @@ public final class TcpConn {
                 outstanding += 1;       // FIN 占一个序号，必须计入未确认
                 sndNxt = (sndNxt + 1) & 0xFFFFFFFFL;
                 state = FIN_WAIT_1;
+                closeStartedAt = now;
                 LogHub.d("tcp", "-> FIN，进入 FIN_WAIT_1");
             }
             long deadline = now + timeoutMs;
@@ -514,7 +516,7 @@ public final class TcpConn {
                 }
             }
             // 关闭阶段长时间无望则强制收尾，避免连接表泄漏
-            if ((state == FIN_WAIT_1 || state == FIN_WAIT_2) && now - lastProgressAt > 8000) {
+            if ((state == FIN_WAIT_1 || state == FIN_WAIT_2) && now - closeStartedAt > 8000) {
                 LogHub.w("tcp", "关闭流程超时，强制释放（" + stateName() + "）");
                 state = CLOSED;
                 closedAt = now;

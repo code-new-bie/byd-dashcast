@@ -18,6 +18,7 @@ final class ContinuousProjectionTask implements ProjectionSessionController.Task
     private final Consumer<String> log;
     private final CaptureOptions options;
     private final ProjectionTarget target;
+    private final boolean compositionTrial;
 
     ContinuousProjectionTask(Context context, int seconds, Consumer<String> log) {
         this(context, seconds, log, CaptureOptions.of(CaptureOptions.Mode.STRETCH));
@@ -29,12 +30,18 @@ final class ContinuousProjectionTask implements ProjectionSessionController.Task
 
     ContinuousProjectionTask(Context context, int seconds, Consumer<String> log, CaptureOptions options,
             ProjectionTarget target) {
+        this(context, seconds, log, options, target, false);
+    }
+
+    ContinuousProjectionTask(Context context, int seconds, Consumer<String> log, CaptureOptions options,
+            ProjectionTarget target, boolean compositionTrial) {
         ProjectionLimits.requireSeconds(seconds);
         this.context = context.getApplicationContext();
         this.seconds = seconds;
         this.log = log;
         this.options = java.util.Objects.requireNonNull(options);
         this.target = java.util.Objects.requireNonNull(target);
+        this.compositionTrial = compositionTrial;
     }
 
     @Override
@@ -55,6 +62,10 @@ final class ContinuousProjectionTask implements ProjectionSessionController.Task
             }
             session = UsbNcmSession.open(context, abort);
             client = new NoAuthVideoClient(session::connect, abort, log::accept, true);
+            if (compositionTrial) {
+                client.enableCompositionTrial(new java.security.SecureRandom().nextInt(Integer.MAX_VALUE - 1) + 1,
+                        () -> stop.set(true));
+            }
             NoAuthVideoClient ownedClient = client;
             AvcReceiverContract contract = new AvcReceiverContract();
             boolean[] begun = {false};
@@ -80,6 +91,13 @@ final class ContinuousProjectionTask implements ProjectionSessionController.Task
                 }
             };
             VideoPatternProbe.Observer frames = new VideoPatternProbe.Observer() {
+                @Override
+                public void tick() throws IOException {
+                    if (!stop.get()) {
+                        ownedClient.maintain();
+                    }
+                }
+
                 @Override
                 public void log(String message) {
                     log.accept(message);

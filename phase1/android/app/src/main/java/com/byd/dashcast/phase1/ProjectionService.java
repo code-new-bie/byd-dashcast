@@ -62,6 +62,19 @@ public final class ProjectionService extends Service {
     }
 
     static void start(Context context, int seconds, CaptureOptions options, ProjectionTarget target) {
+        start(context, seconds, options, target, false, false);
+    }
+
+    static void startComposition(Context context, CaptureOptions options, ProjectionTarget target) {
+        start(context, 10, options, target, true, false);
+    }
+
+    static void startProbe(Context context, ProjectionTarget target) {
+        start(context, 5, CaptureOptions.of(CaptureOptions.Mode.FIT), target, false, true);
+    }
+
+    private static void start(Context context, int seconds, CaptureOptions options, ProjectionTarget target,
+            boolean composition, boolean probe) {
         ProjectionLimits.requireSeconds(seconds);
         if (options == null || target == null) {
             throw new IllegalArgumentException("Capture selection and projection target required");
@@ -69,6 +82,7 @@ public final class ProjectionService extends Service {
         context.startForegroundService(new Intent(context, ProjectionService.class).setAction(START)
                 .putExtra("seconds", seconds).putExtra("parked_matching_firmware", true)
                 .putExtra("capture_selection", options.token())
+                .putExtra("composition_trial", composition).putExtra("capture_only_probe", probe)
                 .putExtra("projection_target", target.token()));
     }
 
@@ -171,25 +185,37 @@ public final class ProjectionService extends Service {
             ProjectionLimits.requireSeconds(seconds);
             CaptureOptions options = CaptureOptions.parse(intent.getStringExtra("capture_selection"));
             ProjectionTarget target = ProjectionTarget.parse(intent.getStringExtra("projection_target"));
+            boolean composition = intent.getBooleanExtra("composition_trial", false);
+            boolean probe = intent.getBooleanExtra("capture_only_probe", false);
+            if (composition && (probe || seconds != 10) || probe && (seconds != 5 || !target.isRemote())) {
+                throw new IOException("Invalid fixed composition/probe profile");
+            }
             JOURNAL.append("PROJECTION_CONFIG=" + options
                     + "; target=" + target
-                    + "; encoded=1920x720/30fps native_rect=[640,240,640,240]; HMI occlusion and decoded FPS require vehicle validation");
-            UsbDevice device = UsbNcmSession.findDevice(this);
-            UsbManager usb = (UsbManager)getSystemService(USB_SERVICE);
-            if (usb == null || !usb.hasPermission(device)) {
-                throw new IOException("Normal instrument USB permission required before starting");
+                    + "; encoded=1920x720/30fps mode=" + (probe ? "capture-only-probe" : composition
+                    ? "composition-5s" : "small-window") + "; actual composition/FPS require vehicle observation");
+            if (!probe) {
+                UsbDevice device = UsbNcmSession.findDevice(this);
+                UsbManager usb = (UsbManager)getSystemService(USB_SERVICE);
+                if (usb == null || !usb.hasPermission(device)) {
+                    throw new IOException("Normal instrument USB permission required before starting");
+                }
+                ownedDevice = device.getDeviceName();
             }
-            ownedDevice = device.getDeviceName();
             startForeground(NOTIFICATION_ID, notification());
-            registerReceiver(detach, new IntentFilter(UsbManager.ACTION_USB_DEVICE_DETACHED));
-            receiverRegistered = true;
+            if (!probe) {
+                registerReceiver(detach, new IntentFilter(UsbManager.ACTION_USB_DEVICE_DETACHED));
+                receiverRegistered = true;
+            }
             PowerManager power = (PowerManager)getSystemService(POWER_SERVICE);
             if (power == null) {
                 throw new IOException("PowerManager unavailable");
             }
             wakeLock = power.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "dashcast:continuous");
             wakeLock.acquire((seconds + 30L) * 1000);
-            ContinuousProjectionTask task = new ContinuousProjectionTask(this, seconds, JOURNAL::append, options, target);
+            ProjectionSessionController.Task task = probe
+                    ? new RemoteDisplayProbeTask(this, target, JOURNAL::append)
+                    : new ContinuousProjectionTask(this, seconds, JOURNAL::append, options, target, composition);
             ownedLease = lease;
             boolean accepted = controller.start((stop, abort, streaming, cleaning) -> {
                 task.run(stop, abort, streaming, cleaning);

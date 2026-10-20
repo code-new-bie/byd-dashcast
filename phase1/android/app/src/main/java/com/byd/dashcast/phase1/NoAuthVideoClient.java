@@ -44,6 +44,14 @@ final class NoAuthVideoClient implements Closeable {
     private long maxAckNanos;
     private long totalAckNanos;
     private InstrumentDisplayProbe displayProbe;
+    private InstrumentCompositionTrial composition;
+
+    void enableCompositionTrial(int nonce, Runnable stopRequested) throws IOException {
+        if (video != null || closed || !continuous) {
+            throw new IOException("COMPOSITION_REQUIRES_FRESH_CONTINUOUS_SESSION");
+        }
+        composition = new InstrumentCompositionTrial(logger, nanoTime, nonce, stopRequested);
+    }
 
     NoAuthVideoClient(Connector connector, AtomicBoolean cancelled, Logger logger) {
         this(connector, cancelled, logger, System::nanoTime);
@@ -84,6 +92,9 @@ final class NoAuthVideoClient implements Closeable {
             byte[] header = video.readExact(NoAuthVideoProtocol.HEADER_BYTES);
             byte[] offer = video.readExact(NoAuthVideoProtocol.OFFER_BYTES);
             NoAuthVideoProtocol.validateOffer(header, offer);
+            if (composition != null) {
+                composition.prepare(video);
+            }
             if (displayProbe != null) {
                 displayProbe.negotiate(video);
             }
@@ -91,7 +102,8 @@ final class NoAuthVideoClient implements Closeable {
             negotiated = true;
             cleanupConfirmed = false;
             lastHeartbeat = nanoTime.getAsLong();
-            NoAuthVideoProtocol.Reply reply = exchange(NoAuthVideoProtocol.start(), NoAuthVideoProtocol.START, 0, 0);
+            NoAuthVideoProtocol.Reply reply = exchange(NoAuthVideoProtocol.start(composition != null),
+                    NoAuthVideoProtocol.START, 0, 0);
             if ((reply.flags & 1) == 0 || reply.submissions != 0) {
                 throw new IOException("DCV1_MEDIA_CONTEXT_NOT_READY");
             }
@@ -133,6 +145,9 @@ final class NoAuthVideoClient implements Closeable {
         maxAckNanos = Math.max(maxAckNanos, ackNanos);
         totalAckNanos += ackNanos;
         acknowledged++;
+        if (composition != null && acknowledged == 1) {
+            composition.activate(video);
+        }
         previousPtsMillis = relativeMillis;
         payloadBytes += annexB.length;
         if (displayProbe != null) {
@@ -172,6 +187,20 @@ final class NoAuthVideoClient implements Closeable {
             }
         }
         throw new IOException("WINDOW_UNCONFIRMED: receiver did not report its visible video window");
+    }
+
+    /** Serialized on the FRAME/STOP owner; an idle picture source is not a dead USB session. */
+    void maintain() throws IOException {
+        if (!started || closed || rejected) {
+            return;
+        }
+        checkCancellation();
+        if (nanoTime.getAsLong() - lastHeartbeat >= 1_000_000_000L) {
+            heartbeat();
+        }
+        if (composition != null) {
+            composition.tick(video);
+        }
     }
 
     private NoAuthVideoProtocol.Reply exchange(byte[] request, int type, int sequence, long pts) throws IOException {
@@ -219,8 +248,16 @@ final class NoAuthVideoClient implements Closeable {
             return;
         }
         boolean restoreInterrupt = Thread.interrupted();
+        IOException backgroundFailure = null;
         try {
             video.beginCleanup();
+            if (composition != null) {
+                try {
+                    composition.restore(video);
+                } catch (IOException error) {
+                    backgroundFailure = error;
+                }
+            }
             if (terminalCleanup) {
                 cleanupConfirmed = true;
                 logger.log("ERROR_CLEANUP_REPORTED: negative FRAME ACK followed native cleanup; no STOP on closed peer");
@@ -232,7 +269,14 @@ final class NoAuthVideoClient implements Closeable {
                 cleanupConfirmed = true;
                 logger.log("STOP_CLEANUP_REPORTED: native media/window cleanup returned 0; manually check window exit");
             }
+            if (backgroundFailure != null) {
+                cleanupConfirmed = false;
+                throw backgroundFailure;
+            }
         } catch (IOException error) {
+            if (backgroundFailure != null && backgroundFailure != error) {
+                error.addSuppressed(backgroundFailure);
+            }
             logger.log("STOP_UNCONFIRMED " + error.getMessage() + "; do not retry before checking instrument/window");
             throw error;
         } finally {
