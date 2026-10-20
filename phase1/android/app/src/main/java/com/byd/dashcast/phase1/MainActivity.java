@@ -195,6 +195,8 @@ public final class MainActivity extends Activity {
         root.addView(scopeView, new LinearLayout.LayoutParams(-1, -2));
 
         addControlSection(root);
+        root.addView(createButton("背景功能验证：抑制5秒并自动恢复（非全屏）",
+                view -> startBackgroundPoc()));
         captureSettingsView = new CaptureSettingsView(this, this::appendLog);
         root.addView(captureSettingsView.view());
         addProjectionTargetControls(root);
@@ -219,10 +221,8 @@ public final class MainActivity extends Activity {
         root.addView(usbButton);
         root.addView(capabilityButton);
         root.addView(allButton);
-        root.addView(createButton("F1. 只读仪表显示检查（不切模式 / 不改图层）",
-                view -> startDisplayReadback(false)));
-        root.addView(createButton("F1. 小窗测试图＋显示检查（10秒，非全屏）",
-                view -> startDisplayReadback(true)));
+        // This candidate uses the receiver extension slot for background control.
+        // The old F1/type9 readback buttons are intentionally not offered here.
         Button downloadButton = new Button(this);
         downloadButton.setText(R.string.export_session_logs);
         downloadButton.setOnClickListener(view -> exportLogsToDownloads());
@@ -719,6 +719,43 @@ public final class MainActivity extends Activity {
                         performDisplayReadback();
                     }
                 })).show();
+    }
+
+    private void startBackgroundPoc() {
+        if (!receiverInstalled.isChecked()) {
+            appendLog("背景验证未开始：请确认已刷0.9.1配套仪表包且车辆停稳。");
+            return;
+        }
+        try {
+            UsbDevice device = UsbNcmSession.findDevice(this);
+            if (!Usb.hasPermission(this, device)) {
+                appendLog("背景验证未开始：请先允许访问仪表USB。");
+                return;
+            }
+        } catch (IOException | SecurityException error) {
+            appendLog("背景验证未开始：" + describe(error));
+            return;
+        }
+        new AlertDialog.Builder(this).setTitle("仅停车/台架：5秒背景功能验证")
+                .setMessage("只测试原厂装饰背景的抑制与恢复，不启动视频、不切USB模式。"
+                        + "车速、挡位、告警必须全程可见。仪表自行计时5秒，重复请求不会续时；"
+                        + "结束后背景应恢复。出现前景缺失或未恢复立即停止测试，正常重启/回退，勿上路。"
+                        + "此候选真实改动仪表HMI，但尚未实车验证，不是完整全屏包。")
+                .setNegativeButton("取消", null)
+                .setPositiveButton("已停稳，开始5秒验证", (dialog, which) ->
+                        executeProbe("5s background PoC", this::performBackgroundPoc)).show();
+    }
+
+    private void performBackgroundPoc() throws IOException {
+        int nonce = new SecureRandom().nextInt(Integer.MAX_VALUE - 1) + 1;
+        try (UsbNcmSession session = UsbNcmSession.open(this, cancelled);
+                NoAuthVideoTransport channel = session.connect(NoAuthVideoProtocol.PORT, cancelled)) {
+            NoAuthVideoProtocol.validateOffer(channel.readExact(NoAuthVideoProtocol.HEADER_BYTES),
+                    channel.readExact(NoAuthVideoProtocol.OFFER_BYTES));
+            new InstrumentBackgroundPoc(cancelled, this::appendLog, nonce).run(channel);
+            appendLog(session.statistics());
+        }
+        appendLog("背景测试连接已释放。请人工确认原厂背景恢复，再测试小窗视频；最后一键导出到下载目录。");
     }
 
     private void performDisplayReadback() throws IOException {

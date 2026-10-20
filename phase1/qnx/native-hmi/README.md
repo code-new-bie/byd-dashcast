@@ -1,5 +1,12 @@
 # Native background controller — implementation, not a flashable HMI adapter
 
+2026-10-20: `background-poc.thumb` adds a separate, exact-version, five-second
+render-time PoC. It does not compile/link the C99 controller below, enable
+fullscreen, or certify vehicle safety. It defaults to native drawing, accepts
+only an explicit bounded request through the matching receiver, validates the
+background scene structure and restores via an HMI-owned deadline. Firmware
+builds must use the matching overlay/startup variant, not the old App packer.
+
 The C99 controller implements the ownership, preparation, output-freshness,
 lease and restoration part of native-foreground/fullscreen composition. It has
 no Kanzi dependency, no file/network access, no allocation and no worker thread.

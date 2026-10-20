@@ -1,5 +1,15 @@
 # 构建与复现
 
+## 0.9.1限时背景组件
+
+需要requirements-native.txt中的依赖及自行提供的精确0.8.2 HMI/receiver。新输出的父目录必须已存在：
+
+```bash
+python3 tools/build_background_poc_components.py --hmi /private/rc_hmi.exe --receiver /private/instrument-receiver --output build/background-poc
+```
+
+两份输入哈希都通过后才创建输出，产生HMI/receiver及范围报告；**不是升级ZIP构建器或QNX SDK编译**。新启动源为startup-background-poc.ksh，App内安装路径仍为startup.ksh。旧build_instrument_app仅支持0.5.0，不能生成本候选。APK为code31/0.9.1-debug，操作和未验证项见[TASKS](TASKS_0.9.1.md)。
+
 ## 原生背景控制器（便携源码，不是仪表插件）
 
 新增源码位于`phase1/qnx/native-hmi/`，只依赖C99标准库。已有C编译器/Python 3的主机可运行：

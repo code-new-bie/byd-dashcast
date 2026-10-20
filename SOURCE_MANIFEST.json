@@ -1,5 +1,5 @@
 {
-  "snapshot_version": "0.9.0",
+  "snapshot_version": "0.9.1",
   "snapshot_date": "2026-10-20",
   "ncm_original_author_confirmed": true,
   "project_license": "NOT_SELECTED_BY_OWNER",
@@ -61,8 +61,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "bytes": 13201,
-      "sha256": "3f14a9f96e27da229f6548d99f12aef138b53910d6dab5caee929d38bf01a0a8",
+      "bytes": 13647,
+      "sha256": "3582a1885be713f12442c140311f21164cdddce67cebbb65c4c5cade59383c43",
       "origin": "publication/template/CHANGELOG.md",
       "transformations": []
     },
@@ -82,8 +82,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 8992,
-      "sha256": "87f8f46ca585ea3cd944449938456c7911b997807ebc3ecc91e8a2a3b3a54951",
+      "bytes": 8887,
+      "sha256": "b66aa7f9de3c909b688bf4334ec81dc34f9cffdd85fc358e97b2fea6d4dda7bc",
       "origin": "publication/template/README.md",
       "transformations": []
     },
@@ -99,6 +99,13 @@
       "bytes": 1221,
       "sha256": "808d22b323f7ef571959062361660196c7c8ecf86a87698fd58ff4daffe3715a",
       "origin": "publication/template/THIRD_PARTY_NOTICES.md",
+      "transformations": []
+    },
+    {
+      "path": "analysis/background_poc_native.py",
+      "bytes": 12091,
+      "sha256": "a0482bc08548ebc07084e05744bc99c0bb5cfd949d35f1f87eb15391cf83f677",
+      "origin": "analysis/background_poc_native.py",
       "transformations": []
     },
     {
@@ -135,22 +142,22 @@
     },
     {
       "path": "docs/ARCHITECTURE.md",
-      "bytes": 3711,
-      "sha256": "858815d279b1b06f26457f8260b4c307f686d1bd93b2ede3197bdcdcdcf0102d",
+      "bytes": 4150,
+      "sha256": "bdbc789f2f0ee27bed55a14cd66968c8775a1b3e920ac53d7d65466881e8338b",
       "origin": "publication/template/docs/ARCHITECTURE.md",
       "transformations": []
     },
     {
       "path": "docs/BUILD.md",
-      "bytes": 2581,
-      "sha256": "9ea1057d43b50ff6da38bc6475e4c49cbb37598bde94e9d141ba94d596927295",
+      "bytes": 3250,
+      "sha256": "367b2e32a153978128a4ad3eea6f6fe707cc0685abfc476ed37c6147a3f7d95a",
       "origin": "publication/template/docs/BUILD.md",
       "transformations": []
     },
     {
       "path": "docs/PUBLISHING.md",
-      "bytes": 2235,
-      "sha256": "b6a860afa7b0e32b93cf1910e6ac8c1851b2da681cb3da72996e7d544c01330f",
+      "bytes": 2551,
+      "sha256": "7d479ffee54ed4d74a2d1a5d429b3d8dff38b3821dec2ec448c56326d6b242cd",
       "origin": "publication/template/docs/PUBLISHING.md",
       "transformations": []
     },
@@ -267,16 +274,23 @@
       "transformations": []
     },
     {
+      "path": "docs/TASKS_0.9.1.md",
+      "bytes": 2914,
+      "sha256": "6e616d301899c70561761fe5367f8d098f701e7b9cb7e396f82d5755328aad4f",
+      "origin": "publication/template/docs/TASKS_0.9.1.md",
+      "transformations": []
+    },
+    {
       "path": "docs/USAGE.md",
-      "bytes": 7745,
-      "sha256": "0c4d63b24ff3e3642be924789b52773d60b6b2391da19b83c6533c91a880687a",
+      "bytes": 8081,
+      "sha256": "7413ac5130dbc961f7af02a3c8827e489d030d86cac263a10f5bcd8750aa6e9a",
       "origin": "publication/template/docs/USAGE.md",
       "transformations": []
     },
     {
       "path": "docs/VALIDATION.md",
-      "bytes": 3445,
-      "sha256": "a9d0a9df0141f498886e778311c18c413cb8765a1a07f74ee0140c69d1cbb5e4",
+      "bytes": 4176,
+      "sha256": "61f85c4718d361b250b89f3ab6c36f3a2243500a196c0f134f1f296229fc2270",
       "origin": "publication/template/docs/VALIDATION.md",
       "transformations": []
     },
@@ -290,7 +304,7 @@
     {
       "path": "phase1/android/app/build.gradle",
       "bytes": 1106,
-      "sha256": "4aaa12cf28ca0b0c6b587e93159cb01d8065f9135bb754bd936955c1177b9a0a",
+      "sha256": "4634455c24da3e4e92ed805eb425027b11a156ee9054674b87fabac8b339bf01",
       "origin": "phase1/android/app/build.gradle",
       "transformations": []
     },
@@ -470,6 +484,13 @@
       "transformations": []
     },
     {
+      "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/InstrumentBackgroundPoc.java",
+      "bytes": 12153,
+      "sha256": "6151d4f0a48ca3f65e9c0c2f684e2078ddf15f6c1a89492d290b8931953e65ef",
+      "origin": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/InstrumentBackgroundPoc.java",
+      "transformations": []
+    },
+    {
       "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/InstrumentDisplayProbe.java",
       "bytes": 13400,
       "sha256": "ac0921ee52aab154ed24f910e91adc25bd70ac30f53f8ae08fd7309aafdfa5af",
@@ -499,8 +520,8 @@
     },
     {
       "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/MainActivity.java",
-      "bytes": 72592,
-      "sha256": "4fc21f85245f91fef41adbecec0a6f6f810f532d060ddd6620b78537c95c83de",
+      "bytes": 74838,
+      "sha256": "281f97f401339723e35493ecbdd15c71670230250e7dca1cfbf56017921efc1c",
       "origin": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/MainActivity.java",
       "transformations": []
     },
@@ -828,8 +849,8 @@
     },
     {
       "path": "phase1/android/app/src/main/res/values/strings.xml",
-      "bytes": 2655,
-      "sha256": "3400e99f59aef0ced3bb5c3bc5211eb618fe56c6f2a30b47636cc8f67a5573e3",
+      "bytes": 2665,
+      "sha256": "7a0d076f6a81b3403ad4c31ef347263e7b7ce73c69c14b7098539cef6054c4bf",
       "origin": "phase1/android/app/src/main/res/values/strings.xml",
       "transformations": []
     },
@@ -952,6 +973,13 @@
       "bytes": 5696,
       "sha256": "c63dad88308914341774372c7e5d58246ec1c6485361424a8c5e254806c9a5b2",
       "origin": "phase1/android/app/src/test/java/com/byd/dashcast/phase1/FramedCaptureReaderTest.java",
+      "transformations": []
+    },
+    {
+      "path": "phase1/android/app/src/test/java/com/byd/dashcast/phase1/InstrumentBackgroundPocTest.java",
+      "bytes": 8679,
+      "sha256": "f42b2afb4fdbcb3266dd5415d59212a9326cc091429d876d6a5656239ef34675",
+      "origin": "phase1/android/app/src/test/java/com/byd/dashcast/phase1/InstrumentBackgroundPocTest.java",
       "transformations": []
     },
     {
@@ -1233,9 +1261,16 @@
     },
     {
       "path": "phase1/qnx/native-hmi/README.md",
-      "bytes": 4982,
-      "sha256": "3e6abbf7a5f87d0f655c70850c5dc56ae4e66c816b0cff5942ec87d2acbb1345",
+      "bytes": 5447,
+      "sha256": "3fb41022cb55e15d7e9e3fcfa9f97a367280762338d0992df600a6f7bbff5b86",
       "origin": "phase1/qnx/native-hmi/README.md",
+      "transformations": []
+    },
+    {
+      "path": "phase1/qnx/native-hmi/background-poc.thumb",
+      "bytes": 8029,
+      "sha256": "aaa5ed51e0bf067c84a7cd81782dae9adc88a0edf95c5a3698c8c2c13a9e19af",
+      "origin": "phase1/qnx/native-hmi/background-poc.thumb",
       "transformations": []
     },
     {
@@ -1264,6 +1299,13 @@
       "bytes": 3637,
       "sha256": "f8cb30a9c6d9ca610ccb19c00d0360ea9e0794d2f9ad95f03a531229514d0c82",
       "origin": "phase1/qnx/ref2-noauth/cast-mode.ksh",
+      "transformations": []
+    },
+    {
+      "path": "phase1/qnx/ref2-noauth/receiver-background-poc.arm",
+      "bytes": 6478,
+      "sha256": "e9f6172c3f7f8f77e632b35fd1ae942804872614bcdd1a5364c748e7ff279e80",
+      "origin": "phase1/qnx/ref2-noauth/receiver-background-poc.arm",
       "transformations": []
     },
     {
@@ -1299,6 +1341,13 @@
       "bytes": 1590,
       "sha256": "268ee0e537d6f78dc9715d44d5c3c8e5504aad794480a9708cfb77c9515f6b83",
       "origin": "phase1/qnx/ref2-noauth/run-cast.ksh",
+      "transformations": []
+    },
+    {
+      "path": "phase1/qnx/ref2-noauth/startup-background-poc.ksh",
+      "bytes": 1664,
+      "sha256": "10af0bacfa4b797f57b4b88f986114a79ddceb029f87da0a322e80ae92f2fd9b",
+      "origin": "phase1/qnx/ref2-noauth/startup-background-poc.ksh",
       "transformations": []
     },
     {
@@ -1372,6 +1421,13 @@
       "transformations": []
     },
     {
+      "path": "tools/build_background_poc_components.py",
+      "bytes": 2198,
+      "sha256": "768f3a9fd8898680d715b50fd749dad390f9c8322c5b75db5066bab0ba915210",
+      "origin": "publication/template/tools/build_background_poc_components.py",
+      "transformations": []
+    },
+    {
       "path": "tools/build_instrument_app.py",
       "bytes": 7139,
       "sha256": "07b6eba506f3a5db8663ed635ca1b996dd362c6dac3e91ef163b389b90afe90c",
@@ -1390,6 +1446,13 @@
       "bytes": 3215,
       "sha256": "7fc24820cf3388cf901fd25e6ce23a5a0cda804e41b3becdc3be12fa14dddf0d",
       "origin": "publication/template/tools/test_native_background.py",
+      "transformations": []
+    },
+    {
+      "path": "tools/tests/test_background_overlay_cli.py",
+      "bytes": 2031,
+      "sha256": "4764f33a02616d2e7c4eac619627685e8897a6ea07ee7fe460b4d9bd1232c135",
+      "origin": "publication/template/tools/tests/test_background_overlay_cli.py",
       "transformations": []
     },
     {
