@@ -1,4 +1,6 @@
-# 当前架构（0.10.0五秒全屏实车合成首测）
+# 当前架构（1.0 Kotlin产品候选）
+
+Kotlin产品Activity/应用目录/配置 → 应用级协调器与真实Service状态 → 已授权原厂导航角色中继/前台投屏Service → 原Java副屏采集/硬编/DCV1/NCM → QNX receiver/HMI背景桥。单一最长两小时连接，RWN1能力匹配后同nonce/PID/epoch/序号按秒续租五秒背景期限；不靠循环重连。停止先恢复背景、媒体STOP、采集EXIT、USB ALT0和接口释放，未知清理隔离。带线Host再soft-link-down及私有协议栈正常退出，不强杀共享服务；设备消失不冒充Host成功反馈。导航不每次停车确认，车辆运动输入未接入，不能由软件状态证明物理层/全部告警或道路安全。[产品范围](PRODUCT_1.0.md)。以下保留历史架构。
 
 0.10.0同一DCV1连接准备背景能力、HELLO2/固定全屏START、首帧ACK后一次type10 START；五秒原生恢复后自动停止，提前结束先恢复背景再媒体STOP/USB释放。DCS1 idle只保活不计视频帧；自有父窗口z=-3、子局部z=1，HMI请求8位alpha，不降低原生前景alpha/改pipeline。短远程探针由前台Service持有但不打开USB视频。默认小窗保持；[本版范围](TASKS_0.10.0.md)。下文保留历史阶段架构。
 

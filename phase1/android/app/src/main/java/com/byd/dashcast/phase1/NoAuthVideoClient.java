@@ -44,7 +44,14 @@ final class NoAuthVideoClient implements Closeable {
     private long maxAckNanos;
     private long totalAckNanos;
     private InstrumentDisplayProbe displayProbe;
-    private InstrumentCompositionTrial composition;
+    private CompositionControl composition;
+
+    void enableProductComposition(int nonce) throws IOException {
+        if (video != null || closed || !continuous) {
+            throw new IOException("PRODUCT_COMPOSITION_REQUIRES_FRESH_CONTINUOUS_SESSION");
+        }
+        composition = new ProductCompositionSession(logger, nanoTime, nonce);
+    }
 
     void enableCompositionTrial(int nonce, Runnable stopRequested) throws IOException {
         if (video != null || closed || !continuous) {

@@ -122,10 +122,11 @@ remove_interface() {
     esac
     run /sbin/ifconfig ncm0 down || { unset SOCK; return 1; }
     # devnp-usbdnet refuses destruction while its USB disconnect is pending.
-    # Keep the real unplug prerequisite; retry only this idempotent private
-    # interface removal, without KILL or stopping shared multimedia/USB services.
+    # Product hot transition first confirms Android ALT 0 + interface releases,
+    # then soft-disconnects the DCD above. Drain that logical disconnect while
+    # the cable remains attached; no KILL or shared USB/multimedia service stop.
     destroy_attempt=0
-    while [ "$destroy_attempt" -lt 3 ]; do
+    while [ "$destroy_attempt" -lt 20 ]; do
         run /sbin/ifconfig ncm0 destroy
         destroy_rc=$?
         interface_present

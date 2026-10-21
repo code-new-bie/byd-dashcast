@@ -66,7 +66,11 @@ case "${command##*/}" in
                 ;;
             down) rm -f "$RUN/interface-up" ;;
             destroy)
-                [ ! -f "$RUN/physical-peer" ] || exit 4
+                if [ -f "$RUN/physical-peer" ]; then
+                    # Fixture assumption only: Android ALT 0 released, then DCD soft-down.
+                    # The physical cable marker stays present throughout the transition.
+                    [ -f "$RUN/android-alt0-released" ] && [ ! -f "$RUN/link-up" ] || exit 4
+                fi
                 if [ -f "$RUN/destroy-failures" ]; then
                     read -r remaining < "$RUN/destroy-failures"
                     if [ "$remaining" -gt 0 ]; then

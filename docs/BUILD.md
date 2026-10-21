@@ -1,5 +1,17 @@
 # 构建与复现
 
+## 1.0 Kotlin产品与组件
+
+APK code33，AGP9.3内置Kotlin，Java/Kotlin目标11，无需另加kotlin-android插件；普通Gradle构建/测试/lint命令不变。原签名与ADB身份不公开，不保证新环境debug签名可覆盖旧APK。
+
+自行提供精确0.10.0 receiver和未打桥的原始已检查HMI，安装requirements-native.txt后运行：
+
+```bash
+python3 tools/build_product_components.py --receiver /private/receiver-010 --hmi /private/original-rc_hmi.exe --output build/product
+```
+
+输出receiver/HMI/USB角色脚本和范围JSON，严格校验输入哈希和新输出边界，**不是可刷FULL**。应用cfg沿用0.10的alpha配置，原启动桥/媒体库保持；不得拿旧包装器生成产品包。[产品操作及限制](PRODUCT_1.0.md)。下面保留历史构建。
+
 ## 当前0.10.0合成组件
 
 APK code32，Android构建步骤不变。自行提供精确0.9.1 receiver与原始application.cfg，安装requirements-native.txt依赖：

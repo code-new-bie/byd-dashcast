@@ -32,6 +32,8 @@ public final class ProjectionService extends Service {
     private static final int NOTIFICATION_ID = 50;
     private static final ProjectionJournal JOURNAL = new ProjectionJournal();
     private static volatile ProjectionSessionController current;
+    private static final java.util.concurrent.atomic.AtomicLong PRODUCT_GENERATION =
+            new java.util.concurrent.atomic.AtomicLong();
     private final Handler main = new Handler(Looper.getMainLooper());
     private ThreadPoolExecutor worker;
     private ProjectionSessionController controller;
@@ -73,6 +75,17 @@ public final class ProjectionService extends Service {
         start(context, 5, CaptureOptions.of(CaptureOptions.Mode.FIT), target, false, true);
     }
 
+    static void startProduct(Context context, CaptureOptions options, ProjectionTarget target, boolean underlay) {
+        if (!new ProductSettings(context).getSetupComplete() || target == null || options == null) {
+            throw new IllegalArgumentException("Product setup and explicit capture selection required");
+        }
+        context.startForegroundService(new Intent(context, ProjectionService.class).setAction(START)
+                .putExtra("seconds", ProjectionLimits.MAX_SECONDS).putExtra("product_session", true)
+                .putExtra("product_generation", PRODUCT_GENERATION.incrementAndGet())
+                .putExtra("product_underlay", underlay).putExtra("capture_selection", options.token())
+                .putExtra("projection_target", target.token()));
+    }
+
     private static void start(Context context, int seconds, CaptureOptions options, ProjectionTarget target,
             boolean composition, boolean probe) {
         ProjectionLimits.requireSeconds(seconds);
@@ -87,6 +100,8 @@ public final class ProjectionService extends Service {
     }
 
     static void requestStop(Context context) {
+        // A user's STOP also invalidates an enqueued START not yet delivered to the Service.
+        PRODUCT_GENERATION.incrementAndGet();
         ProjectionSessionController active = current;
         if (active != null && active.active()) {
             context.startService(new Intent(context, ProjectionService.class).setAction(STOP));
@@ -100,6 +115,19 @@ public final class ProjectionService extends Service {
 
     static String status() {
         return JOURNAL.status();
+    }
+
+    static ProjectionSessionController.State state() { return JOURNAL.currentState(); }
+
+    static boolean quarantined() { return JOURNAL.quarantined(); }
+
+    static boolean active() {
+        ProjectionSessionController owner = current;
+        return owner != null && owner.active();
+    }
+
+    static void quarantine(String detail) {
+        JOURNAL.state(ProjectionSessionController.State.QUARANTINED, detail);
     }
 
     static String journal() {
@@ -159,7 +187,15 @@ public final class ProjectionService extends Service {
             }
             return START_NOT_STICKY;
         }
-        if (!START.equals(intent.getAction()) || !intent.getBooleanExtra("parked_matching_firmware", false)
+        boolean product = intent.getBooleanExtra("product_session", false);
+        if (product && intent.getLongExtra("product_generation", -1L) != PRODUCT_GENERATION.get()) {
+            JOURNAL.append("PRODUCT_START_CANCELLED before Service ownership");
+            if (!controller.active()) { stopSelf(); }
+            return START_NOT_STICKY;
+        }
+        boolean confirmed = product ? new ProductSettings(this).getSetupComplete()
+                : intent.getBooleanExtra("parked_matching_firmware", false);
+        if (!START.equals(intent.getAction()) || !confirmed
                 || JOURNAL.quarantined()) {
             JOURNAL.append("START_BLOCKED: missing user confirmation or previous cleanup unconfirmed");
             if (!controller.active()) {
@@ -187,15 +223,22 @@ public final class ProjectionService extends Service {
             ProjectionTarget target = ProjectionTarget.parse(intent.getStringExtra("projection_target"));
             boolean composition = intent.getBooleanExtra("composition_trial", false);
             boolean probe = intent.getBooleanExtra("capture_only_probe", false);
+            boolean underlay = intent.getBooleanExtra("product_underlay", false);
+            if (product && (probe || composition || seconds != ProjectionLimits.MAX_SECONDS)) {
+                throw new IOException("Invalid product session profile");
+            }
             if (composition && (probe || seconds != 10) || probe && (seconds != 5 || !target.isRemote())) {
                 throw new IOException("Invalid fixed composition/probe profile");
             }
             JOURNAL.append("PROJECTION_CONFIG=" + options
                     + "; target=" + target
-                    + "; encoded=1920x720/30fps mode=" + (probe ? "capture-only-probe" : composition
+                    + "; encoded=1920x720/30fps mode=" + (product ? (underlay ? "product-renewable-underlay" : "product-small-window") : probe ? "capture-only-probe" : composition
                     ? "composition-5s" : "small-window") + "; actual composition/FPS require vehicle observation");
             if (!probe) {
                 UsbDevice device = UsbNcmSession.findDevice(this);
+                if (product && (device.getVendorId() != 0x1234 || device.getProductId() != 0xfff1)) {
+                    throw new IOException("Product instrument identity changed before Service ownership");
+                }
                 UsbManager usb = (UsbManager)getSystemService(USB_SERVICE);
                 if (usb == null || !usb.hasPermission(device)) {
                     throw new IOException("Normal instrument USB permission required before starting");
@@ -213,9 +256,12 @@ public final class ProjectionService extends Service {
             }
             wakeLock = power.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "dashcast:continuous");
             wakeLock.acquire((seconds + 30L) * 1000);
+            ContinuousProjectionTask continuous = probe ? null
+                    : new ContinuousProjectionTask(this, seconds, JOURNAL::append, options, target, composition);
+            if (product && underlay) { continuous.enableProductComposition(); }
             ProjectionSessionController.Task task = probe
                     ? new RemoteDisplayProbeTask(this, target, JOURNAL::append)
-                    : new ContinuousProjectionTask(this, seconds, JOURNAL::append, options, target, composition);
+                    : continuous;
             ownedLease = lease;
             boolean accepted = controller.start((stop, abort, streaming, cleaning) -> {
                 task.run(stop, abort, streaming, cleaning);
@@ -231,6 +277,7 @@ public final class ProjectionService extends Service {
             ownedLease = null;
             lease.close();
             JOURNAL.append("START_FAILED before capture: " + error);
+            if (!JOURNAL.quarantined()) { JOURNAL.state(ProjectionSessionController.State.FAILED, error.toString()); }
             releaseWakeLock();
             stopForeground(STOP_FOREGROUND_REMOVE);
             stopSelf();
@@ -245,7 +292,7 @@ public final class ProjectionService extends Service {
         }
         manager.createNotificationChannel(new NotificationChannel(CHANNEL, getString(R.string.projection_channel),
                 NotificationManager.IMPORTANCE_LOW));
-        PendingIntent open = PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class),
+        PendingIntent open = PendingIntent.getActivity(this, 0, new Intent(this, ProductActivity.class),
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         PendingIntent stop = PendingIntent.getService(this, 1, new Intent(this, ProjectionService.class).setAction(STOP),
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);

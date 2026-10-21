@@ -1,0 +1,388 @@
+// Product overlay on the exact 0.10.0 receiver. Same-stream renewable HMI lease.
+// Legacy START remains non-renewable; only operation3 is explicit owned renewal.
+// SLOT background_dispatch 0x102e1c 124
+ldr r3, [sp, #0x70]
+cmp r3, #10
+bne bg_control_legacy
+ldr r0, [sp, #0x24]
+mov r1, r8
+bl #0x108898
+cmp r0, #0
+beq #0x10185c
+b #0x101abc
+bg_control_legacy:
+ldr r3, [r4, #4]
+b #0x10199c
+
+// SLOT background_control 0x108898 3232
+// socket r0, original fixed payload buffer r1. Request >4I: 1,op,nonce,hold_ms.
+// Reply 0x8a: >4I version/BGP1/op/error followed by >32I control snapshot.
+push {r4, r5, r6, r7, r8, r9, r10, r11, lr}
+sub sp, sp, #92
+mov r4, r0
+mov r5, r1
+mov r6, #0
+mov r7, #0
+mov r8, #0
+mov r9, #0
+mov r10, #0
+mov r11, #1
+mvn r0, #0
+str r0, [sp, #24]
+str r0, [sp, #12]
+ldr r0, [r5]
+cmp r0, #0x01000000
+bne bg_control_cleanup
+ldr r0, [r5, #4]
+rev r0, r0
+str r0, [sp, #12]
+cmp r0, #3
+bhi bg_control_cleanup
+ldr r1, [r5, #8]
+rev r1, r1
+str r1, [sp, #8]
+cmp r0, #0
+bne bg_control_nonce_nonzero
+cmp r1, #0
+bne bg_control_cleanup
+b bg_control_hold_check
+bg_control_nonce_nonzero:
+cmp r1, #0
+ble bg_control_cleanup
+bg_control_hold_check:
+ldr r1, [r5, #12]
+rev r1, r1
+cmp r0, #1
+cmpne r0, #3
+movw r2, #5000
+moveq r3, r2
+movne r3, #0
+cmp r1, r3
+bne bg_control_cleanup
+ldr r0, =bg_control_libc
+mov r1, #2
+bl #0x10100c
+movs r7, r0
+beq bg_control_api_error
+ldr r1, =bg_control_mmap
+bl #0x101048
+movs r8, r0
+beq bg_control_api_error
+mov r0, r7
+ldr r1, =bg_control_munmap
+bl #0x101048
+movs r9, r0
+beq bg_control_api_error
+mov r0, r7
+ldr r1, =bg_control_lseek
+bl #0x101048
+movs r10, r0
+beq bg_control_api_error
+bl bg_control_bound
+cmp r0, #0
+bne bg_control_api_error
+ldr r0, =bg_control_path
+mov r1, #2
+bl #0x101150
+str r0, [sp, #24]
+cmp r0, #0
+blt bg_control_no_file
+bl bg_control_bound
+cmp r0, #0
+bne bg_control_api_error
+ldr r0, [sp, #24]
+mov r1, #0
+mov r2, #2
+blx r10
+cmp r0, #4096
+bne bg_control_api_error
+bl bg_control_bound
+cmp r0, #0
+bne bg_control_api_error
+ldr r0, [sp, #24]
+str r0, [sp]
+mov r0, #0
+str r0, [sp, #4]
+mov r1, #4096
+mov r2, #0x300
+mov r3, #1
+blx r8
+cmn r0, #1
+beq bg_control_api_error
+cmp r0, #0
+beq bg_control_api_error
+mov r6, r0
+mov r0, #2
+add r1, sp, #16
+bl #0x100e98
+cmp r0, #0
+bne bg_control_clock_error
+ldr r0, [r6]
+movw r1, #0x4244
+movt r1, #0x3147
+cmp r0, r1
+bne bg_control_not_ready
+ldr r0, [r6, #4]
+cmp r0, #1
+bne bg_control_not_ready
+ldr r0, [r6, #8]
+cmp r0, #128
+bne bg_control_not_ready
+ldr r0, [r6, #40]
+cmp r0, #0
+ble bg_control_not_ready
+ldr r0, [r6, #72]
+cmp r0, #0
+beq bg_control_not_ready
+ldr r0, [sp, #16]
+ldr r1, [r6, #48]
+subs r0, r0, r1
+cmp r0, #1
+bhi bg_control_not_ready
+movw r2, #0xca00
+movt r2, #0x3b9a
+mul r0, r0, r2
+ldr r1, [sp, #20]
+add r0, r0, r1
+ldr r1, [r6, #52]
+subs r0, r0, r1
+movw r1, #0x6500
+movt r1, #0x1dcd
+cmp r0, r1
+bhi bg_control_not_ready
+ldr r0, [sp, #12]
+cmp r0, #0
+beq bg_control_success
+ldr r1, [r6, #12]
+tst r1, #1
+bne bg_control_busy
+ldr r2, [r6, #32]
+cmp r1, r2
+bne bg_control_busy
+cmn r1, #4
+bhs bg_control_busy
+cmp r0, #1
+bne bg_control_stop_check
+ldr r2, [r6, #36]
+cmp r2, #1
+beq bg_control_busy
+b bg_control_commit
+bg_control_stop_check:
+cmp r0, #3
+bne bg_control_owner_check
+ldr r2, [r6, #36]
+cmp r2, #1
+bne bg_control_wrong_owner
+ldr r2, [r6, #124]
+movw r3, #0x4e31
+movt r3, #0x5257
+cmp r2, r3
+bne bg_control_not_ready
+bg_control_owner_check:
+ldr r2, [r6, #80]
+ldr r3, [sp, #8]
+cmp r2, r3
+bne bg_control_wrong_owner
+bg_control_commit:
+add r2, r1, #1
+str r2, [r6, #12]
+dmb ish
+cmp r0, #1
+moveq r2, #1
+movne r2, #0
+cmp r0, #3
+moveq r2, #2
+str r2, [r6, #16]
+ldr r2, [r6, #40]
+str r2, [r6, #20]
+ldr r2, [sp, #16]
+str r2, [r6, #24]
+ldr r2, [sp, #20]
+str r2, [r6, #28]
+ldr r2, [r6, #72]
+str r2, [r6, #76]
+ldr r2, [sp, #8]
+str r2, [r6, #80]
+dmb ish
+add r1, r1, #2
+str r1, [r6, #12]
+bg_control_success:
+mov r11, #0
+b bg_control_cleanup
+bg_control_no_file:
+mov r11, #2
+b bg_control_cleanup
+bg_control_not_ready:
+mov r11, #3
+b bg_control_cleanup
+bg_control_busy:
+mov r11, #4
+b bg_control_cleanup
+bg_control_wrong_owner:
+mov r11, #5
+b bg_control_cleanup
+bg_control_api_error:
+mov r11, #6
+b bg_control_cleanup
+bg_control_clock_error:
+mov r11, #7
+bg_control_cleanup:
+mov r0, #0
+add r1, r5, #40
+mov r2, #128
+bg_control_zero:
+str r0, [r1], #4
+subs r2, r2, #4
+bne bg_control_zero
+cmp r6, #0
+beq bg_control_unmap_done
+mov r0, #3
+str r0, [sp, #32]
+bg_control_snapshot:
+ldr r3, [r6, #104]
+tst r3, #1
+bne bg_control_snapshot_retry
+dmb ish
+mov r0, #0
+bg_control_copy:
+ldr r1, [r6, r0]
+rev r1, r1
+add r2, r5, #40
+str r1, [r2, r0]
+add r0, r0, #4
+cmp r0, #128
+bne bg_control_copy
+dmb ish
+ldr r0, [r6, #104]
+cmp r0, r3
+beq bg_control_snapshot_done
+bg_control_snapshot_retry:
+ldr r0, [sp, #32]
+subs r0, r0, #1
+str r0, [sp, #32]
+bne bg_control_snapshot
+mov r11, #9
+bg_control_snapshot_done:
+bl bg_control_bound
+cmp r0, #0
+bne bg_control_release_error
+mov r0, r6
+mov r1, #4096
+blx r9
+cmp r0, #0
+bne bg_control_release_error
+bg_control_unmap_done:
+ldr r0, [sp, #24]
+cmp r0, #0
+blt bg_control_unload
+bl bg_control_bound
+cmp r0, #0
+bne bg_control_release_error
+ldr r0, [sp, #24]
+bl #0x10118c
+cmp r0, #0
+bne bg_control_release_error
+b bg_control_unload
+bg_control_release_error:
+mov r11, #8
+// Unknown own FD/map cleanup requests ONLY the original receiver's orderly exit.
+movw r0, #0xef90
+movt r0, #0x10
+mov r1, #1
+str r1, [r0]
+bg_control_unload:
+cmp r7, #0
+beq bg_control_reply
+mov r0, r7
+bl #0x100f7c
+bg_control_reply:
+mov r0, #2
+mov r1, #0
+mov r2, #0
+mov r3, #0
+str r1, [sp]
+bl #0x101174
+movw r0, #0x4344
+movt r0, #0x3156
+str r0, [r5]
+mov r0, #0x8a000000
+str r0, [r5, #4]
+mov r0, #0x90000000
+str r0, [r5, #8]
+mov r0, #0
+str r0, [r5, #12]
+str r0, [r5, #16]
+str r0, [r5, #20]
+mov r0, #0x01000000
+str r0, [r5, #24]
+movw r0, #0x4742
+movt r0, #0x3150
+str r0, [r5, #28]
+ldr r0, [sp, #12]
+rev r0, r0
+str r0, [r5, #32]
+rev r0, r11
+str r0, [r5, #36]
+mov r0, #2
+add r1, sp, #16
+bl #0x100e98
+cmp r0, #0
+bne bg_control_failed
+ldr r0, [sp, #20]
+mov r1, #0
+movw r2, #0x4240
+movt r2, #0xf
+mov r3, #0
+bl #0x10aa68
+ldr r2, [sp, #16]
+mov r3, #1000
+umlal r0, r1, r2, r3
+adds r0, r0, #1000
+adc r1, r1, #0
+strd r0, r1, [sp]
+mov r0, r4
+mov r1, r5
+mov r2, #168
+mov r3, #1
+bl #0x101578
+cmp r11, #8
+mvneq r0, #0
+b bg_control_return
+bg_control_failed:
+mvn r0, #0
+bg_control_return:
+add sp, sp, #92
+pop {r4, r5, r6, r7, r8, r9, r10, r11, pc}
+
+bg_control_bound:
+push {lr}
+sub sp, sp, #20
+movw r0, #0x9680
+movt r0, #0x98
+str r0, [sp, #8]
+mov r0, #0
+str r0, [sp]
+str r0, [sp, #12]
+mov r0, #2
+mov r1, #0x50
+mov r2, #0
+add r3, sp, #8
+bl #0x101174
+add sp, sp, #20
+pop {pc}
+.align 2
+bg_control_libc:
+.asciz "libc.so.3"
+.align 2
+bg_control_mmap:
+.asciz "mmap"
+.align 2
+bg_control_munmap:
+.asciz "munmap"
+.align 2
+bg_control_lseek:
+.asciz "lseek"
+.align 2
+bg_control_path:
+.asciz "/dev/shmem/dashcast-bg1"
+.align 2

@@ -72,8 +72,10 @@ public final class NoAuthContinuousSessionTest {
         assertThrows(IOException.class, () -> NoAuthVideoProtocol.frame(NoAuthVideoProtocolTest.P, 1801, 60000));
         NoAuthVideoProtocol.frame(NoAuthVideoProtocolTest.P, 1801, 60000, true);
         NoAuthVideoProtocol.frame(NoAuthVideoProtocolTest.P, 65000, 1800000, true);
-        assertThrows(IOException.class, () -> NoAuthVideoProtocol.frame(NoAuthVideoProtocolTest.P, 65001, 1800000, true));
-        assertThrows(IOException.class, () -> NoAuthVideoProtocol.heartbeat(65005, true));
+        NoAuthVideoProtocol.frame(NoAuthVideoProtocolTest.P, 65001, 1800000, true);
+        NoAuthVideoProtocol.frame(NoAuthVideoProtocolTest.P, 240000, 7200000, true);
+        assertThrows(IOException.class, () -> NoAuthVideoProtocol.frame(NoAuthVideoProtocolTest.P, 240001, 7200000, true));
+        assertThrows(IOException.class, () -> NoAuthVideoProtocol.heartbeat(240005, true));
     }
 
     @Test

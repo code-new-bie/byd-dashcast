@@ -9,7 +9,7 @@ import java.util.concurrent.locks.LockSupport;
  * @author Codex
  * @date 2026/10/20
  */
-final class InstrumentCompositionTrial {
+final class InstrumentCompositionTrial implements CompositionControl {
     private static final long POLL_NANOS = 100_000_000L;
     private static final long MAX_ACTIVE_NANOS = 7_000_000_000L;
     private final NoAuthVideoClient.Logger log;
@@ -33,7 +33,8 @@ final class InstrumentCompositionTrial {
         this.stop = Objects.requireNonNull(stop);
     }
 
-    void prepare(NoAuthVideoTransport channel) throws IOException {
+    @Override
+    public void prepare(NoAuthVideoTransport channel) throws IOException {
         before = exchange(channel, InstrumentBackgroundPoc.QUERY, 0);
         requireSame(before);
         if (before.word(9) == 1 || before.word(3) != before.word(8)) {
@@ -43,7 +44,8 @@ final class InstrumentCompositionTrial {
                 + "; fixed full-size underlay, not a physical composition certification");
     }
 
-    void activate(NoAuthVideoTransport channel) throws IOException {
+    @Override
+    public void activate(NoAuthVideoTransport channel) throws IOException {
         if (sent || before == null) {
             throw new IOException("COMPOSITION_START_REPLAY_OR_NOT_PREPARED");
         }
@@ -56,7 +58,8 @@ final class InstrumentCompositionTrial {
         log.log("COMPOSITION_VIDEO_SUBMITTED_BACKGROUND_REQUESTED hold_ms=5000; no renewal");
     }
 
-    void tick(NoAuthVideoTransport channel) throws IOException {
+    @Override
+    public void tick(NoAuthVideoTransport channel) throws IOException {
         if (!sent || restored) {
             return;
         }
@@ -94,7 +97,8 @@ final class InstrumentCompositionTrial {
         }
     }
 
-    void restore(NoAuthVideoTransport channel) throws IOException {
+    @Override
+    public void restore(NoAuthVideoTransport channel) throws IOException {
         if (!sent || restored) {
             return;
         }
@@ -129,7 +133,12 @@ final class InstrumentCompositionTrial {
 
     private static InstrumentBackgroundPoc.Reply exchange(NoAuthVideoTransport channel, int operation, int nonce)
             throws IOException {
-        channel.write(InstrumentBackgroundPoc.request(operation, nonce));
+        return exchangePacket(channel, operation, InstrumentBackgroundPoc.request(operation, nonce));
+    }
+
+    static InstrumentBackgroundPoc.Reply exchangePacket(NoAuthVideoTransport channel, int operation, byte[] request)
+            throws IOException {
+        channel.write(request);
         InstrumentBackgroundPoc.validateHeader(channel.readExact(NoAuthVideoProtocol.HEADER_BYTES));
         byte[] bytes = new byte[InstrumentBackgroundPoc.REPLY_BYTES];
         for (int offset = 0; offset < bytes.length;) {

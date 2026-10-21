@@ -33,7 +33,7 @@ public final class ShellCaptureCommandTest {
         assertThrows(IllegalArgumentException.class,
                 () -> ShellCaptureCommand.continuous("/sdcard/base.apk", 1800));
         assertThrows(IllegalArgumentException.class,
-                () -> ShellCaptureCommand.continuous("/data/app/x/base.apk", 1801));
+                () -> ShellCaptureCommand.continuous("/data/app/x/base.apk", 7201));
     }
     @Test
     public void fixedEntryPointQuotesInstalledApkAndDoesNotDisableAuthentication() {

@@ -9,7 +9,7 @@ import java.nio.charset.StandardCharsets;
  * @date 2026/10/10
  */
 public enum InstrumentUsbCommand {
-    /** Restore instrument Host; USB peer must be disconnected first. */
+    /** Restore Host after owned video/USB cleanup; product supports ordered logical detach with cable attached. */
     HOST("SCMD_USBMODE1"),
     /** Switch instrument to the reference NCM Device stack. */
     NCM("SCMD_USBMODE2");

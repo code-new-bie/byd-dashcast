@@ -122,7 +122,7 @@ public final class FramedCaptureReaderTest {
         }
         reader.onOutput(CaptureFrameProtocol.end((ProjectionLimits.MAX_FRAMES - 1) * 33333L), 24);
         reader.finish(false);
-        assertEquals(65000, count[0]);
+        assertEquals(240000, count[0]);
     }
 
     @Test

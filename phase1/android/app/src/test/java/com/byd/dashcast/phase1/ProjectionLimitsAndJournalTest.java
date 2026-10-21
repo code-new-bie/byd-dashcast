@@ -5,12 +5,13 @@ import static org.junit.Assert.*;
 
 public final class ProjectionLimitsAndJournalTest {
     @Test
-    public void durationHasFiniteThirtyMinuteBoundary() {
+    public void durationHasFiniteTwoHourBoundary() {
         assertEquals(33_333L, ProjectionLimits.TARGET_FRAME_INTERVAL_US);
         ProjectionLimits.requireSeconds(1);
         ProjectionLimits.requireSeconds(600);
         ProjectionLimits.requireSeconds(1800);
-        for (int seconds : new int[] {-1, 0, 1801, Integer.MAX_VALUE}) {
+        ProjectionLimits.requireSeconds(7200);
+        for (int seconds : new int[] {-1, 0, 7201, Integer.MAX_VALUE}) {
             assertThrows(IllegalArgumentException.class, () -> ProjectionLimits.requireSeconds(seconds));
         }
     }

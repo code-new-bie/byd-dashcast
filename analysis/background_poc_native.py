@@ -68,8 +68,8 @@ def build_background_receiver(original):
     return apply_receiver_overlay(base)
 
 
-def compile_thumb():
-    source = HMI_SOURCE.read_text("utf-8")
+def compile_thumb(source_path=HMI_SOURCE):
+    source = source_path.read_text("utf-8")
     code = re.sub(r"(?m)//.*$", "", source)
     # Keystone's Thumb relaxation can move a previously encoded numeric BL.
     # Resolve external four-byte branches AFTER final label/layout resolution.
@@ -111,7 +111,7 @@ def compile_thumb():
     return bytes(binary), labels, digest(source.encode())
 
 
-def apply_hmi_overlay(base, expected_sha=HMI_BASE_SHA):
+def apply_hmi_overlay(base, expected_sha=HMI_BASE_SHA, source_path=HMI_SOURCE):
     if not expected_sha or digest(base) != expected_sha:
         raise ValueError("Not the exact inspected HMI baseline")
     elf = ELFFile(io.BytesIO(base))
@@ -132,7 +132,7 @@ def apply_hmi_overlay(base, expected_sha=HMI_BASE_SHA):
                 section["sh_offset"] < CAVE_OFFSET + CAVE_CAPACITY
                 and section["sh_offset"] + section["sh_size"] > CAVE_OFFSET):
             raise ValueError("HMI cave overlaps a section")
-    code, labels, source_sha = compile_thumb()
+    code, labels, source_sha = compile_thumb(source_path)
     output = bytearray(base)
     allowed = []
 

@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">BYD 仪表 USB 投屏</string>
-    <string name="screen_title">BYD → QNX 仪表投屏 0.10.0 综合修复 / 实车合成</string>
+    <string name="app_name">Dashcast 仪表导航</string>
+    <string name="screen_title">Dashcast 1.0 高级工程工具</string>
     <string name="control_initial_status">待连接 ADB；原厂导航中继版本、USB 枚举与视频需分别验证。</string>
-    <string name="screen_scope">0.10.0必须配套更新仪表App。默认保留原小窗；新增实际1920×720底层视频＋五秒背景处理合成入口，自动恢复，不只检查日志。修正持续会话静默保活、前台服务副屏探针与传输等待。关键原生信息必须全程保留，实际合成及性能待实车，仅停车/台架，禁止行驶。未请求合成时不抑制背景，普通ADB/USB许可不变。结束后一键导出到下载目录。</string>
+    <string name="screen_scope">这是保留的高级工程回归工具，短时实验不等于日常投屏流程。日常导航、持续合成、带线切换请返回产品首页。实验会操作仪表背景，仅停稳或台架使用；无需视频授权，普通ADB和USB访问许可保持不变。</string>
     <string name="continuous_status">持续投屏：%1$s</string>
-    <string name="matching_firmware">已刷入0.10.0实车合成配套仪表App/固件，车辆停稳</string>
+    <string name="matching_firmware">已刷入1.0配套仪表包，当前仅停稳或台架运行高级实验</string>
     <string name="capture_geometry_scope">采集设置只改变车机1920×720源的取景方式，不改变仪表窗口、层级或编码尺寸。地图区域由你指定，不自动识别导航应用；发送端目标30FPS。</string>
     <string name="capture_fit">保持比例：完整车机画面，必要时留黑边</string>
     <string name="capture_crop">中心裁剪：保持比例，填满原小窗</string>
@@ -20,6 +20,6 @@
     <string name="stop_projection">停止投屏 / 当前验证（不会自动切 Host）</string>
     <string name="projection_channel">仪表持续投屏</string>
     <string name="projection_notification_title">仪表持续投屏运行中</string>
-    <string name="projection_notification_text">可切到导航；停止后拔线再恢复 Host</string>
+    <string name="projection_notification_text">独立导航运行中；停止或恢复U盘模式可在应用内完成，无需拔线</string>
     <string name="projection_notification_stop">停止投屏</string>
 </resources>

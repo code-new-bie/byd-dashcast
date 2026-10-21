@@ -28,6 +28,10 @@ final class ProjectionJournal {
         return state == ProjectionSessionController.State.QUARANTINED;
     }
 
+    synchronized ProjectionSessionController.State currentState() {
+        return state;
+    }
+
     synchronized String status() {
         return state + ": " + detail;
     }

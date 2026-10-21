@@ -67,6 +67,9 @@ public final class UsbNcmSession implements Closeable {
 
     public static UsbNcmSession open(Context context, AtomicBoolean cancelled) throws IOException {
         UsbDevice device = findDevice(context);
+        if (device.getVendorId() != 0x1234 || device.getProductId() != 0xfff1) {
+            throw new IOException("Non-target NCM device; instrument session was not opened");
+        }
         Usb.Session usb = null;
         Net network = null;
         Ncm ncm = null;
