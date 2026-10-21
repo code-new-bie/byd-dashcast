@@ -38,6 +38,20 @@ public final class ProjectionService extends Service {
     private ThreadPoolExecutor worker;
     private ProjectionSessionController controller;
     private PowerManager.WakeLock wakeLock;
+    private static final long WAKE_LEASE_MILLIS = 60_000L;
+    private static final long WAKE_RENEW_MILLIS = 20_000L;
+    private final Runnable renewWakeLease = new Runnable() {
+        @Override public void run() {
+            if (destroyed || finishing || controller == null || !controller.active() || wakeLock == null) { return; }
+            try {
+                wakeLock.acquire(WAKE_LEASE_MILLIS);
+                main.postDelayed(this, WAKE_RENEW_MILLIS);
+            } catch (RuntimeException error) {
+                JOURNAL.append("PRODUCT_WAKE_LEASE_FAILED " + error);
+                controller.abort("Foreground wake ownership lost");
+            }
+        }
+    };
     private String ownedDevice;
     private boolean receiverRegistered;
     private volatile boolean finishing;
@@ -80,7 +94,7 @@ public final class ProjectionService extends Service {
             throw new IllegalArgumentException("Product setup and explicit capture selection required");
         }
         context.startForegroundService(new Intent(context, ProjectionService.class).setAction(START)
-                .putExtra("seconds", ProjectionLimits.MAX_SECONDS).putExtra("product_session", true)
+                .putExtra("seconds", ContinuousSessionPolicy.UNLIMITED_SECONDS).putExtra("product_session", true)
                 .putExtra("product_generation", PRODUCT_GENERATION.incrementAndGet())
                 .putExtra("product_underlay", underlay).putExtra("capture_selection", options.token())
                 .putExtra("projection_target", target.token()));
@@ -218,13 +232,14 @@ public final class ProjectionService extends Service {
                 throw new IOException("Previous owner's cleanup became unconfirmed; retry blocked");
             }
             int seconds = intent.getIntExtra("seconds", 0);
-            ProjectionLimits.requireSeconds(seconds);
+            if (product) { ContinuousSessionPolicy.requireCaptureSeconds(seconds); }
+            else { ProjectionLimits.requireSeconds(seconds); }
             CaptureOptions options = CaptureOptions.parse(intent.getStringExtra("capture_selection"));
             ProjectionTarget target = ProjectionTarget.parse(intent.getStringExtra("projection_target"));
             boolean composition = intent.getBooleanExtra("composition_trial", false);
             boolean probe = intent.getBooleanExtra("capture_only_probe", false);
             boolean underlay = intent.getBooleanExtra("product_underlay", false);
-            if (product && (probe || composition || seconds != ProjectionLimits.MAX_SECONDS)) {
+            if (product && (probe || composition || !ContinuousSessionPolicy.unlimited(seconds))) {
                 throw new IOException("Invalid product session profile");
             }
             if (composition && (probe || seconds != 10) || probe && (seconds != 5 || !target.isRemote())) {
@@ -255,7 +270,8 @@ public final class ProjectionService extends Service {
                 throw new IOException("PowerManager unavailable");
             }
             wakeLock = power.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "dashcast:continuous");
-            wakeLock.acquire((seconds + 30L) * 1000);
+            wakeLock.setReferenceCounted(false);
+            wakeLock.acquire(product ? WAKE_LEASE_MILLIS : (seconds + 30L) * 1000);
             ContinuousProjectionTask continuous = probe ? null
                     : new ContinuousProjectionTask(this, seconds, JOURNAL::append, options, target, composition);
             if (product && underlay) { continuous.enableProductComposition(); }
@@ -272,6 +288,8 @@ public final class ProjectionService extends Service {
                 releaseWakeLock();
                 stopForeground(STOP_FOREGROUND_REMOVE);
                 stopSelf();
+            } else if (product) {
+                main.postDelayed(renewWakeLease, WAKE_RENEW_MILLIS);
             }
         } catch (IOException | RuntimeException error) {
             ownedLease = null;
@@ -304,6 +322,7 @@ public final class ProjectionService extends Service {
     }
 
     private void releaseWakeLock() {
+        main.removeCallbacks(renewWakeLease);
         if (wakeLock != null && wakeLock.isHeld()) {
             wakeLock.release();
         }

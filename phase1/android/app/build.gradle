@@ -11,8 +11,8 @@ android {
         minSdk 29
         // Target API 29 matches the Android 10 head-unit runtime under test.
         targetSdk 29
-        versionCode 33
-        versionName "1.0.0"
+        versionCode 34
+        versionName "1.0.1"
     }
 
     buildTypes {

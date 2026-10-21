@@ -72,7 +72,8 @@ final class AdbScreenVideoSource {
 
     void runContinuous(int seconds, String installedApk, AtomicBoolean stopRequested, Runnable finishReceiver,
             CaptureOptions options, ProjectionTarget target) throws IOException {
-        FramedCaptureReader reader = new FramedCaptureReader(observer, finishReceiver);
+        FramedCaptureReader reader = new FramedCaptureReader(observer, finishReceiver,
+                ContinuousSessionPolicy.unlimited(seconds));
         ProjectionTarget selectedTarget = Objects.requireNonNull(target, "Projection target required");
         log.accept("VIDEO_SOURCE=authorized_ADB_DCS1; timestamps=encoder_PTS; no video file recorded"
                 + "; target=" + selectedTarget);

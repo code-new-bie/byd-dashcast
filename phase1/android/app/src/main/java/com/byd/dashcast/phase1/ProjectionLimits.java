@@ -1,6 +1,6 @@
 package com.byd.dashcast.phase1;
 
-/** Explicit, finite bounds for the high-definition continuous projection milestone.
+/** Finite engineering profiles; normal product capture uses ContinuousSessionPolicy, not these totals.
  * @author Codex
  * @date 2026/10/13
  */

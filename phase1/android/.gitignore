@@ -1,5 +1,6 @@
 .gradle-local/
 .gradle/
+.kotlin/
 .gradle-user-home/
 .android-sdk/
 .downloads/

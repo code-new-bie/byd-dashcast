@@ -148,6 +148,6 @@ final class FramePacer {
         if (frames < 2L || first < 0L || last <= first) {
             return 0L;
         }
-        return (frames - 1L) * NANOS_PER_SECOND * 100L / (last - first);
+        return ContinuousSessionPolicy.rateX100(frames, first, last, NANOS_PER_SECOND);
     }
 }

@@ -18,7 +18,7 @@ WRAPPER_HASH = "497c8c2a7e5031f6aa847f88104aa80a93532ec32ee17bdb8d1d2f67a194a9c7
 FORBIDDEN_EXTENSIONS = {".sv", ".zip", ".apk", ".aab", ".img", ".bin", ".elf", ".so", ".dll",
                         ".h264", ".dcv1", ".ts", ".mp4", ".log", ".jks", ".keystore", ".pem",
                         ".p12", ".pfx", ".key", ".class", ".jar"}
-GENERATED_PARTS = {".git", "build", "__pycache__", ".android-sdk", ".downloads", ".native-deps",
+GENERATED_PARTS = {".git", ".kotlin", "build", "__pycache__", ".android-sdk", ".downloads", ".native-deps",
                    "_tmp", ".venv", ".pytest_cache", ".ruff_cache", "private-inputs"}
 PATTERNS = {
     "PRIVATE_KEY_OR_ACCESS_TOKEN": re.compile(

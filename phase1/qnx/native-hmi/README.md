@@ -1,5 +1,14 @@
 # Native background controller — implementation, not a flashable HMI adapter
 
+2026-10-21 current adapter: `background-unlimited.thumb` (1.0.1) publishes
+RWN2 and word30=0 for the matching DCV1/3 receiver. It retains the owned renewable
+five-second expiry; zero means no product total budget, NOT no failure recovery.
+Only two capability-publication instructions differ from the frozen 1.0 adapter.
+The MCU/OS/KZB/foreground and USB role script are unchanged. These adapters are
+separate from the portable C99 implementation below. ARM/Thumb/API-mocked tests
+are not target QNX loading, physical composition or road-safety certification.
+`background-product.thumb`/RWN1/7200 remains a frozen 1.0 source, not current policy.
+
 2026-10-20: `background-poc.thumb` adds a separate, exact-version, five-second
 render-time PoC. It does not compile/link the C99 controller below, enable
 fullscreen, or certify vehicle safety. It defaults to native drawing, accepts

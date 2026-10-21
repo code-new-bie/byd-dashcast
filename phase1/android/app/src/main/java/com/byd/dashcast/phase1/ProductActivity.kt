@@ -165,14 +165,14 @@ class ProductActivity : Activity() {
         card {
             addView(text("画面与外观", 26, true))
             addView(toggle("全尺寸视频置于原生信息下方", settings.underlay) { settings.underlay = it })
-            addView(text("关闭后使用已打通的兼容小窗。全尺寸模式要求配套 1.0 仪表包；原生背景由有界租约管理，失联后自动恢复。", 16))
+            addView(text("关闭后使用已打通的兼容小窗。持续模式要求配套 1.0.1 仪表包；原生背景由有界租约管理，失联后自动恢复。", 16))
             addView(toggle("中心裁剪填充画面", settings.crop) { settings.crop = it })
             addView(text("默认保持完整比例；裁剪只改变视频取景，不改变车速、挡位等仪表元素。设置在下一次开始时生效。", 16))
             addView(toggle("日间浅色界面", settings.light) { settings.light = it; build() })
         }
         card {
             addView(text("使用与边界", 23, true))
-            addView(text("支持持续导航投屏，不再使用每次停车勾选或秒数验证流程。单次连接上限两小时，到时正常停止，可再开始；不会暗中循环重连。", 17))
+            addView(text("持续导航没有累计时长上限，直到主动停止、断开连接或出现异常；不会定时结束，也不会暗中循环重连。", 17))
             addView(text("软件不读取或伪造车速，不自动判定车辆在行驶。不能以保留当前前景信息代替全部告警/硬件合成的实车确认；本候选版本不宣称道路安全认证。", 17))
             addView(button("查看首次连接说明") { firstRun() })
         }
@@ -209,7 +209,7 @@ class ProductActivity : Activity() {
 
     private fun firstRun() {
         AlertDialog.Builder(this).setTitle("首次连接 Dashcast")
-            .setMessage("1. 仪表使用本次 1.0 配套固件，MCU 和参考 OS 不改。\n2. 仪表与车机连接 USB 数据线，可保持连接切模式。\n3. 首次开始时允许 ADB 调试和 USB 访问。\n\n默认独立投屏导航应用。驾驶时不要操作设置或观看视频；若任何原生信息异常，立即停止投屏。本候选版本不宣称道路安全认证。")
+            .setMessage("1. 仪表使用本次 1.0.1 配套固件，MCU 和参考 OS 不改。\n2. 仪表与车机连接 USB 数据线，可保持连接切模式。\n3. 首次开始时允许 ADB 调试和 USB 访问。\n\n默认独立投屏导航应用。驾驶时不要操作设置或观看视频；若任何原生信息异常，立即停止投屏。本候选版本不宣称道路安全认证。")
             .setPositiveButton("已安装配套仪表包，开始设置") { _, _ -> settings.setupComplete = true; control.connect(); updateStatus() }
             .setNegativeButton("稍后", null).show()
     }

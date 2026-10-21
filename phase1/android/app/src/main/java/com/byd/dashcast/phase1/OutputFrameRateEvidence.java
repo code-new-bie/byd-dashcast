@@ -53,7 +53,7 @@ final class OutputFrameRateEvidence {
             maxPtsIntervalUs = maxPtsIntervalUs < 0L
                     ? ptsInterval : Math.max(maxPtsIntervalUs, ptsInterval);
         }
-        frames++;
+        frames = ContinuousSessionPolicy.add(frames, 1);
         lastPts = ptsMicros;
         lastWallNanos = wallNanos;
     }
@@ -127,7 +127,7 @@ final class OutputFrameRateEvidence {
         if (count < 2L || first == Long.MIN_VALUE || last <= first) {
             return 0L;
         }
-        return (count - 1L) * unitsPerSecond * 100L / (last - first);
+        return ContinuousSessionPolicy.rateX100(count, first, last, unitsPerSecond);
     }
 
     private static long averageInterval(long first, long last, long count) {

@@ -1,4 +1,8 @@
-# 当前架构（1.0 Kotlin产品候选）
+# 当前架构（1.0.1 持续产品会话）
+
+Kotlin产品层→所属前台Service→受控shell副屏/硬件AVC→DCV1/3/NCM→QNX receiver/RWN2 HMI桥。正常产品duration=0，无累计时间/帧数/字节数停止，不使用定时重连；uint32模线序号与PTS配合64位源时间/统计。HMI同nonce/PID/epoch按秒续期五秒租约，接收器只检查最近15秒心跳；服务持锁随活跃所属短租续期。停止恢复/EXIT/STOP/ALT0/接口释放与1.0带线工作流保持，未知清理仍隔离。[1.0.1能力与兼容](PRODUCT_1.0.1.md)。
+
+## 1.0 架构（历史）
 
 Kotlin产品Activity/应用目录/配置 → 应用级协调器与真实Service状态 → 已授权原厂导航角色中继/前台投屏Service → 原Java副屏采集/硬编/DCV1/NCM → QNX receiver/HMI背景桥。单一最长两小时连接，RWN1能力匹配后同nonce/PID/epoch/序号按秒续租五秒背景期限；不靠循环重连。停止先恢复背景、媒体STOP、采集EXIT、USB ALT0和接口释放，未知清理隔离。带线Host再soft-link-down及私有协议栈正常退出，不强杀共享服务；设备消失不冒充Host成功反馈。导航不每次停车确认，车辆运动输入未接入，不能由软件状态证明物理层/全部告警或道路安全。[产品范围](PRODUCT_1.0.md)。以下保留历史架构。
 

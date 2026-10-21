@@ -280,7 +280,7 @@ internal object ProductErrors {
         val text = error.message.orEmpty()
         return when {
             text.contains("AUTH", true) || text.contains("authentication", true) -> "ADB 尚未授权；请允许车机的 USB 调试弹窗后重试"
-            text.contains("MATCHING_FIRMWARE") -> "仪表固件与产品版本不匹配；请使用本次配套仪表包"
+            text.contains("MATCHING_FIRMWARE") -> "仪表固件与产品版本不匹配；请使用本次 1.0.1 配套仪表包"
             text.contains("CLEANUP_UNCONFIRMED") -> "上次清理未确认，已停止重试；请重启仪表和应用恢复"
             text.contains("NCM_NOT_ENUMERATED") -> "暂未发现仪表连接；保持数据线连接并检查仪表模式提示"
             text.contains("USB_PERMISSION") -> "请允许访问仪表 USB 后再操作"

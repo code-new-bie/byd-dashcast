@@ -41,7 +41,7 @@ final class ContinuousProjectionTask implements ProjectionSessionController.Task
 
     ContinuousProjectionTask(Context context, int seconds, Consumer<String> log, CaptureOptions options,
             ProjectionTarget target, boolean compositionTrial) {
-        ProjectionLimits.requireSeconds(seconds);
+        ContinuousSessionPolicy.requireCaptureSeconds(seconds);
         this.context = context.getApplicationContext();
         this.seconds = seconds;
         this.log = log;
@@ -68,6 +68,7 @@ final class ContinuousProjectionTask implements ProjectionSessionController.Task
             }
             session = UsbNcmSession.open(context, abort);
             client = new NoAuthVideoClient(session::connect, abort, log::accept, true);
+            if (ContinuousSessionPolicy.unlimited(seconds)) { client.enableUnlimitedStream(); }
             if (productComposition) {
                 client.enableProductComposition(new java.security.SecureRandom().nextInt(Integer.MAX_VALUE - 1) + 1);
             } else if (compositionTrial) {

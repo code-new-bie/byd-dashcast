@@ -18,7 +18,8 @@ final class FramedCaptureReader implements AdbShellClient.ShellOutputHandler {
     private long pts;
     private boolean key;
     private long lastPts = -1;
-    private int frames;
+    private long frames;
+    private final boolean unlimited;
     private long bytes;
     private boolean failed;
     private boolean finished;
@@ -29,8 +30,13 @@ final class FramedCaptureReader implements AdbShellClient.ShellOutputHandler {
     }
 
     FramedCaptureReader(VideoPatternProbe.Observer observer, Runnable endHandler) {
+        this(observer, endHandler, false);
+    }
+
+    FramedCaptureReader(VideoPatternProbe.Observer observer, Runnable endHandler, boolean unlimited) {
         this.observer = Objects.requireNonNull(observer);
         this.endHandler = Objects.requireNonNull(endHandler);
+        this.unlimited = unlimited;
     }
 
     @Override
@@ -41,11 +47,11 @@ final class FramedCaptureReader implements AdbShellClient.ShellOutputHandler {
         if (finished || failed || ended && length > 0) {
             throw new IOException("DCS1_CLOSED_OR_BYTE_LIMIT");
         }
-        if (length > ProjectionLimits.MAX_CAPTURE_BYTES - bytes) {
+        if (!unlimited && length > ProjectionLimits.MAX_CAPTURE_BYTES - bytes) {
             failed = true;
             throw new IOException("DCS1_BYTE_LIMIT");
         }
-        bytes += length;
+        bytes = ContinuousSessionPolicy.add(bytes, length);
         try {
             int offset = 0;
             while (offset < length) {
@@ -68,7 +74,7 @@ final class FramedCaptureReader implements AdbShellClient.ShellOutputHandler {
                     if (frameUsed == frame.length) {
                         observer.frame(frame, pts, key);
                         lastPts = pts;
-                        frames++;
+                        frames = ContinuousSessionPolicy.add(frames, 1);
                         frame = null;
                         frameUsed = 0;
                         headerUsed = 0;
@@ -106,7 +112,7 @@ final class FramedCaptureReader implements AdbShellClient.ShellOutputHandler {
             endHandler.run();
             return;
         }
-        if (frames >= ProjectionLimits.MAX_CAPTURE_FRAMES || pts <= lastPts) {
+        if (!unlimited && frames >= ProjectionLimits.MAX_CAPTURE_FRAMES || pts <= lastPts) {
             throw new IOException("DCS1_FRAME_COUNT_OR_NON_MONOTONIC_ENCODER_PTS");
         }
         frame = new byte[size];

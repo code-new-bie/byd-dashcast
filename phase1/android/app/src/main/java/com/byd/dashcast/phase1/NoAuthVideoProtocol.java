@@ -41,8 +41,14 @@ final class NoAuthVideoProtocol {
     }
 
     static byte[] hello(boolean continuous) {
+        return helloVersion(continuous ? 2 : 1);
+    }
+
+    static byte[] helloUnlimited() { return helloVersion(3); }
+
+    private static byte[] helloVersion(int version) {
         ByteBuffer payload = ByteBuffer.allocate(16).order(ByteOrder.BIG_ENDIAN);
-        payload.putLong(0).put(MAGIC).putInt(continuous ? 2 : 1);
+        payload.putLong(0).put(MAGIC).putInt(version);
         return packet(HELLO, 0, 0, 0, payload.array());
     }
 
@@ -66,6 +72,10 @@ final class NoAuthVideoProtocol {
         if (counter < 1 || counter > frameLimit(continuous) + 4) {
             throw new IOException("DCV1_HEARTBEAT_LIMIT");
         }
+        return heartbeatUnlimited(counter);
+    }
+
+    static byte[] heartbeatUnlimited(int counter) {
         ByteBuffer payload = ByteBuffer.allocate(20).order(ByteOrder.BIG_ENDIAN);
         payload.putLong(0).putLong(0).putInt(counter);
         return packet(HEARTBEAT, 0, 0, 0, payload.array());
@@ -80,13 +90,21 @@ final class NoAuthVideoProtocol {
     }
 
     static byte[] frame(byte[] annexB, int sequence, long ptsMillis, boolean continuous) throws IOException {
+        if (sequence < 1 || sequence > frameLimit(continuous)) {
+            throw new IOException("DCV1_FRAME_LIMIT");
+        }
+        return frameUnlimited(annexB, sequence, ptsMillis, sequence == 1);
+    }
+
+    /** Version 3 serial/PTS are uint32 bit patterns, not cumulative session budgets. */
+    static byte[] frameUnlimited(byte[] annexB, int sequence, long ptsMillis, boolean first) throws IOException {
         if (annexB == null || annexB.length == 0 || annexB.length > MAX_FRAME_BYTES
-                || sequence < 1 || sequence > frameLimit(continuous) || ptsMillis < 0 || ptsMillis > 0xffffffffL) {
+                || ptsMillis < 0 || ptsMillis > 0xffffffffL) {
             throw new IOException("DCV1_FRAME_LIMIT");
         }
         int types = inspectAnnexB(annexB);
         boolean idr = (types & (1 << 5)) != 0;
-        if (sequence == 1 && (!idr || (types & (1 << 7)) == 0 || (types & (1 << 8)) == 0)) {
+        if (first && (!idr || (types & (1 << 7)) == 0 || (types & (1 << 8)) == 0)) {
             throw new IOException("DCV1_FIRST_FRAME_NEEDS_SPS_PPS_IDR");
         }
         if (((types & (1 << 1)) == 0 && !idr) || (idr && (types & (1 << 1)) != 0)) {
@@ -120,6 +138,16 @@ final class NoAuthVideoProtocol {
 
     static Reply reply(byte[] header, byte[] payload, int operation, int sequence, long pts, boolean continuous)
             throws IOException {
+        return replyInternal(header, payload, operation, sequence, pts, continuous, false);
+    }
+
+    static Reply replyUnlimited(byte[] header, byte[] payload, int operation, int sequence, long pts)
+            throws IOException {
+        return replyInternal(header, payload, operation, sequence, pts, true, true);
+    }
+
+    private static Reply replyInternal(byte[] header, byte[] payload, int operation, int sequence, long pts,
+            boolean continuous, boolean unlimited) throws IOException {
         validateEnvelope(header, operation | 0x80, ACK_BYTES, sequence, pts);
         if (payload == null || payload.length != ACK_BYTES) {
             throw new IOException("DCV1_BAD_ACK_LENGTH");
@@ -129,11 +157,11 @@ final class NoAuthVideoProtocol {
         int flags = values.getInt();
         int frames = values.getInt();
         long lastPts = Integer.toUnsignedLong(values.getInt());
-        if ((flags & ~31) != 0 || frames < 0 || frames > frameLimit(continuous)) {
+        if ((flags & ~31) != 0 || !unlimited && (frames < 0 || frames > frameLimit(continuous))) {
             throw new IOException("DCV1_INVALID_OR_FAILED_MEDIA_STATE");
         }
         if (result != 0) {
-            throw new Rejected(operation, result, new Reply(flags, frames, lastPts));
+            throw new Rejected(operation, result, new Reply(flags, frames, lastPts, unlimited));
         }
         if ((flags & 8) != 0) {
             throw new IOException("DCV1_INVALID_OR_FAILED_MEDIA_STATE cleanup_error=true");
@@ -141,7 +169,7 @@ final class NoAuthVideoProtocol {
         if (operation == FRAME && (frames != sequence || lastPts != pts)) {
             throw new IOException("DCV1_SUBMISSION_READBACK_MISMATCH");
         }
-        return new Reply(flags, frames, lastPts);
+        return new Reply(flags, frames, lastPts, unlimited);
     }
 
     private static int frameLimit(boolean continuous) {
@@ -206,15 +234,21 @@ final class NoAuthVideoProtocol {
         final int flags;
         final int submissions;
         final long lastPts;
+        private final boolean modularCount;
 
         Reply(int flags, int submissions, long lastPts) {
+            this(flags, submissions, lastPts, false);
+        }
+
+        Reply(int flags, int submissions, long lastPts, boolean modularCount) {
             this.flags = flags;
             this.submissions = submissions;
             this.lastPts = lastPts;
+            this.modularCount = modularCount;
         }
 
         boolean windowReported() {
-            return flags == 23 && submissions >= 2;
+            return flags == 23 && (modularCount || submissions >= 2);
         }
 
         boolean cleanupReported() {
@@ -223,7 +257,7 @@ final class NoAuthVideoProtocol {
 
         String summary() {
             return "RECEIVER_MEDIA context=" + ((flags & 1) != 0)
-                    + " submitted=" + submissions + " video_window=" + ((flags & 4) != 0)
+                    + " submitted=" + Integer.toUnsignedLong(submissions) + " video_window=" + ((flags & 4) != 0)
                     + " screen_visible=" + ((flags & 16) != 0) + " last_pts_ms=" + lastPts
                     + "; NOT decoded/post-frame counts, manual picture observation required";
         }

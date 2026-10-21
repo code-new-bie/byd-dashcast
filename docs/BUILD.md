@@ -1,6 +1,18 @@
 # 构建与复现
 
-## 1.0 Kotlin产品与组件
+## 1.0.1 持续会话与组件
+
+APK code34，普通Gradle构建/测试/lint命令不变。新协议DCV1/3和RWN2需要匹配接收器/HMI，不允许只改UI或只更新APK。
+
+自行提供精确1.0.0 receiver（SHA256 974ee40f19643370b58e0846ea211ce0da5b6f841b845c03a72b7912253997d7）和原始未打桥HMI，依赖沿用requirements-native.txt：
+
+```bash
+python3 tools/build_unlimited_components.py --receiver /private/receiver-100 --hmi /private/original-rc_hmi.exe --output build/unlimited
+```
+
+仅输出receiver/HMI和范围JSON，不是可刷FULL；输入精确哈希/已有输出不匹配即拒绝。1.0 USB角色脚本、cfg/启动桥/媒体库不改，原工具继续用于历史版本复现。[当前产品说明](PRODUCT_1.0.1.md)。以下保留历史构建。
+
+## 1.0 Kotlin产品与组件（历史）
 
 APK code33，AGP9.3内置Kotlin，Java/Kotlin目标11，无需另加kotlin-android插件；普通Gradle构建/测试/lint命令不变。原签名与ADB身份不公开，不保证新环境debug签名可覆盖旧APK。
 

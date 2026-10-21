@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Dashcast 仪表导航</string>
-    <string name="screen_title">Dashcast 1.0 高级工程工具</string>
+    <string name="screen_title">Dashcast 1.0.1 高级工程工具</string>
     <string name="control_initial_status">待连接 ADB；原厂导航中继版本、USB 枚举与视频需分别验证。</string>
     <string name="screen_scope">这是保留的高级工程回归工具，短时实验不等于日常投屏流程。日常导航、持续合成、带线切换请返回产品首页。实验会操作仪表背景，仅停稳或台架使用；无需视频授权，普通ADB和USB访问许可保持不变。</string>
     <string name="continuous_status">持续投屏：%1$s</string>

@@ -45,14 +45,14 @@ final class FrameRateGate {
             firstInputPts = ptsMicros;
         }
         lastInputPts = ptsMicros;
-        inputFrames++;
+        inputFrames = ContinuousSessionPolicy.add(inputFrames, 1);
         if (firstOutputPts < 0L) {
             firstOutputPts = ptsMicros;
             lastOutputPts = ptsMicros;
         } else {
             lastOutputPts = advanceOutputPts(lastOutputPts);
         }
-        outputFrames++;
+        outputFrames = ContinuousSessionPolicy.add(outputFrames, 1);
         return lastOutputPts;
     }
 
@@ -96,6 +96,6 @@ final class FrameRateGate {
         if (frames < 2L || firstPts < 0L || lastPts <= firstPts) {
             return 0L;
         }
-        return (frames - 1L) * MICROS_PER_SECOND * RATE_SCALE / (lastPts - firstPts);
+        return ContinuousSessionPolicy.rateX100(frames, firstPts, lastPts, MICROS_PER_SECOND);
     }
 }

@@ -48,7 +48,8 @@ public final class ShellScreenCapture {
                 throw new IOException("SHELL_CAPTURE_REQUIRES_AUTHORIZED_UID2000_ANDROID10");
             }
             int seconds = Integer.parseInt(args[0]);
-            if (seconds < 1 || seconds > (live ? ProjectionLimits.MAX_SECONDS : 10)) {
+            if (live) { ContinuousSessionPolicy.requireCaptureSeconds(seconds); }
+            if (!live && (seconds < 1 || seconds > 10)) {
                 throw new IOException("SHELL_CAPTURE_DURATION_LIMIT");
             }
             if (target.isRemote() && Looper.myLooper() == null) {
@@ -172,19 +173,21 @@ public final class ShellScreenCapture {
     }
 
     private static void stream(MediaCodec codec, int seconds, CaptureStopControl control) throws IOException {
-        long stopAt = System.nanoTime() + seconds * 1_000_000_000L;
-        long drainUntil = stopAt + 2_000_000_000L;
+        long began = System.nanoTime();
+        long drainUntil = 0;
+        boolean unlimited = control != null && ContinuousSessionPolicy.unlimited(seconds);
         OutputStream stdout = ShellCaptureOutput.videoStream();
         long lastPts = -1;
         long lastIdle = System.nanoTime();
-        int frames = 0;
+        long frames = 0;
         boolean eos = false;
         byte[] config = new byte[0];
         OutputFrameRateEvidence frameRateEvidence = new OutputFrameRateEvidence(NoAuthVideoProtocol.FPS);
         long nextRollingGateFrame = OutputFrameRateEvidence.MIN_STABLE_FRAMES;
         MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
-        while (System.nanoTime() < drainUntil) {
-            if (!eos && (System.nanoTime() >= stopAt || control != null && control.stopped())) {
+        while (!eos || System.nanoTime() - drainUntil < 0) {
+            if (!eos && (ContinuousSessionPolicy.timedOut(seconds, began, System.nanoTime())
+                    || control != null && control.stopped())) {
                 codec.signalEndOfInputStream();
                 eos = true;
                 drainUntil = System.nanoTime() + 2_000_000_000L;
@@ -218,8 +221,9 @@ public final class ShellScreenCapture {
                     if ((info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
                         config = AvcByteStream.normalizeConfiguration(buffer);
                     } else {
+                        frames = ContinuousSessionPolicy.add(frames, 1);
                         if ((info.flags & MediaCodec.BUFFER_FLAG_PARTIAL_FRAME) != 0 || info.presentationTimeUs <= lastPts
-                                || ++frames > (control == null ? 360 : ProjectionLimits.MAX_CAPTURE_FRAMES)) {
+                                || !unlimited && frames > (control == null ? 360 : ProjectionLimits.MAX_CAPTURE_FRAMES)) {
                             throw new IOException("SHELL_CAPTURE_PARTIAL_B_FRAME_OR_FRAME_LIMIT");
                         }
                         long frameNanos = System.nanoTime();
@@ -227,7 +231,8 @@ public final class ShellScreenCapture {
                         if (frameRateEvidence.sampleFrames() >= nextRollingGateFrame) {
                             OutputFrameRateEvidence.Result rolling = frameRateEvidence.result();
                             System.err.println(rolling.logLine() + " sample=rolling diagnostic_only=true");
-                            nextRollingGateFrame += OutputFrameRateEvidence.MIN_STABLE_FRAMES;
+                            nextRollingGateFrame = ContinuousSessionPolicy.add(nextRollingGateFrame,
+                                    OutputFrameRateEvidence.MIN_STABLE_FRAMES);
                         }
                         boolean key = (info.flags & MediaCodec.BUFFER_FLAG_KEY_FRAME) != 0;
                         byte[] picture = AvcByteStream.normalize(buffer);
@@ -253,6 +258,9 @@ public final class ShellScreenCapture {
                     }
                 }
                 if ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
+                    if (unlimited && !control.stopped()) {
+                        throw new IOException("SHELL_CAPTURE_UNEXPECTED_EOS_IN_UNLIMITED_SESSION");
+                    }
                     if (frames < 2 && !(control != null && control.stopped())) {
                         throw new IOException("SHELL_CAPTURE_FEWER_THAN_TWO_PICTURES");
                     }

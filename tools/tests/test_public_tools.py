@@ -39,6 +39,12 @@ class PublicCheckTests(unittest.TestCase):
         self.put("README.md", b"# Synthetic test\n")
         self.assertEqual([], inspect_files(self.root, proposed_files(self.root)))
 
+    def test_kotlin_session_cache_excluded_but_explicit_tracking_refused(self):
+        name = "phase1/android/.kotlin/sessions/synthetic-session"
+        self.put(name, b"synthetic generated cache")
+        self.assertNotIn(name, proposed_files(self.root))
+        self.assertEqual([(name, "PRIVATE_OR_GENERATED_FILE_TRACKED")], inspect_files(self.root, [name]))
+
     def test_firmware_extension_rejected(self):
         self.put("unreviewed.sv", b"synthetic, not a firmware")
         self.assertIn(("unreviewed.sv", "BINARY_FIRMWARE_LOG_OR_KEY"), inspect_files(self.root, proposed_files(self.root)))

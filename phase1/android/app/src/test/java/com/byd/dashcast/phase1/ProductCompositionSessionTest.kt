@@ -34,7 +34,7 @@ class ProductCompositionSessionTest {
             words[3] = 2; words[8] = 2; words[9] = state; words[10] = pid
             words[12] = (now / 1_000_000_000L).toInt(); words[13] = (now % 1_000_000_000L).toInt()
             words[14] = words[12] + 5; words[15] = words[13]; words[18] = epoch
-            words[21] = ownerOverride ?: nonce; words[30] = 7200; words[31] = capability
+            words[21] = ownerOverride ?: nonce; words[30] = 0; words[31] = capability
             words[16] = if (nonce == 0) 0 else skip; words[17] = words[16]
             val out = ByteBuffer.allocate(168)
             out.putInt(0x44435631).putInt(0x8a).putInt(144).putInt(0).putInt(0).putInt(0)
@@ -47,13 +47,13 @@ class ProductCompositionSessionTest {
         override fun close() = Unit
     }
 
-    @Test fun oneConnectionRenewsTwoHoursWithoutStartReplayAndRestoresBeforeMediaStop() {
+    @Test fun oneConnectionCrossesTwoHoursWithoutStartReplayAndRestoresBeforeMediaStop() {
         val p = Peer(); val session = p.session()
         session.prepare(p); session.activate(p)
-        repeat(7199) { p.now += 1_000_000_000L; session.tick(p) }
+        repeat(43200) { p.now += 1_000_000_000L; session.tick(p) }
         session.restore(p); session.restore(p)
         assertEquals(1, p.operations.count { it == 1 })
-        assertEquals(7199, p.operations.count { it == 3 })
+        assertEquals(43200, p.operations.count { it == 3 })
         assertEquals(1, p.operations.count { it == 2 })
         assertEquals(2, p.state)
     }
@@ -107,5 +107,13 @@ class ProductCompositionSessionTest {
         val p = Peer(); val s = p.session(); s.prepare(p); s.activate(p); p.error = 5
         assertThrows(IOException::class.java) { s.restore(p) }
         assertEquals(1, p.operations.count { it == 2 })
+    }
+
+    @Test fun previouslyConfirmedDrawCounterWrapDoesNotExpireHealthyOwnership() {
+        val p = Peer(); val s = p.session(); s.prepare(p); s.activate(p)
+        p.now += 1_000_000_000L; s.tick(p)
+        p.skip = 0 // uint32 native skip counter returns to its initial bits after a full cycle
+        p.now += 1_000_000_000L; s.tick(p)
+        assertEquals(2, p.operations.count { it == 3 })
     }
 }

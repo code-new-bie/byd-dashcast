@@ -34,7 +34,9 @@ final class NoAuthVideoClient implements Closeable {
     private boolean closed;
     private boolean terminalCleanup;
     private boolean rejected;
-    private int acknowledged;
+    private long acknowledged;
+    private boolean unlimited;
+    private StreamSerials serials;
     private int heartbeats;
     private long lastHeartbeat;
     private long firstPts = -1;
@@ -45,6 +47,14 @@ final class NoAuthVideoClient implements Closeable {
     private long totalAckNanos;
     private InstrumentDisplayProbe displayProbe;
     private CompositionControl composition;
+
+    void enableUnlimitedStream() throws IOException {
+        if (video != null || closed || !continuous) {
+            throw new IOException("UNLIMITED_REQUIRES_FRESH_CONTINUOUS_SESSION");
+        }
+        unlimited = true;
+        serials = new StreamSerials();
+    }
 
     void enableProductComposition(int nonce) throws IOException {
         if (video != null || closed || !continuous) {
@@ -105,7 +115,8 @@ final class NoAuthVideoClient implements Closeable {
             if (displayProbe != null) {
                 displayProbe.negotiate(video);
             }
-            exchange(NoAuthVideoProtocol.hello(continuous), NoAuthVideoProtocol.HELLO, 0, 0);
+            exchange(unlimited ? NoAuthVideoProtocol.helloUnlimited() : NoAuthVideoProtocol.hello(continuous),
+                    NoAuthVideoProtocol.HELLO, 0, 0);
             negotiated = true;
             cleanupConfirmed = false;
             lastHeartbeat = nanoTime.getAsLong();
@@ -115,7 +126,7 @@ final class NoAuthVideoClient implements Closeable {
                 throw new IOException("DCV1_MEDIA_CONTEXT_NOT_READY");
             }
             started = true;
-            logger.log("RECEIVER_READY DCV1/" + (continuous ? 2 : 1)
+            logger.log("RECEIVER_READY DCV1/" + (unlimited ? 3 : continuous ? 2 : 1)
                     + " no video authorization; " + NoAuthVideoProtocol.WIDTH + "x"
                     + NoAuthVideoProtocol.HEIGHT + "/" + NoAuthVideoProtocol.FPS
                     + "fps; NOT picture confirmation");
@@ -142,21 +153,25 @@ final class NoAuthVideoClient implements Closeable {
                 || (previousPtsMillis >= 0 && relativeMillis - previousPtsMillis > 2000)) {
             throw new IOException("DCV1_NON_MONOTONIC_OR_GAPPED_PTS");
         }
-        byte[] packet = NoAuthVideoProtocol.frame(annexB, acknowledged + 1, relativeMillis, continuous);
+        int sequence = unlimited ? serials.nextFrame() : (int)(acknowledged + 1);
+        long wirePts = unlimited ? relativeMillis & ContinuousSessionPolicy.UINT32_MASK : relativeMillis;
+        byte[] packet = unlimited ? NoAuthVideoProtocol.frameUnlimited(annexB, sequence, wirePts, acknowledged == 0)
+                : NoAuthVideoProtocol.frame(annexB, sequence, wirePts, continuous);
         if (nanoTime.getAsLong() - lastHeartbeat >= 1_000_000_000L) {
             heartbeat();
         }
         long ackStart = nanoTime.getAsLong();
-        evidence = exchange(packet, NoAuthVideoProtocol.FRAME, acknowledged + 1, relativeMillis);
+        evidence = exchange(packet, NoAuthVideoProtocol.FRAME, sequence, wirePts);
         long ackNanos = Math.max(0, nanoTime.getAsLong() - ackStart);
         maxAckNanos = Math.max(maxAckNanos, ackNanos);
-        totalAckNanos += ackNanos;
-        acknowledged++;
+        totalAckNanos = ContinuousSessionPolicy.add(totalAckNanos, ackNanos);
+        if (unlimited) { serials.acceptFrame(sequence); }
+        acknowledged = ContinuousSessionPolicy.add(acknowledged, 1);
         if (composition != null && acknowledged == 1) {
             composition.activate(video);
         }
         previousPtsMillis = relativeMillis;
-        payloadBytes += annexB.length;
+        payloadBytes = ContinuousSessionPolicy.add(payloadBytes, annexB.length);
         if (displayProbe != null) {
             displayProbe.step(video);
         }
@@ -169,8 +184,10 @@ final class NoAuthVideoClient implements Closeable {
     }
 
     private void heartbeat() throws IOException {
-        evidence = exchange(NoAuthVideoProtocol.heartbeat(++heartbeats, continuous), NoAuthVideoProtocol.HEARTBEAT, 0, 0);
-        if (evidence.submissions != acknowledged) {
+        int counter = unlimited ? serials.nextHeartbeat() : ++heartbeats;
+        evidence = exchange(unlimited ? NoAuthVideoProtocol.heartbeatUnlimited(counter)
+                : NoAuthVideoProtocol.heartbeat(counter, continuous), NoAuthVideoProtocol.HEARTBEAT, 0, 0);
+        if (evidence.submissions != (unlimited ? serials.frameBits() : (int)acknowledged)) {
             throw new IOException("DCV1_HEARTBEAT_SUBMISSION_MISMATCH");
         }
         lastHeartbeat = nanoTime.getAsLong();
@@ -215,7 +232,8 @@ final class NoAuthVideoClient implements Closeable {
         byte[] header = video.readExact(NoAuthVideoProtocol.HEADER_BYTES);
         byte[] payload = video.readExact(NoAuthVideoProtocol.ACK_BYTES);
         try {
-            return NoAuthVideoProtocol.reply(header, payload, type, sequence, pts, continuous);
+            return unlimited ? NoAuthVideoProtocol.replyUnlimited(header, payload, type, sequence, pts)
+                    : NoAuthVideoProtocol.reply(header, payload, type, sequence, pts, continuous);
         } catch (NoAuthVideoProtocol.Rejected error) {
             rejected = true;
             terminalCleanup = error.terminalCleanupReported();

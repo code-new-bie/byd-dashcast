@@ -21,7 +21,7 @@ final class ShellCaptureCommand {
     }
 
     static String continuous(String apk, int seconds) {
-        ProjectionLimits.requireSeconds(seconds);
+        ContinuousSessionPolicy.requireCaptureSeconds(seconds);
         return create(apk, seconds, true);
     }
 
@@ -42,11 +42,13 @@ final class ShellCaptureCommand {
     }
 
     private static String create(String apk, int seconds, boolean continuous) {
-        if (seconds < 1 || seconds > (continuous ? ProjectionLimits.MAX_SECONDS : 10)
+        boolean validDuration = continuous ? seconds == 0 || seconds > 0 && seconds <= ProjectionLimits.MAX_SECONDS
+                : seconds > 0 && seconds <= 10;
+        if (!validDuration
                 || apk == null || !apk.startsWith("/data/app/")
                 || !apk.endsWith(".apk") || apk.length() > 1024 || apk.indexOf('\0') >= 0
                 || apk.indexOf('\n') >= 0 || apk.indexOf('\r') >= 0) {
-            throw new IllegalArgumentException("Expected installed APK and bounded capture duration");
+            throw new IllegalArgumentException("Expected installed APK and explicit live/timed capture profile");
         }
         return "CLASSPATH='" + apk.replace("'", "'\\''")
                 + "' /system/bin/app_process /system/bin com.byd.dashcast.phase1.ShellScreenCapture " + seconds

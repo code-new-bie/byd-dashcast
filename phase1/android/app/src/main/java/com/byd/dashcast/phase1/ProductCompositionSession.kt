@@ -18,6 +18,7 @@ internal class ProductCompositionSession(
     private var sent = false
     private var restored = false
     private var active = false
+    private var drawingConfirmed = false
     private var began = 0L
     private var confirmed = 0L
     private var lastPoll = 0L
@@ -29,14 +30,14 @@ internal class ProductCompositionSession(
         check(!sent && before == null) { "PRODUCT_COMPOSITION_SINGLE_USE" }
         val reply = exchange(channel, QUERY)
         requireReply(reply)
-        if (reply.word(31) != CAPABILITY || reply.word(30) < ProjectionLimits.MAX_SECONDS) {
+        if (reply.word(31) != CAPABILITY || reply.word(30) != 0) {
             throw IOException("PRODUCT_MATCHING_FIRMWARE_REQUIRED")
         }
         if (reply.word(9) == 1 || reply.word(3) != reply.word(8)) {
             throw IOException("PRODUCT_BACKGROUND_ALREADY_ACTIVE_OR_PENDING")
         }
         before = reply
-        log.log("PRODUCT_CAPABILITY_READY lease_ms=5000 max_seconds=${reply.word(30)}")
+        log.log("PRODUCT_CAPABILITY_READY lease_ms=5000 total_duration=unlimited")
     }
 
     override fun activate(channel: NoAuthVideoTransport) {
@@ -77,9 +78,10 @@ internal class ProductCompositionSession(
             log.log("PRODUCT_NATIVE_BACKGROUND_ACTIVE; native foreground unchanged; physical composition not certified")
         }
         if (now - lastRenew >= RENEW_INTERVAL) {
-            if (delta(reply, 16) == 0L || delta(reply, 17) == 0L) {
+            if (!drawingConfirmed && (delta(reply, 16) == 0L || delta(reply, 17) == 0L)) {
                 throw IOException("PRODUCT_BACKGROUND_DRAW_NOT_CONFIRMED")
             }
+            drawingConfirmed = true
             val renewed = exchange(channel, RENEW)
             requireQueued(renewed)
             lastRenew = now
@@ -130,7 +132,7 @@ internal class ProductCompositionSession(
         InstrumentCompositionTrial.exchangePacket(channel, operation, request(operation, nonce))
 
     companion object {
-        const val CAPABILITY = 0x52574e31
+        const val CAPABILITY = 0x52574e32
         private const val QUERY = 0
         private const val START = 1
         private const val RESTORE = 2
