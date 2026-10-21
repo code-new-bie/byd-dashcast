@@ -18,6 +18,7 @@ class ProductCompositionSessionTest {
         var skip = 1
         var ownerOverride: Int? = null
         var navigationOverride: Int? = null
+        var pending = false
         val operations = mutableListOf<Int>()
         lateinit var bytes: ByteArray
         var offset = 0
@@ -32,7 +33,7 @@ class ProductCompositionSessionTest {
             if (op == 3) { assertEquals(nonce, packet.getInt(32)); assertEquals(5000, packet.getInt(36)) }
             val words = IntArray(32)
             words[0] = 0x31474244; words[1] = 1; words[2] = 128
-            words[3] = 2; words[8] = 2; words[9] = state; words[10] = pid
+            words[3] = if (pending) 4 else 2; words[8] = 2; words[9] = state; words[10] = pid
             words[12] = (now / 1_000_000_000L).toInt(); words[13] = (now % 1_000_000_000L).toInt()
             words[14] = words[12] + 5; words[15] = words[13]; words[18] = epoch
             words[21] = ownerOverride ?: nonce; words[30] = 0; words[31] = capability
@@ -146,5 +147,45 @@ class ProductCompositionSessionTest {
         p.skip = 0 // uint32 native skip counter returns to its initial bits after a full cycle
         p.now += 1_000_000_000L; s.tick(p)
         assertEquals(2, p.operations.count { it == 3 })
+    }
+
+    @Test fun pendingRenewalAfterFortySecondsWaitsForItsOwnAckWithoutNewRenewal() {
+        val p = Peer(); val s = p.session(); s.prepare(p); s.activate(p)
+        repeat(42) { p.now += 1_000_000_000L; s.tick(p) }
+        val renewals = p.operations.count { it == 3 }
+        p.pending = true; p.now += 250_000_000L; s.tick(p)
+        p.now += 250_000_000L; s.tick(p)
+        assertEquals(renewals, p.operations.count { it == 3 })
+        p.pending = false; p.now += 500_000_000L; s.tick(p)
+        assertEquals(renewals + 1, p.operations.count { it == 3 })
+        assertEquals(1, p.operations.count { it == 1 })
+        s.restore(p)
+        assertEquals(2, p.state)
+    }
+
+    @Test fun pendingRenewalStillExpiresAndCannotMaskForeignOwner() {
+        for (foreign in listOf(false, true)) {
+            val p = Peer(); val s = p.session(); s.prepare(p); s.activate(p)
+            repeat(42) { p.now += 1_000_000_000L; s.tick(p) }
+            val renewals = p.operations.count { it == 3 }
+            p.pending = true
+            if (foreign) { p.ownerOverride = 88 }
+            p.now += if (foreign) 250_000_000L else 1_500_000_000L
+            assertThrows(IOException::class.java) { s.tick(p) }
+            assertEquals(renewals, p.operations.count { it == 3 })
+            assertEquals(1, p.operations.count { it == 1 })
+        }
+    }
+
+    @Test fun acknowledgedForeignOwnerOrRevocationDuringPendingNeverRenews() {
+        for (revoked in listOf(false, true)) {
+            val p = Peer(); val s = p.session(); s.prepare(p); s.activate(p)
+            p.now += 1_000_000_000L; s.tick(p)
+            if (revoked) { p.pending = true; p.state = 2 } else { p.ownerOverride = 88 }
+            val renewals = p.operations.count { it == 3 }
+            p.now += 250_000_000L
+            assertThrows(IOException::class.java) { s.tick(p) }
+            assertEquals(renewals, p.operations.count { it == 3 })
+        }
     }
 }

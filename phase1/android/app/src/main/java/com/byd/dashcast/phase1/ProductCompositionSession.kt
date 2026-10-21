@@ -23,6 +23,8 @@ internal class ProductCompositionSession(
     private var confirmed = 0L
     private var lastPoll = 0L
     private var lastRenew = 0L
+    private var requestBegan = 0L
+    private var waitingAcknowledgement = false
 
     init { require(nonce > 0) { "PRODUCT_COMPOSITION_NONCE" } }
 
@@ -46,6 +48,7 @@ internal class ProductCompositionSession(
         began = clock.asLong
         confirmed = began
         lastRenew = began
+        requestBegan = began
         val reply = exchange(channel, START)
         requireQueued(reply)
         log.log("PRODUCT_COMPOSITION_STARTED; same-stream bounded lease, no permanent transparency")
@@ -62,12 +65,33 @@ internal class ProductCompositionSession(
         val reply = exchange(channel, QUERY)
         if (reply.error == 9) { return }
         requireReply(reply)
-        if (reply.word(3) != reply.word(8) || reply.word(21) != nonce) {
-            if (now - began >= ACTIVATION_DEADLINE) { throw IOException("PRODUCT_OWNER_ACTIVATION_UNCONFIRMED") }
-            return
-        }
         if (reply.word(11) != 0 || reply.word(9) == 2) {
             throw IOException("PRODUCT_NATIVE_LEASE_REVOKED reason=${reply.word(11)}")
+        }
+        if (reply.word(3) != reply.word(8)) {
+            // A queued renewal can be observed before the render thread consumes it.
+            // Bound that request's acknowledgement, NOT the age of the whole session.
+            // Never renew or refresh confirmed while acknowledgement is pending.
+            if (active && reply.word(21) != nonce) {
+                throw IOException("PRODUCT_OWNER_CHANGED_WHILE_PENDING")
+            }
+            if (now - requestBegan >= ACTIVATION_DEADLINE) {
+                throw IOException("PRODUCT_REQUEST_ACK_UNCONFIRMED")
+            }
+            if (!waitingAcknowledgement) {
+                waitingAcknowledgement = true
+                log.log("PRODUCT_REQUEST_ACK_PENDING requested=${reply.unsigned(3)} acknowledged=${reply.unsigned(8)}; no renewal replay")
+            }
+            return
+        }
+        if (waitingAcknowledgement) {
+            waitingAcknowledgement = false
+            log.log("PRODUCT_REQUEST_ACK_CONFIRMED sequence=${reply.unsigned(8)}")
+        }
+        if (reply.word(21) != nonce) {
+            if (active) { throw IOException("PRODUCT_OWNER_CHANGED") }
+            if (now - began >= ACTIVATION_DEADLINE) { throw IOException("PRODUCT_OWNER_ACTIVATION_UNCONFIRMED") }
+            return
         }
         if (reply.word(9) != 1) {
             if (now - began >= ACTIVATION_DEADLINE) { throw IOException("PRODUCT_ACTIVATION_UNCONFIRMED") }
@@ -89,6 +113,7 @@ internal class ProductCompositionSession(
             val renewed = exchange(channel, RENEW)
             requireQueued(renewed)
             lastRenew = now
+            requestBegan = now
         }
         // A fresh HMI snapshot confirms the current lease, not physical decoder/display FPS.
         confirmed = now

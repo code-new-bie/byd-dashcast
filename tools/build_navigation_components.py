@@ -1,4 +1,4 @@
-"""Original inspected HMI/KZB -> 1.1.1 local-controller components, NOT an upgrade ZIP."""
+"""Original inspected HMI/KZB -> 1.1.2 refined local layout, NOT an upgrade ZIP."""
 import argparse
 import hashlib
 import json
@@ -32,9 +32,10 @@ def main():
     if hashlib.sha256(toc).hexdigest() != TOC_SHA:
         raise ValueError("Not the inspected original TOC")
     sys.path.insert(0, str(ROOT / "analysis"))
-    from navigation_layout_fix import build_navigation_fix_hmi, build_navigation_fix_kzb
+    from navigation_layout_fix import build_navigation_fix_hmi
+    from navigation_layout_refine import build_navigation_refined_kzb
     hmi, hr = build_navigation_fix_hmi(hp.read_bytes())
-    kzb, kr = build_navigation_fix_kzb(kp.read_bytes(), toc.decode("utf-8-sig").splitlines())
+    kzb, kr = build_navigation_refined_kzb(kp.read_bytes(), toc.decode("utf-8-sig").splitlines())
     out.mkdir()
     for name, data in (("rc_hmi.exe", hmi), ("bic_byd_stha.kzb", kzb)):
         with (out / name).open("xb") as stream: stream.write(data)

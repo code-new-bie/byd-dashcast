@@ -1,6 +1,16 @@
 # Native background controller — implementation, not a flashable HMI adapter
 
-2026-10-21 current 1.1.1: `navigation-layout-local.thumb` and
+2026-10-21 current 1.1.2: HMI binary and this local Thumb remain EXACTLY 1.1.1.
+`analysis/navigation_layout_refine.py` changes only KZB coordinates and two owned
+band subtrees. Each band keeps its 0/1 opacity anchor and uses 33 non-overlapping
+native black-brush rectangles, a 32-step/64-pixel cosine feather, max alpha .94.
+No new bitmap/shader/library, Screen layer or warning-parent suppression.
+The 1.1.1 photo proves the layout applied but shows clipping and hard edges;
+new top-row offsets are removed and bottom coordinates composed explicitly.
+24 offline resource/native regression tests do NOT measure the real GPU cost
+or certify physical layout/all dynamic alerts. See docs/PRODUCT_1.1.2.md.
+
+2026-10-21 inherited 1.1.1 mechanism: `navigation-layout-local.thumb` and
 `analysis/navigation_layout_fix.py` put the control and StateManager on the
 same Content owner. The bridge reads back BOTH band opacities with the original
 native optional-float getter before publishing NLC0/NLC1; NLC2 means pending.
