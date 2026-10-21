@@ -1,5 +1,14 @@
 # Native background controller — implementation, not a flashable HMI adapter
 
+2026-10-21 current 1.1.0: `navigation-layout.thumb` is appended to the exact
+`background-unlimited.thumb` by `analysis/navigation_layout.py`. It sets one
+private inherited int on the render thread; KZB state groups apply/retract the
+native navigation layout. Two initially invisible owned contrast bands are
+required before NAV0/NAV1 status is published (word29, inside the HMI seqlock).
+OEM numeric/alert resources, MCU/OS/receiver/role script remain unchanged.
+The explicit HMI/KZB changes and hardware limits are in docs/PRODUCT_1.1.0.md
+in the public source tree. The historical claims below describe their versions.
+
 2026-10-21 current adapter: `background-unlimited.thumb` (1.0.1) publishes
 RWN2 and word30=0 for the matching DCV1/3 receiver. It retains the owned renewable
 five-second expiry; zero means no product total budget, NOT no failure recovery.

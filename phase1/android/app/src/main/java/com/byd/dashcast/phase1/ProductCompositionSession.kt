@@ -30,14 +30,14 @@ internal class ProductCompositionSession(
         check(!sent && before == null) { "PRODUCT_COMPOSITION_SINGLE_USE" }
         val reply = exchange(channel, QUERY)
         requireReply(reply)
-        if (reply.word(31) != CAPABILITY || reply.word(30) != 0) {
+        if (reply.word(31) != CAPABILITY || reply.word(30) != 0 || reply.word(29) != NAVIGATION_READY) {
             throw IOException("PRODUCT_MATCHING_FIRMWARE_REQUIRED")
         }
         if (reply.word(9) == 1 || reply.word(3) != reply.word(8)) {
             throw IOException("PRODUCT_BACKGROUND_ALREADY_ACTIVE_OR_PENDING")
         }
         before = reply
-        log.log("PRODUCT_CAPABILITY_READY lease_ms=5000 total_duration=unlimited")
+        log.log("PRODUCT_CAPABILITY_READY lease_ms=5000 total_duration=unlimited layout=native-navigation")
     }
 
     override fun activate(channel: NoAuthVideoTransport) {
@@ -73,9 +73,12 @@ internal class ProductCompositionSession(
             if (now - began >= ACTIVATION_DEADLINE) { throw IOException("PRODUCT_ACTIVATION_UNCONFIRMED") }
             return
         }
+        if (reply.word(29) != NAVIGATION_ACTIVE) {
+            throw IOException("PRODUCT_NAVIGATION_LAYOUT_UNCONFIRMED")
+        }
         if (!active) {
             active = true
-            log.log("PRODUCT_NATIVE_BACKGROUND_ACTIVE; native foreground unchanged; physical composition not certified")
+            log.log("PRODUCT_NATIVE_BACKGROUND_ACTIVE layout=native-navigation; OEM data/alerts retained")
         }
         if (now - lastRenew >= RENEW_INTERVAL) {
             if (!drawingConfirmed && (delta(reply, 16) == 0L || delta(reply, 17) == 0L)) {
@@ -98,7 +101,8 @@ internal class ProductCompositionSession(
             val reply = exchange(channel, QUERY)
             if (reply.error == 0) {
                 requireReply(reply)
-                if (reply.word(3) == reply.word(8) && reply.word(21) == nonce && reply.word(9) == 2) {
+                if (reply.word(3) == reply.word(8) && reply.word(21) == nonce && reply.word(9) == 2 &&
+                    reply.word(29) == NAVIGATION_READY) {
                     restored = true
                     log.log("PRODUCT_NATIVE_RESTORE_CONFIRMED; media STOP follows")
                     return
@@ -133,6 +137,8 @@ internal class ProductCompositionSession(
 
     companion object {
         const val CAPABILITY = 0x52574e32
+        const val NAVIGATION_READY = 0x4e415600
+        const val NAVIGATION_ACTIVE = 0x4e415601
         private const val QUERY = 0
         private const val START = 1
         private const val RESTORE = 2

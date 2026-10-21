@@ -17,6 +17,7 @@ class ProductCompositionSessionTest {
         var error = 0
         var skip = 1
         var ownerOverride: Int? = null
+        var navigationOverride: Int? = null
         val operations = mutableListOf<Int>()
         lateinit var bytes: ByteArray
         var offset = 0
@@ -35,6 +36,8 @@ class ProductCompositionSessionTest {
             words[12] = (now / 1_000_000_000L).toInt(); words[13] = (now % 1_000_000_000L).toInt()
             words[14] = words[12] + 5; words[15] = words[13]; words[18] = epoch
             words[21] = ownerOverride ?: nonce; words[30] = 0; words[31] = capability
+            words[29] = navigationOverride ?: if (state == 1) ProductCompositionSession.NAVIGATION_ACTIVE
+                else ProductCompositionSession.NAVIGATION_READY
             words[16] = if (nonce == 0) 0 else skip; words[17] = words[16]
             val out = ByteBuffer.allocate(168)
             out.putInt(0x44435631).putInt(0x8a).putInt(144).putInt(0).putInt(0).putInt(0)
@@ -61,6 +64,20 @@ class ProductCompositionSessionTest {
         val p = Peer().apply { capability = 0 }
         assertThrows(IOException::class.java) { p.session().prepare(p) }
         assertEquals(listOf(0), p.operations)
+    }
+    @Test fun oldUnlimitedFirmwareWithoutLayoutFailsBeforeStartingLease() {
+        val p = Peer().apply { navigationOverride = 0 }
+        assertThrows(IOException::class.java) { p.session().prepare(p) }
+        assertEquals(listOf(0), p.operations)
+    }
+    @Test fun activeLayoutLossNeverRenewsAndCanStillRestore() {
+        val p = Peer(); val s = p.session(); s.prepare(p); s.activate(p)
+        p.navigationOverride = ProductCompositionSession.NAVIGATION_READY
+        p.now += 1_000_000_000L
+        assertThrows(IOException::class.java) { s.tick(p) }
+        assertFalse(p.operations.contains(3))
+        s.restore(p)
+        assertEquals(2, p.state)
     }
     @Test fun processOrEpochReplacementNeverRenews() {
         for (process in listOf(true, false)) {

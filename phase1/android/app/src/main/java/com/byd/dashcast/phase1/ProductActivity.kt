@@ -100,7 +100,7 @@ class ProductActivity : Activity() {
         card {
             addView(text("当前应用", 16))
             addView(text(selected?.label ?: "尚未选择导航应用", 27, true))
-            addView(text(if (selected?.navigation == true) "导航专注 · 独立副屏 · ${if (settings.underlay) "全尺寸原生前景下方" else "兼容小窗"}"
+            addView(text(if (selected?.navigation == true) "导航专注 · 独立副屏 · ${if (settings.underlay) "顶部状态 / 中央地图 / 底部数据" else "兼容小窗"}"
                 else "请在应用中心选择；不同应用的副屏兼容性不同", 17))
             addView(button("更换应用") { page = 1; build() })
         }
@@ -164,8 +164,8 @@ class ProductActivity : Activity() {
     private fun preferences() {
         card {
             addView(text("画面与外观", 26, true))
-            addView(toggle("全尺寸视频置于原生信息下方", settings.underlay) { settings.underlay = it })
-            addView(text("关闭后使用已打通的兼容小窗。持续模式要求配套 1.0.1 仪表包；原生背景由有界租约管理，失联后自动恢复。", 16))
+            addView(toggle("导航仪表布局：顶部状态、中央地图、底部数据", settings.underlay) { settings.underlay = it })
+            addView(text("开启后随全尺寸投屏启用原生紧凑布局；停止或失联自动恢复。关闭使用兼容小窗。需配套 1.1.0 仪表包，下次开始生效；不是把 APK 车速叠到地图上。", 16))
             addView(toggle("中心裁剪填充画面", settings.crop) { settings.crop = it })
             addView(text("默认保持完整比例；裁剪只改变视频取景，不改变车速、挡位等仪表元素。设置在下一次开始时生效。", 16))
             addView(toggle("日间浅色界面", settings.light) { settings.light = it; build() })
@@ -209,7 +209,7 @@ class ProductActivity : Activity() {
 
     private fun firstRun() {
         AlertDialog.Builder(this).setTitle("首次连接 Dashcast")
-            .setMessage("1. 仪表使用本次 1.0.1 配套固件，MCU 和参考 OS 不改。\n2. 仪表与车机连接 USB 数据线，可保持连接切模式。\n3. 首次开始时允许 ADB 调试和 USB 访问。\n\n默认独立投屏导航应用。驾驶时不要操作设置或观看视频；若任何原生信息异常，立即停止投屏。本候选版本不宣称道路安全认证。")
+            .setMessage("1. 仪表使用本次 1.1.0 配套固件，MCU 和参考 OS 不改。\n2. 仪表与车机连接 USB 数据线，可保持连接切模式。\n3. 首次开始时允许 ADB 调试和 USB 访问。\n\n默认独立导航副屏，投屏时启用原生顶栏/底栏，停止恢复。驾驶时不要操作设置或观看视频；若任何原生信息异常，立即停止投屏。本版本不宣称道路安全认证。")
             .setPositiveButton("已安装配套仪表包，开始设置") { _, _ -> settings.setupComplete = true; control.connect(); updateStatus() }
             .setNegativeButton("稍后", null).show()
     }
