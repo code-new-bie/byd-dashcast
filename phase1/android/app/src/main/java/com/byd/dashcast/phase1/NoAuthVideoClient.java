@@ -47,6 +47,9 @@ final class NoAuthVideoClient implements Closeable {
     private long totalAckNanos;
     private InstrumentDisplayProbe displayProbe;
     private CompositionControl composition;
+    private boolean productProfile;
+    private boolean compositionActivated;
+    private long productSourceBegan;
 
     void enableUnlimitedStream() throws IOException {
         if (video != null || closed || !continuous) {
@@ -61,6 +64,7 @@ final class NoAuthVideoClient implements Closeable {
             throw new IOException("PRODUCT_COMPOSITION_REQUIRES_FRESH_CONTINUOUS_SESSION");
         }
         composition = new ProductCompositionSession(logger, nanoTime, nonce);
+        productProfile = true;
     }
 
     void enableCompositionTrial(int nonce, Runnable stopRequested) throws IOException {
@@ -126,6 +130,7 @@ final class NoAuthVideoClient implements Closeable {
                 throw new IOException("DCV1_MEDIA_CONTEXT_NOT_READY");
             }
             started = true;
+            productSourceBegan = nanoTime.getAsLong();
             logger.log("RECEIVER_READY DCV1/" + (unlimited ? 3 : continuous ? 2 : 1)
                     + " no video authorization; " + NoAuthVideoProtocol.WIDTH + "x"
                     + NoAuthVideoProtocol.HEIGHT + "/" + NoAuthVideoProtocol.FPS
@@ -167,8 +172,12 @@ final class NoAuthVideoClient implements Closeable {
         totalAckNanos = ContinuousSessionPolicy.add(totalAckNanos, ackNanos);
         if (unlimited) { serials.acceptFrame(sequence); }
         acknowledged = ContinuousSessionPolicy.add(acknowledged, 1);
-        if (composition != null && acknowledged == 1) {
+        // A cold launcher can emit a short blank animation and then leave its display.
+        // Never hide OEM background on that initial FRAME ACK alone.
+        if (composition != null && !compositionActivated && ((!productProfile && acknowledged == 1)
+                || (productProfile && ProductVideoReadiness.canActivate(acknowledged, relativeMillis)))) {
             composition.activate(video);
+            compositionActivated = true;
         }
         previousPtsMillis = relativeMillis;
         payloadBytes = ContinuousSessionPolicy.add(payloadBytes, annexB.length);
@@ -218,6 +227,9 @@ final class NoAuthVideoClient implements Closeable {
         if (!started || closed || rejected) {
             return;
         }
+        if (productProfile && !compositionActivated && nanoTime.getAsLong() - productSourceBegan >= 12_000_000_000L) {
+            throw new IOException("PRODUCT_SOURCE_NOT_READY: background remains unchanged; map startup produced insufficient video");
+        }
         checkCancellation();
         if (nanoTime.getAsLong() - lastHeartbeat >= 1_000_000_000L) {
             heartbeat();
@@ -258,6 +270,27 @@ final class NoAuthVideoClient implements Closeable {
 
     boolean cleanupConfirmed() {
         return cleanupConfirmed;
+    }
+
+    boolean readyForStreaming() {
+        return !productProfile || compositionActivated;
+    }
+
+    /** Do not wait for RPC replies on a physically removed device, or claim remote success. */
+    void closeAfterPhysicalDetach() throws IOException {
+        if (closed) {
+            return;
+        }
+        closed = true;
+        cleanupConfirmed = false;
+        if (video != null) {
+            try {
+                video.close();
+            } finally {
+                video = null;
+            }
+        }
+        logger.log("PHYSICAL_DETACH_REMOTE_CLEANUP_PENDING; no fabricated STOP/restore acknowledgement");
     }
 
     @Override

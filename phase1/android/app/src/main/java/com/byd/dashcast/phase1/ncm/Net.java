@@ -204,6 +204,18 @@ public final class Net implements Ncm.Sink {
         LogHub.i("net", "协议栈停止");
     }
 
+    /** Local worker proof, used only after physical detach; no remote-role claim. */
+    public boolean awaitStopped(long timeoutMillis) {
+        if (running) { return false; }
+        if (ticker == null) { return true; }
+        try {
+            return ticker.awaitTermination(timeoutMillis, java.util.concurrent.TimeUnit.MILLISECONDS);
+        } catch (InterruptedException error) {
+            Thread.currentThread().interrupt();
+            return false;
+        }
+    }
+
     private void tickLoop() {
         while (running) {
             try {

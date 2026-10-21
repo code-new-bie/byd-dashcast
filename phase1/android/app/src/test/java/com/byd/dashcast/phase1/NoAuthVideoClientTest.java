@@ -14,6 +14,61 @@ import static org.junit.Assert.*;
 /** Independent scripted binary receiver; tests cancellation/error/cleanup, not QNX display. */
 public final class NoAuthVideoClientTest {
     @Test
+    public void physicalRemovalClosesOnlyOwnedLinkWithoutFabricatingRemoteStop() throws Exception {
+        Link link = new Link().ready();
+        List<String> logs = new ArrayList<>();
+        NoAuthVideoClient client = client(link, new AtomicBoolean(), logs);
+        client.begin();
+        client.closeAfterPhysicalDetach();
+        client.close();
+        assertTrue(link.closed);
+        assertFalse(client.cleanupConfirmed());
+        assertEquals(2, link.writes.size());
+        assertTrue(logs.stream().anyMatch(line -> line.startsWith("PHYSICAL_DETACH_REMOTE_CLEANUP_PENDING")));
+        assertFalse(logs.stream().anyMatch(line -> line.startsWith("STOP_CLEANUP_REPORTED")));
+    }
+
+    @Test
+    public void productDoesNotActivateBackgroundForShortColdLauncherAnimation() throws Exception {
+        Link link = new Link().offer().productBackground(0, 0, 0)
+                .ack(7, 0, 0, 0, 0, 0).ack(1, 0, 0, 1, 0, 0);
+        for (int i = 1; i <= 22; i++) { link.ack(2, i, (i - 1) * 33, 7, i, (i - 1) * 33); }
+        link.ack(3, 0, 0, 0, 22, 0);
+        long[] clock = {0};
+        NoAuthVideoClient client = new NoAuthVideoClient((p, f) -> link,
+                new AtomicBoolean(), s -> {}, () -> clock[0], true);
+        client.enableProductComposition(77);
+        client.begin();
+        for (int i = 0; i < 22; i++) { client.frame(i == 0 ? IDR : P, i * 33_000L); }
+        assertFalse(client.readyForStreaming());
+        clock[0] = 12_000_000_000L;
+        assertThrows(IOException.class, client::maintain);
+        client.close();
+        assertTrue(client.cleanupConfirmed());
+        assertEquals(1, link.writes.stream().filter(p -> p[7] == 10).count());
+        assertTrue(link.reads.isEmpty());
+    }
+
+    @Test
+    public void productActivatesExactlyOnceAfterSustainedSourceProgress() throws Exception {
+        Link link = new Link().offer().productBackground(0, 0, 0)
+                .ack(7, 0, 0, 0, 0, 0).ack(1, 0, 0, 1, 0, 0);
+        for (int i = 1; i <= 31; i++) { link.ack(2, i, (i - 1) * 34, 7, i, (i - 1) * 34); }
+        link.productBackground(1, 1, 77);
+        NoAuthVideoClient client = new NoAuthVideoClient((p, f) -> link,
+                new AtomicBoolean(), s -> {}, () -> 0L, true);
+        client.enableProductComposition(77);
+        client.begin();
+        for (int i = 0; i < 30; i++) { client.frame(i == 0 ? IDR : P, i * 34_000L); }
+        assertFalse(client.readyForStreaming());
+        client.frame(P, 30 * 34_000L);
+        assertTrue(client.readyForStreaming());
+        assertEquals(2, link.writes.stream().filter(p -> p[7] == 10).count());
+        assertTrue(link.reads.isEmpty());
+        client.closeAfterPhysicalDetach();
+    }
+
+    @Test
     public void failedBackgroundRestoreStillSendsMediaStopButCannotClaimCleanSession() throws Exception {
         Link link = new Link().offer().background(0, 0, 0).ack(7, 0, 0, 0, 0, 0)
                 .ack(1, 0, 0, 1, 0, 0).ack(2, 1, 0, 7, 1, 0).background(1, 1, 77)
@@ -139,6 +194,15 @@ public final class NoAuthVideoClientTest {
         boolean closed;
         boolean failStop;
         boolean failBackgroundRestore;
+
+        Link productBackground(int operation, int status, int nonce) {
+            background(operation, status, nonce);
+            java.nio.ByteBuffer tail = java.nio.ByteBuffer.wrap(reads.peekLast());
+            tail.putInt(52, status == 1 ? ProductCompositionSession.NAVIGATION_ACTIVE
+                    : ProductCompositionSession.NAVIGATION_READY);
+            tail.putInt(60, ProductCompositionSession.CAPABILITY);
+            return this;
+        }
 
         Link background(int operation, int status, int nonce) {
             reads.add(header(0x8a, 144, 0, 0));

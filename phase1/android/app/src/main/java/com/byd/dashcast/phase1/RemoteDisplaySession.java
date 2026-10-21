@@ -1,6 +1,8 @@
 package com.byd.dashcast.phase1;
 
 import android.content.Context;
+import android.content.ComponentName;
+import android.content.pm.ActivityInfo;
 import android.hardware.display.VirtualDisplay;
 import android.os.Handler;
 import android.os.Process;
@@ -42,7 +44,7 @@ final class RemoteDisplaySession implements AutoCloseable {
             System.err.println("SHELL_CAPTURE_REMOTE_DISPLAY_CREATED id=" + androidDisplay.getDisplayId()
                     + " size=" + DISPLAY_WIDTH + "x" + DISPLAY_HEIGHT + " density=" + DISPLAY_DENSITY_DPI
                     + " flags=PUBLIC|PRESENTATION|OWN_CONTENT_ONLY component=" + target.component());
-            launchOnDisplay(androidDisplay.getDisplayId(), target.component());
+            launchOnDisplay(androidDisplay.getDisplayId(), launchComponent(context, target.component()));
         } catch (Exception error) {
             Exception failure = error instanceof InvocationTargetException
                     ? unwrap((InvocationTargetException)error) : error;
@@ -72,7 +74,7 @@ final class RemoteDisplaySession implements AutoCloseable {
     }
 
     private static void launchOnDisplay(int displayId, String component) throws Exception {
-        java.lang.Process process = new ProcessBuilder("/system/bin/am", "start", "--display",
+        java.lang.Process process = new ProcessBuilder("/system/bin/am", "start", "-W", "--display",
                 Integer.toString(displayId), "--user", "current", "-a", "android.intent.action.MAIN",
                 "-c", "android.intent.category.LAUNCHER", "-n", component)
                 .redirectErrorStream(true)
@@ -84,6 +86,20 @@ final class RemoteDisplaySession implements AutoCloseable {
             throw new IOException("SHELL_CAPTURE_REMOTE_APP_START_FAILED exit=" + process.exitValue()
                     + " output=" + detail);
         }
+    }
+
+    private static String launchComponent(Context context, String requested) throws Exception {
+        String candidate = RemoteLaunchPlan.mapActivityCandidate(requested);
+        if (candidate == null) { return requested; }
+        ComponentName component = ComponentName.unflattenFromString(candidate);
+        if (component == null) { throw new IOException("REMOTE_MAP_COMPONENT_INVALID"); }
+        ActivityInfo activity = context.getPackageManager().getActivityInfo(component, 0);
+        if (!activity.enabled || !activity.exported || activity.permission != null) {
+            throw new IOException("REMOTE_MAP_ENTRY_UNAVAILABLE; no private activity or privilege bypass attempted");
+        }
+        System.err.println("SHELL_CAPTURE_REMOTE_MAP_ENTRY requested=" + requested + " actual=" + candidate
+                + "; cold map starts on the owned virtual display, not the self-finishing launcher gateway");
+        return candidate;
     }
 
     private static Context shellContext() throws Exception {

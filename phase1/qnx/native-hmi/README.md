@@ -1,6 +1,17 @@
 # Native background controller — implementation, not a flashable HMI adapter
 
-2026-10-21 current 1.1.0: `navigation-layout.thumb` is appended to the exact
+2026-10-21 current 1.1.1: `navigation-layout-local.thumb` and
+`analysis/navigation_layout_fix.py` put the control and StateManager on the
+same Content owner. The bridge reads back BOTH band opacities with the original
+native optional-float getter before publishing NLC0/NLC1; NLC2 means pending.
+Old NAV0/1 cannot satisfy this capability. The 1.1.0 photo showed its layout
+did not apply; setter-only simulation was not a Kanzi-runtime test. New 19
+offline tests include the original getter instructions and 1000 background
+cycles, but the state engine is simulated. Actual layout and every dynamic
+alert remain unverified; warning/car safety parents are not hidden. See
+docs/PRODUCT_1.1.1.md in the public source tree. MCU/OS/receiver/role unchanged.
+
+2026-10-21 historical 1.1.0: `navigation-layout.thumb` is appended to the exact
 `background-unlimited.thumb` by `analysis/navigation_layout.py`. It sets one
 private inherited int on the render thread; KZB state groups apply/retract the
 native navigation layout. Two initially invisible owned contrast bands are

@@ -20,6 +20,12 @@ final class ContinuousProjectionTask implements ProjectionSessionController.Task
     private final ProjectionTarget target;
     private final boolean compositionTrial;
     private boolean productComposition;
+    private final AtomicBoolean physicallyDetached = new AtomicBoolean();
+
+    /** Called only for the OS detach broadcast matching this Service's owned device. */
+    void notePhysicalDetach() {
+        physicallyDetached.set(true);
+    }
 
     ContinuousProjectionTask enableProductComposition() {
         productComposition = true;
@@ -67,6 +73,7 @@ final class ContinuousProjectionTask implements ProjectionSessionController.Task
                 return;
             }
             session = UsbNcmSession.open(context, abort);
+            session.observePhysicalDetach(physicallyDetached::get);
             client = new NoAuthVideoClient(session::connect, abort, log::accept, true);
             if (ContinuousSessionPolicy.unlimited(seconds)) { client.enableUnlimitedStream(); }
             if (productComposition) {
@@ -76,6 +83,7 @@ final class ContinuousProjectionTask implements ProjectionSessionController.Task
                         () -> stop.set(true));
             }
             NoAuthVideoClient ownedClient = client;
+            UsbNcmSession ownedSession = session;
             AvcReceiverContract contract = new AvcReceiverContract();
             boolean[] begun = {false};
             boolean[] receiverFinished = {false};
@@ -85,8 +93,22 @@ final class ContinuousProjectionTask implements ProjectionSessionController.Task
                 }
                 receiverFinished[0] = true;
                 cleaning.run();
+                if (ownedSession.physicalLinkAbsent(context)) {
+                    physicallyDetached.set(true);
+                    stop.set(true);
+                    abort.set(true);
+                    log.accept("OWNED_USB_REMOVAL_CONFIRMED_BY_DEVICE_LIST");
+                }
+                if (physicallyDetached.get()) {
+                    try {
+                        ownedClient.closeAfterPhysicalDetach();
+                    } catch (IOException | RuntimeException error) {
+                        receiverFailure[0] = collect(receiverFailure[0], error);
+                    }
+                    return;
+                }
                 try {
-                    if (!stop.get() && begun[0]) {
+                    if (!stop.get() && !abort.get() && begun[0]) {
                         ownedClient.requireWindowReport();
                     }
                 } catch (IOException | RuntimeException error) {
@@ -128,11 +150,12 @@ final class ContinuousProjectionTask implements ProjectionSessionController.Task
                     // monotonic 30 FPS clock; a slow ACK path is recorded as late, never hidden.
                     framePacer.awaitNextSlot();
                     ownedClient.frame(data, outputPts);
-                    streaming.run();
+                    if (ownedClient.readyForStreaming()) { streaming.run(); }
                 }
             };
             AdbShellClient adb = new AdbShellClient("127.0.0.1", 5555, 20000,
-                    AndroidAdbIdentity.load(), log, abort);
+                    // USB abort must not cancel the independent localhost channel before its owned STOP/EXIT.
+                    AndroidAdbIdentity.load(), log, new AtomicBoolean());
             source = new AdbScreenVideoSource(adb, frames, log);
             captureAttempted = true;
             source.runContinuous(seconds, context.getApplicationInfo().sourceDir, stop, finishReceiver, options, target);
@@ -148,7 +171,8 @@ final class ContinuousProjectionTask implements ProjectionSessionController.Task
             cleaning.run();
             if (client != null) {
                 try {
-                    client.close();
+                    if (physicallyDetached.get()) { client.closeAfterPhysicalDetach(); }
+                    else { client.close(); }
                 } catch (IOException | RuntimeException error) {
                     failure = collect(failure, error);
                 }
@@ -158,7 +182,8 @@ final class ContinuousProjectionTask implements ProjectionSessionController.Task
                     log.accept(session.statistics());
                 } finally {
                     try {
-                        session.close();
+                        if (physicallyDetached.get()) { session.closeDetached(); }
+                        else { session.close(); }
                     } catch (IOException | RuntimeException error) {
                         usbClean = false;
                         failure = collect(failure, error);
@@ -168,6 +193,10 @@ final class ContinuousProjectionTask implements ProjectionSessionController.Task
         }
         boolean captureClean = !captureAttempted || source != null && source.exitConfirmed();
         boolean receiverClean = client == null || client.cleanupConfirmed();
+        if (physicallyDetached.get() && captureClean && usbClean && !openCleanupUnconfirmed(failure)) {
+            log.accept("PHYSICAL_DETACH_LOCAL_CLEANUP_CONFIRMED; read-only peer recovery required after reconnect");
+            throw new ProjectionSessionController.DetachedSessionException(failure);
+        }
         if (receiverFailure[0] != null && failure == null) {
             failure = receiverFailure[0];
         }

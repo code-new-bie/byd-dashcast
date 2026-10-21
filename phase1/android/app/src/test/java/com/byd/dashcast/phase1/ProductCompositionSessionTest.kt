@@ -70,6 +70,20 @@ class ProductCompositionSessionTest {
         assertThrows(IOException::class.java) { p.session().prepare(p) }
         assertEquals(listOf(0), p.operations)
     }
+    @Test fun oldSetterOnlyNAV1CannotImpersonateNativeEffectReadback() {
+        val p = Peer().apply { navigationOverride = 0x4e415600 }
+        assertThrows(IOException::class.java) { p.session().prepare(p) }
+        assertEquals(listOf(0), p.operations)
+    }
+
+    @Test fun pendingEffectsHaveShortGraceButCannotRenewWithoutApplication() {
+        val p = Peer(); val s = p.session(); s.prepare(p); s.activate(p)
+        p.navigationOverride = ProductCompositionSession.NAVIGATION_PENDING
+        p.now += 1_000_000_000L; s.tick(p)
+        assertFalse(p.operations.contains(3))
+        p.now += 1_000_000_000L
+        assertThrows(IOException::class.java) { s.tick(p) }
+    }
     @Test fun activeLayoutLossNeverRenewsAndCanStillRestore() {
         val p = Peer(); val s = p.session(); s.prepare(p); s.activate(p)
         p.navigationOverride = ProductCompositionSession.NAVIGATION_READY

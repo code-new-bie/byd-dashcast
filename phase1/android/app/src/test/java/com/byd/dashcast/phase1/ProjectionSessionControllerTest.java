@@ -104,4 +104,18 @@ public final class ProjectionSessionControllerTest {
         assertEquals(ProjectionSessionController.State.QUARANTINED, owner.state());
         assertFalse(owner.active());
     }
+
+    @Test
+    public void provenDetachWithLocalTeardownIsRecoverableButCannotStartWithoutPeerProof() {
+        Worker worker = new Worker();
+        ProjectionSessionController owner = new ProjectionSessionController(worker, (state, detail) -> {});
+        assertTrue(owner.start((s, a, f, c) -> {
+            c.run();
+            throw new ProjectionSessionController.DetachedSessionException(null);
+        }));
+        worker.run();
+        assertFalse(owner.active());
+        assertEquals(ProjectionSessionController.State.DISCONNECTED, owner.state());
+        assertFalse(owner.start((s, a, f, c) -> fail("read-only recovery must happen first")));
+    }
 }

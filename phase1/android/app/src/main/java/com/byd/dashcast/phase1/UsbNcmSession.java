@@ -25,6 +25,7 @@ public final class UsbNcmSession implements Closeable {
     private final Usb.Session usb;
     private final Net network;
     private final Ncm ncm;
+    private java.util.function.BooleanSupplier detached = () -> false;
 
     private UsbNcmSession(Usb.Session usb, Net network, Ncm ncm) {
         this.usb = usb;
@@ -106,6 +107,18 @@ public final class UsbNcmSession implements Closeable {
     }
 
     public Channel connect(int port, AtomicBoolean cancelled) throws IOException {
+        return connect(port, cancelled, 15_000_000_000L);
+    }
+
+    Channel connectRecovery(AtomicBoolean cancelled) throws IOException {
+        return connect(NoAuthVideoProtocol.PORT, cancelled, 2_000_000_000L);
+    }
+
+    void observePhysicalDetach(java.util.function.BooleanSupplier observation) {
+        detached = java.util.Objects.requireNonNull(observation);
+    }
+
+    private Channel connect(int port, AtomicBoolean cancelled, long replyBudgetNanos) throws IOException {
         if (port != NoAuthVideoProtocol.PORT) {
             throw new IOException("Only the DCV1 private USB video port is permitted");
         }
@@ -118,7 +131,7 @@ public final class UsbNcmSession implements Closeable {
             connection.abort();
             throw new IOException("Instrument TCP port " + port + " unavailable: " + error);
         }
-        return new Channel(connection, cancelled);
+        return new Channel(connection, cancelled, detached, replyBudgetNanos);
     }
 
     public String statistics() {
@@ -137,15 +150,48 @@ public final class UsbNcmSession implements Closeable {
         }
     }
 
+    /** Only for an OS-observed physical removal. Missing bus acknowledgements remain unconfirmed. */
+    void closeDetached() throws IOException {
+        if (!detached.getAsBoolean()) {
+            throw new IOException("PHYSICAL_DETACH_PROOF_REQUIRED");
+        }
+        network.stop();
+        ncm.stop();
+        usb.close();
+        if (!localResourcesClosed()) {
+            throw new IOException("CLEANUP_UNCONFIRMED detached local USB/pump resources");
+        }
+        LogHub.i("session", "DETACHED_LOCAL_USB_CLOSED; ALT0/remote cleanup not acknowledged");
+    }
+
+    boolean localResourcesClosed() {
+        return usb.connectionClosed() && ncm.stoppedConfirmed() && network.awaitStopped(500);
+    }
+
+    boolean physicalLinkAbsent(Context context) {
+        try {
+            UsbManager manager = Usb.mgr(context);
+            return manager != null && !manager.getDeviceList().containsKey(usb.device.getDeviceName());
+        } catch (RuntimeException error) {
+            LogHub.w("session", "USB removal observation unavailable; not treating uncertainty as detach");
+            return false;
+        }
+    }
+
     /** Single bounded TCP stream over NCM, with no alternate network fallback. */
     public static final class Channel implements NoAuthVideoTransport {
         private final TcpConn connection;
         private final AtomicBoolean cancelled;
         private boolean cleanup;
+        private final java.util.function.BooleanSupplier detached;
+        private final long replyBudgetNanos;
 
-        private Channel(TcpConn connection, AtomicBoolean cancelled) {
+        private Channel(TcpConn connection, AtomicBoolean cancelled,
+                java.util.function.BooleanSupplier detached, long replyBudgetNanos) {
             this.connection = connection;
             this.cancelled = cancelled;
+            this.detached = detached;
+            this.replyBudgetNanos = replyBudgetNanos;
         }
 
         public void write(byte[] data) throws IOException {
@@ -162,7 +208,7 @@ public final class UsbNcmSession implements Closeable {
             }
             // Error/STOP replies now follow owned media teardown (six bounded
             // 2s IPCs at worst). Never abandon USB before the cleanup reply.
-            long deadline = System.nanoTime() + 15_000_000_000L;
+            long deadline = System.nanoTime() + replyBudgetNanos;
             byte[] result = new byte[count];
             int offset = 0;
             while (offset < count && System.nanoTime() < deadline) {
@@ -188,7 +234,7 @@ public final class UsbNcmSession implements Closeable {
         }
 
         private void checkCancellation() throws IOException {
-            if ((!cleanup && cancelled.get()) || Thread.currentThread().isInterrupted()) {
+            if (detached.getAsBoolean() || (!cleanup && cancelled.get()) || Thread.currentThread().isInterrupted()) {
                 throw new IOException("Video verification cancelled");
             }
         }

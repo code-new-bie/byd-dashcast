@@ -1,14 +1,14 @@
 # 构建与复现
 
-## 1.1.0 导航布局（当前）
+## 1.1.1 本地导航布局（当前）
 
-APK code35，Gradle命令和原签名规则不变。匹配已有1.0.1 receiver/角色/OS/MCU，仪表只新增HMI/KZB布局；公开工具不含原件也不生成升级ZIP。安装requirements-native.txt，父目录build须已存在，自备精确原始HMI、KZB及其TOC：
+APK code36，Gradle命令和原签名规则不变。匹配已有1.0.1 receiver/角色/OS/MCU，仪表只新增HMI/KZB布局；公开工具不含原件也不生成升级ZIP。安装requirements-native.txt，父目录build须已存在，自备精确原始HMI、KZB及其TOC：
 
 ```bash
 python3 tools/build_navigation_components.py --hmi /private/original-rc_hmi.exe --kzb /private/original-bic_byd_stha.kzb --toc /private/original-bic_byd_stha.kzb.txt --output build/navigation
 ```
 
-输出两个组件及范围JSON，输入哈希/已有输出/符号链接不匹配拒绝。[1.1.0范围与操作](PRODUCT_1.1.0.md)。以下各“当前”保留为历史写作状态，不是当前打包入口。
+输出两个组件及范围JSON，输入哈希/已有输出/符号链接不匹配拒绝。当前使用 navigation_layout_fix.py 与 navigation-layout-local.thumb，不给已修改 HMI 重复打补丁。[1.1.1范围与操作](PRODUCT_1.1.1.md)。以下各“当前”保留为历史写作状态，不是当前打包入口。
 
 ## 1.0.1 持续会话与组件（历史）
 

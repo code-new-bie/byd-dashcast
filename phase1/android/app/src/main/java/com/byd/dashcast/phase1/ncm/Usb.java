@@ -385,6 +385,12 @@ public final class Usb {
         private boolean dataClaimed;
         private boolean controlClaimed;
         private boolean cleanupConfirmed = true;
+        private boolean connectionClosed;
+
+        /** Local descriptor evidence only; not an alternate-setting or remote-role acknowledgement. */
+        public boolean connectionClosed() {
+            return connectionClosed;
+        }
 
         public Session(UsbDevice d, UsbDeviceConnection c) {
             device = d;
@@ -419,6 +425,7 @@ public final class Usb {
                 @Override
                 public void closeConnection() {
                     conn.close();
+                    connectionClosed = true;
                 }
             });
             LogHub.i("usb", "USB released; data-deactivation-confirmed=" + cleanupConfirmed

@@ -85,6 +85,7 @@ internal class ProductController private constructor(context: Context) {
         if (busy) { message = "当前操作尚未完成，请稍候"; return }
         val request = StartRequest(target, settings.options(), settings.underlay, startGeneration.incrementAndGet())
         operation("正在连接仪表并准备投屏") {
+            recoverIfNecessary()
             requireClean()
             if (!adbReady) { authenticate() }
             if (request.generation != startGeneration.get()) { return@operation }
@@ -113,6 +114,17 @@ internal class ProductController private constructor(context: Context) {
         if (!settings.setupComplete) { message = "请先完成首次连接设置"; return }
         if (command == InstrumentUsbCommand.HOST) { startGeneration.incrementAndGet(); pendingStart = null }
         operation(if (command == InstrumentUsbCommand.HOST) "正在停止投屏、释放 USB 并恢复 U 盘模式" else "正在连接仪表模式") {
+            if (command == InstrumentUsbCommand.NCM && !ProjectionService.active() &&
+                ProjectionService.state() == ProjectionSessionController.State.DISCONNECTED && observe().allNcm == 0) {
+                if (!adbReady) { authenticate() }
+                // Explicit user role request only; the original instrument guard remains authoritative.
+                // This does not clear pending peer recovery or start a media session.
+                relay().request(command)
+                message = "已提交一次连接模式请求；重新发现仪表后点开始，只读恢复确认通过才会投屏"
+                log("PRODUCT_DETACHED_USER_NCM_REQUEST; recovery remains pending, no Host or media START")
+                return@operation
+            }
+            recoverIfNecessary()
             if (!adbReady) { authenticate() }
             val result = transition(command)
             message = when (result) {
@@ -128,7 +140,7 @@ internal class ProductController private constructor(context: Context) {
     fun exportLogs() = operation("正在导出日志到下载目录") {
         val file = DownloadLogExporter.fileName(System.currentTimeMillis())
         DownloadLogExporter.export(MediaStoreDownloadStore(app.contentResolver), file,
-            "APK ${BuildConfig.VERSION_NAME}\n" + history.snapshot() + "\n" + ProjectionService.journal(),
+            "APK ${BuildConfig.VERSION_NAME}\n" + history.coordinatorSnapshot() + "\n" + ProjectionService.journal(),
             LogHub.snapshot(), "Product relay evidence is recorded in report.txt; no new system probes.\n",
             "NCM observation=${observe()}\n${ProjectionService.status()}\n")
         message = "已导出到下载目录：$file"
@@ -146,7 +158,7 @@ internal class ProductController private constructor(context: Context) {
     } catch (error: RuntimeException) { "USB 状态不可用：${error.javaClass.simpleName}" }
 
     fun diagnosticText(): String = "Dashcast ${BuildConfig.VERSION_NAME}\nADB=${adbReady}\n${usbSummary()}\n" +
-        ProjectionService.status() + "\n\n" + history.snapshot() + "\n" + ProjectionService.journal()
+        ProjectionService.status() + "\n\n" + history.coordinatorSnapshot() + "\n" + ProjectionService.journal()
 
     private fun startReady(request: StartRequest) {
         if (request.generation != startGeneration.get()) { return }
@@ -244,6 +256,47 @@ internal class ProductController private constructor(context: Context) {
     private fun requireClean() {
         if (ProjectionService.quarantined()) { throw IOException("CLEANUP_UNCONFIRMED: 上次清理未确认，禁止叠加启动或切换；请重启仪表和应用恢复") }
         if (ProjectionService.active()) { throw IOException("SESSION_ACTIVE: 请先停止当前投屏") }
+        if (ProjectionService.state() == ProjectionSessionController.State.DISCONNECTED) {
+            throw IOException("DETACHED_RECOVERY_REQUIRED")
+        }
+    }
+
+    private fun recoverIfNecessary() {
+        if (ProjectionService.state() != ProjectionSessionController.State.DISCONNECTED) { return }
+        check(Looper.myLooper() != Looper.getMainLooper()) { "Recovery I/O must never run on the UI thread" }
+        val device = targetDevice() ?: throw IOException("DETACHED_RECOVERY_RECONNECT_REQUIRED")
+        if (!Usb.hasPermission(app, device)) {
+            Usb.requestPermission(app, device)
+            throw IOException("USB_PERMISSION_REQUIRED")
+        }
+        val gate = UsbOperationGate.acquire() ?: throw IOException("USB_BUSY: 本地清理尚未结束")
+        gate.use {
+            val cancellation = AtomicBoolean()
+            val session = try { UsbNcmSession.open(app, cancellation) } catch (error: Exception) {
+                if (DetachedPeerRecovery.localCleanupUnconfirmed(error)) {
+                    ProjectionService.quarantine("CLEANUP_UNCONFIRMED recovery open: $error")
+                }
+                throw error
+            }
+            try {
+                session.use {
+                    session.connectRecovery(cancellation).use { channel ->
+                        DetachedPeerRecovery.verify(channel) { Thread.sleep(100) }
+                    }
+                }
+            } catch (error: Exception) {
+                if (!session.localResourcesClosed()) {
+                    ProjectionService.quarantine("CLEANUP_UNCONFIRMED recovery local resources: $error")
+                }
+                throw error
+            }
+            if (!session.localResourcesClosed()) {
+                ProjectionService.quarantine("CLEANUP_UNCONFIRMED recovery local resources")
+                throw IOException("CLEANUP_UNCONFIRMED recovery local resources")
+            }
+            ProjectionService.confirmDetachedRecovery()
+            log("PRODUCT_DETACHED_RECOVERY_CONFIRMED read_only=true; no media START or CAN command sent by recovery")
+        }
     }
 
     private fun operation(status: String, action: () -> Unit) {
@@ -280,8 +333,11 @@ internal object ProductErrors {
         val text = error.message.orEmpty()
         return when {
             text.contains("AUTH", true) || text.contains("authentication", true) -> "ADB 尚未授权；请允许车机的 USB 调试弹窗后重试"
-            text.contains("MATCHING_FIRMWARE") -> "仪表固件与导航布局不匹配；请使用本次 1.1.0 配套仪表包"
+            text.contains("MATCHING_FIRMWARE") -> "仪表固件与导航布局不匹配；请使用本次 ${BuildConfig.VERSION_NAME} 配套仪表包"
             text.contains("NAVIGATION_LAYOUT_UNCONFIRMED") -> "原生导航布局未确认，已停止；请确认使用配套仪表包"
+            text.contains("PRODUCT_SOURCE_NOT_READY") -> "地图画面尚未准备好，已停止本次启动；原仪表背景未关闭，可稍候重试"
+            text.contains("DETACHED_RECOVERY_RECONNECT_REQUIRED") -> "数据线已断开，本地资源已释放；重新接线后点击开始或连接模式即可检查恢复，无需重启"
+            text.contains("DETACHED_RECOVERY") -> "仪表正在恢复；本地操作已解锁，稍候重新接线并重试。恢复确认前不会叠加投屏或强切模式"
             text.contains("CLEANUP_UNCONFIRMED") -> "上次清理未确认，已停止重试；请重启仪表和应用恢复"
             text.contains("NCM_NOT_ENUMERATED") -> "暂未发现仪表连接；保持数据线连接并检查仪表模式提示"
             text.contains("USB_PERMISSION") -> "请允许访问仪表 USB 后再操作"

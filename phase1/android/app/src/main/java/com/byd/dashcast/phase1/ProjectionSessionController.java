@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 final class ProjectionSessionController {
     enum State {
-        IDLE, STARTING, STREAMING, STOPPING, STOPPED, FAILED, QUARANTINED
+        IDLE, STARTING, STREAMING, STOPPING, STOPPED, FAILED, DISCONNECTED, QUARANTINED
     }
 
     interface Task {
@@ -31,6 +31,15 @@ final class ProjectionSessionController {
         }
     }
 
+    /** Physical link loss with owned Android capture/USB resources already closed. */
+    static final class DetachedSessionException extends IOException {
+        private static final long serialVersionUID = 1L;
+
+        DetachedSessionException(Throwable cause) {
+            super("DETACHED_RECOVERY_REQUIRED: local resources closed; peer recovery not yet confirmed", cause);
+        }
+    }
+
     private final Executor executor;
     private final Observer observer;
     private State state = State.IDLE;
@@ -45,7 +54,7 @@ final class ProjectionSessionController {
 
     synchronized boolean start(Task task) {
         Objects.requireNonNull(task);
-        if (active || state == State.QUARANTINED) {
+        if (active || state == State.QUARANTINED || state == State.DISCONNECTED) {
             return false;
         }
         active = true;
@@ -93,6 +102,9 @@ final class ProjectionSessionController {
         String detail = "owned capture/receiver/USB cleanup confirmed; check instrument window manually";
         try {
             task.run(ownedStop, ownedAbort, this::streaming, this::cleaning);
+        } catch (DetachedSessionException error) {
+            outcome = State.DISCONNECTED;
+            detail = error.getMessage();
         } catch (CleanupUnconfirmedException error) {
             outcome = State.QUARANTINED;
             detail = error.getMessage() + "; stop testing, normal restart required; no guard deletion";

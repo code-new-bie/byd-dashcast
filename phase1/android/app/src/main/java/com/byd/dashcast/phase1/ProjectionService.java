@@ -57,6 +57,7 @@ public final class ProjectionService extends Service {
     private volatile boolean finishing;
     private volatile UsbOperationGate.Lease ownedLease;
     private volatile boolean destroyed;
+    private ContinuousProjectionTask continuousTask;
 
     private final BroadcastReceiver detach = new BroadcastReceiver() {
         @Override
@@ -64,6 +65,8 @@ public final class ProjectionService extends Service {
             UsbDevice device = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
             if (UsbManager.ACTION_USB_DEVICE_DETACHED.equals(intent.getAction()) && device != null
                     && device.getDeviceName().equals(ownedDevice)) {
+                JOURNAL.append("OWNED_USB_PHYSICAL_DETACH device=" + ownedDevice);
+                if (continuousTask != null) { continuousTask.notePhysicalDetach(); }
                 controller.abort("Owned instrument USB detached");
             }
         }
@@ -148,6 +151,14 @@ public final class ProjectionService extends Service {
         return JOURNAL.snapshot();
     }
 
+    static void confirmDetachedRecovery() throws IOException {
+        if (active() || JOURNAL.currentState() != ProjectionSessionController.State.DISCONNECTED) {
+            throw new IOException("DETACHED_RECOVERY_STATE_CHANGED");
+        }
+        JOURNAL.state(ProjectionSessionController.State.STOPPED,
+                "DETACHED_PEER_RECOVERY_CONFIRMED; local resources closed and fresh peer idle snapshot verified");
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -159,6 +170,7 @@ public final class ProjectionService extends Service {
         controller = new ProjectionSessionController(worker, (state, detail) -> {
             JOURNAL.state(state, detail);
             if (state == ProjectionSessionController.State.STOPPED || state == ProjectionSessionController.State.FAILED
+                    || state == ProjectionSessionController.State.DISCONNECTED
                     || state == ProjectionSessionController.State.QUARANTINED) {
                 finishing = true;
                 // Publish quarantine BEFORE releasing the process gate; never let a new Service
@@ -274,6 +286,7 @@ public final class ProjectionService extends Service {
             wakeLock.acquire(product ? WAKE_LEASE_MILLIS : (seconds + 30L) * 1000);
             ContinuousProjectionTask continuous = probe ? null
                     : new ContinuousProjectionTask(this, seconds, JOURNAL::append, options, target, composition);
+            continuousTask = continuous;
             if (product && underlay) { continuous.enableProductComposition(); }
             ProjectionSessionController.Task task = probe
                     ? new RemoteDisplayProbeTask(this, target, JOURNAL::append)

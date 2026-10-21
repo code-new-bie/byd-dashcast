@@ -161,6 +161,11 @@ public final class Ncm {
         return running;
     }
 
+    /** A timeout warning is not proof that the owned pump workers terminated. */
+    public boolean stoppedConfirmed() {
+        return !running && (pumps == null || pumps.isTerminated());
+    }
+
     /* ---------------- 发送 ---------------- */
 
     /** 由协议栈调用：把一帧以太网报文排进发送队列。 */

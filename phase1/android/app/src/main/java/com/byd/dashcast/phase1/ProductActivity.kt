@@ -225,13 +225,14 @@ class ProductActivity : Activity() {
                 ProjectionSessionController.State.STOPPING -> "正在恢复背景与释放连接"
                 ProjectionSessionController.State.QUARANTINED -> "需要恢复 · 未确认的清理已隔离"
                 ProjectionSessionController.State.FAILED -> "投屏未完成 · 可查看诊断详情"
+                ProjectionSessionController.State.DISCONNECTED -> "连接已断开 · 重新接线后可恢复，无需重启"
                 ProjectionSessionController.State.STOPPED -> "投屏已停止 · 连接已释放"
                 else -> "准备就绪 · 选择应用开始"
             }
         }
         connection.text = "${if (control.adbReady) "ADB 已连接" else "ADB 待连接"}  ·  ${control.usbSummary()}"
         detail.text = if (!control.busy && (state == ProjectionSessionController.State.FAILED ||
-            state == ProjectionSessionController.State.QUARANTINED)) {
+            state == ProjectionSessionController.State.QUARANTINED || state == ProjectionSessionController.State.DISCONNECTED)) {
             ProductErrors.explain(java.io.IOException(ProjectionService.status()))
         } else { control.message }
         primary?.isEnabled = !control.busy && !ProjectionService.blocksOperations()

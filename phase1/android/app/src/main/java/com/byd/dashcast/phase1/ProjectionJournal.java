@@ -39,4 +39,9 @@ final class ProjectionJournal {
     synchronized String snapshot() {
         return "CONTINUOUS_SESSION " + status() + "\n" + log;
     }
+
+    /** Coordinator history is not the Service state; never prepend a fictitious IDLE session. */
+    synchronized String coordinatorSnapshot() {
+        return "PRODUCT_COORDINATOR_EVENTS\n" + log;
+    }
 }

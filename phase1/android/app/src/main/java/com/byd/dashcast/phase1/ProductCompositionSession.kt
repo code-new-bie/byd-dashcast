@@ -74,11 +74,12 @@ internal class ProductCompositionSession(
             return
         }
         if (reply.word(29) != NAVIGATION_ACTIVE) {
+            if (reply.word(29) == NAVIGATION_PENDING && now - began < ACTIVATION_DEADLINE) { return }
             throw IOException("PRODUCT_NAVIGATION_LAYOUT_UNCONFIRMED")
         }
         if (!active) {
             active = true
-            log.log("PRODUCT_NATIVE_BACKGROUND_ACTIVE layout=native-navigation; OEM data/alerts retained")
+            log.log("PRODUCT_NATIVE_BACKGROUND_ACTIVE layout=native-navigation; native property effects confirmed, visual output still requires observation")
         }
         if (now - lastRenew >= RENEW_INTERVAL) {
             if (!drawingConfirmed && (delta(reply, 16) == 0L || delta(reply, 17) == 0L)) {
@@ -137,8 +138,9 @@ internal class ProductCompositionSession(
 
     companion object {
         const val CAPABILITY = 0x52574e32
-        const val NAVIGATION_READY = 0x4e415600
-        const val NAVIGATION_ACTIVE = 0x4e415601
+        const val NAVIGATION_READY = 0x4e4c4300
+        const val NAVIGATION_ACTIVE = 0x4e4c4301
+        const val NAVIGATION_PENDING = 0x4e4c4302
         private const val QUERY = 0
         private const val START = 1
         private const val RESTORE = 2
