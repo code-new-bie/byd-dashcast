@@ -111,6 +111,7 @@ public final class ShellScreenCapture {
         Surface surface = null;
         AutoCloseable display = null;
         CenterFrameRenderer center = null;
+        RemoteDisplaySession remote = null;
         boolean started = false;
         Exception failure = null;
         try {
@@ -118,15 +119,20 @@ public final class ShellScreenCapture {
             surface = codec.createInputSurface();
             codec.start();
             started = true;
+            Surface captureSurface = surface;
+            int logicalWidth = NoAuthVideoProtocol.WIDTH;
             if (options.centerWindow()) {
                 center = new CenterFrameRenderer(surface);
-                display = target.isRemote()
-                        ? new RemoteDisplaySession(center.inputSurface(), target, 1280, 720)
-                        : new Mirror(center.inputSurface(), options, 1280, 720);
-            } else {
-                display = target.isRemote() ? new RemoteDisplaySession(surface, target) : new Mirror(surface, options);
+                captureSurface = center.inputSurface();
+                logicalWidth = 1280;
             }
-            stream(codec, seconds, control, center);
+            if (target.isRemote()) {
+                remote = new RemoteDisplaySession(captureSurface, target, logicalWidth, 720, options);
+                display = remote;
+            } else {
+                display = new Mirror(captureSurface, options, logicalWidth, 720);
+            }
+            stream(codec, seconds, control, center, remote);
         } catch (Exception error) {
             failure = error;
             throw error;
@@ -184,7 +190,7 @@ public final class ShellScreenCapture {
     }
 
     private static void stream(MediaCodec codec, int seconds, CaptureStopControl control,
-            CenterFrameRenderer center) throws IOException {
+            CenterFrameRenderer center, RemoteDisplaySession remote) throws Exception {
         long began = System.nanoTime();
         long drainUntil = 0;
         boolean unlimited = control != null && ContinuousSessionPolicy.unlimited(seconds);
@@ -205,6 +211,14 @@ public final class ShellScreenCapture {
                 drainUntil = System.nanoTime() + 2_000_000_000L;
             }
             if (!eos && center != null) { center.renderIfAvailable(); }
+            if (!eos && remote != null) { remote.update(codec); }
+            // Source handoff may deliberately discard encoder output until a fresh IDR.
+            // Keep the existing same-stream lease alive without forwarding that stale data.
+            if (control != null && System.nanoTime() - lastIdle >= 250_000_000L) {
+                stdout.write(CaptureFrameProtocol.idle(Math.max(0, lastPts)));
+                stdout.flush();
+                lastIdle = System.nanoTime();
+            }
             int index = codec.dequeueOutputBuffer(info, 10_000);
             if (index == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
                 MediaFormat output = codec.getOutputFormat();
@@ -224,6 +238,11 @@ public final class ShellScreenCapture {
                 continue;
             }
             try {
+                if (remote != null && (eos || (info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0)) {
+                    // Do not forward queued pictures after stop, but still consume the EOS flag
+                    // below. A continue here would lose a nonempty final EOS and fake a timeout.
+                    info.size = 0;
+                }
                 if (info.size > 0) {
                     ByteBuffer buffer = codec.getOutputBuffer(index);
                     if (buffer == null || info.size > NoAuthVideoProtocol.MAX_FRAME_BYTES) {
@@ -234,6 +253,10 @@ public final class ShellScreenCapture {
                     if ((info.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
                         config = AvcByteStream.normalizeConfiguration(buffer);
                     } else {
+                        boolean key = (info.flags & MediaCodec.BUFFER_FLAG_KEY_FRAME) != 0;
+                        if (remote != null && (eos || !remote.acceptFrame(info.presentationTimeUs, key))) {
+                            continue;
+                        }
                         frames = ContinuousSessionPolicy.add(frames, 1);
                         if ((info.flags & MediaCodec.BUFFER_FLAG_PARTIAL_FRAME) != 0 || info.presentationTimeUs <= lastPts
                                 || !unlimited && frames > (control == null ? 360 : ProjectionLimits.MAX_CAPTURE_FRAMES)) {
@@ -247,7 +270,6 @@ public final class ShellScreenCapture {
                             nextRollingGateFrame = ContinuousSessionPolicy.add(nextRollingGateFrame,
                                     OutputFrameRateEvidence.MIN_STABLE_FRAMES);
                         }
-                        boolean key = (info.flags & MediaCodec.BUFFER_FLAG_KEY_FRAME) != 0;
                         byte[] picture = AvcByteStream.normalize(buffer);
                         if (key) {
                             if (config.length == 0) {
@@ -324,8 +346,11 @@ public final class ShellScreenCapture {
         }
     }
 
-    private static final class Mirror implements AutoCloseable {
+    static final class Mirror implements AutoCloseable {
         private final Class<?> control = Class.forName("android.view.SurfaceControl");
+        private final CaptureOptions options;
+        private final int outputWidth;
+        private final int outputHeight;
         private IBinder token;
 
         Mirror(Surface surface, CaptureOptions options) throws Exception {
@@ -333,9 +358,33 @@ public final class ShellScreenCapture {
         }
 
         Mirror(Surface surface, CaptureOptions options, int outputWidth, int outputHeight) throws Exception {
+            this(surface, options, outputWidth, outputHeight, 0);
+        }
+
+        Mirror(Surface surface, CaptureOptions options, int outputWidth, int outputHeight,
+                int displayId) throws Exception {
+            this.options = options;
+            this.outputWidth = outputWidth;
+            this.outputHeight = outputHeight;
+            token = (IBinder) control.getMethod("createDisplay", String.class, boolean.class)
+                    .invoke(null, "dashcast-phase1-capture", false);
+            if (token == null) { throw new IOException("SHELL_CAPTURE_DISPLAY_CREATE_FAILED"); }
+            try {
+                control.getMethod("openTransaction").invoke(null);
+                try { method("setDisplaySurface", IBinder.class, Surface.class).invoke(null, token, surface); }
+                finally { control.getMethod("closeTransaction").invoke(null); }
+                selectDisplay(displayId);
+            } catch (Exception error) {
+                try { close(); } catch (Exception cleanup) { error.addSuppressed(cleanup); }
+                throw error;
+            }
+        }
+
+        void selectDisplay(int displayId) throws Exception {
+            if (token == null || displayId < 0) { throw new IOException("SHELL_CAPTURE_SOURCE_DISPLAY_INVALID"); }
             Class<?> manager = Class.forName("android.hardware.display.DisplayManagerGlobal");
             Object global = manager.getMethod("getInstance").invoke(null);
-            Object display = manager.getMethod("getDisplayInfo", int.class).invoke(global, 0);
+            Object display = manager.getMethod("getDisplayInfo", int.class).invoke(global, displayId);
             if (display == null) {
                 throw new IOException("SHELL_CAPTURE_PRIMARY_DISPLAY_MISSING");
             }
@@ -346,22 +395,17 @@ public final class ShellScreenCapture {
                 throw new IOException("SHELL_CAPTURE_UNEXPECTED_DISPLAY");
             }
             CaptureGeometry geometry = CaptureGeometry.create(width, height, options, outputWidth, outputHeight);
-            token = (IBinder) control.getMethod("createDisplay", String.class, boolean.class)
-                    .invoke(null, "dashcast-phase1-capture", false);
-            if (token == null) {
-                throw new IOException("SHELL_CAPTURE_DISPLAY_CREATE_FAILED");
-            }
             try {
                 control.getMethod("openTransaction").invoke(null);
                 try {
-                    method("setDisplaySurface", IBinder.class, Surface.class).invoke(null, token, surface);
                     method("setDisplayLayerStack", IBinder.class, int.class).invoke(null, token, stack);
                     method("setDisplayProjection", IBinder.class, int.class, Rect.class, Rect.class)
                             .invoke(null, token, 0, rect(geometry.source()), rect(geometry.destination()));
                 } finally {
                     control.getMethod("closeTransaction").invoke(null);
                 }
-                System.err.println("SHELL_CAPTURE_MIRROR " + width + "x" + height + " layerStack=" + stack);
+                System.err.println("SHELL_CAPTURE_MIRROR " + width + "x" + height + " layerStack=" + stack
+                        + " source_display=" + displayId);
                 System.err.println("SHELL_CAPTURE_GEOMETRY mode=" + options + " " + geometry
                         + "; native window unchanged; HMI occlusion not certified");
             } catch (Exception error) {

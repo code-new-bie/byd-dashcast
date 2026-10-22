@@ -66,6 +66,21 @@ internal class ProductCompositionSession @JvmOverloads constructor(
         val reply = exchange(channel, QUERY)
         if (reply.error == 9) { return }
         requireReply(reply)
+        if (!active && reply.word(3) != reply.word(8)) {
+            // The receiver has queued this START, while the render-thread snapshot still
+            // describes the preceding RESTORE (state=2/reason=0/previous owner). That is
+            // not revocation of this session. Only our pending request gets this grace.
+            if (reply.word(20) != nonce) { throw IOException("PRODUCT_INITIAL_PENDING_OWNER_CHANGED") }
+            if (now - requestBegan >= ACTIVATION_DEADLINE) {
+                throw IOException("PRODUCT_REQUEST_ACK_UNCONFIRMED")
+            }
+            if (!waitingAcknowledgement) {
+                waitingAcknowledgement = true
+                log.log("PRODUCT_INITIAL_ACK_PENDING requested=${reply.unsigned(3)} acknowledged=${reply.unsigned(8)} " +
+                    "state=${reply.word(9)} reason=${reply.word(11)} owner=${reply.word(21)}; old restore is not revocation")
+            }
+            return
+        }
         if (reply.word(11) != 0 || reply.word(9) == 2) {
             throw IOException("PRODUCT_NATIVE_LEASE_REVOKED reason=${reply.word(11)}")
         }

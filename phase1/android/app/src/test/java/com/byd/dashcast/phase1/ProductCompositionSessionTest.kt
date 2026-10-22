@@ -21,6 +21,12 @@ class ProductCompositionSessionTest {
         var pending = false
         var nativeMode = 0
         var nativeModeOverride: Int? = null
+        var deferStart = false
+        var requestSequence = 2
+        var appliedSequence = 2
+        var requestedOwner = 0
+        var requestedOwnerOverride: Int? = null
+        var nativeReason = 0
         val operations = mutableListOf<Int>()
         lateinit var bytes: ByteArray
         var offset = 0
@@ -30,15 +36,21 @@ class ProductCompositionSessionTest {
             assertEquals(10, packet.getInt(4))
             val op = packet.getInt(28)
             operations += op
-            if (op == 1) { nonce = packet.getInt(32); state = 1; nativeMode = if (packet.getInt(36) == 5001) 1 else 0 }
+            if (op == 1) {
+                requestedOwner = packet.getInt(32)
+                if (deferStart) { requestSequence = 4 }
+                else { nonce = requestedOwner; state = 1; nativeMode = if (packet.getInt(36) == 5001) 1 else 0 }
+            }
             if (op == 2 && error == 0) { assertEquals(nonce, packet.getInt(32)); state = 2; nativeMode = 0 }
             if (op == 3) { assertEquals(nonce, packet.getInt(32)); assertEquals(5000, packet.getInt(36)) }
             val words = IntArray(32)
             words[0] = 0x31474244; words[1] = 1; words[2] = 128
-            words[3] = if (pending) 4 else 2; words[8] = 2; words[9] = state; words[10] = pid
+            words[3] = if (pending) 4 else requestSequence; words[8] = appliedSequence
+            words[9] = state; words[10] = pid; words[11] = nativeReason
             words[12] = (now / 1_000_000_000L).toInt(); words[13] = (now % 1_000_000_000L).toInt()
             words[14] = words[12] + 5; words[15] = words[13]; words[18] = epoch
             words[21] = ownerOverride ?: nonce; words[30] = nativeModeOverride ?: nativeMode; words[31] = capability
+            words[20] = requestedOwnerOverride ?: requestedOwner
             words[29] = navigationOverride ?: if (state == 1) ProductCompositionSession.NAVIGATION_ACTIVE
                 else ProductCompositionSession.NAVIGATION_READY
             words[16] = if (nonce == 0) 0 else skip; words[17] = words[16]
@@ -210,6 +222,31 @@ class ProductCompositionSessionTest {
             assertFalse(p.operations.contains(3))
             p.nativeModeOverride = null
             s.restore(p)
+        }
+    }
+
+    @Test fun previousRestoredStateWhileOurInitialStartIsPendingIsNotRevocation() {
+        val p = Peer().apply { state = 2; nonce = 44; deferStart = true }
+        val s = p.session(); s.prepare(p); s.activate(p)
+        p.now += 250_000_000L; s.tick(p)
+        assertFalse(p.operations.contains(3))
+        p.appliedSequence = 4; p.state = 1; p.nonce = 77
+        p.now += 250_000_000L; s.tick(p)
+        s.restore(p)
+        assertEquals(1, p.operations.count { it == 1 })
+        assertEquals(2, p.state)
+    }
+
+    @Test fun initialStartGraceCannotHideWrongOwnerTimeoutOrNewNativeRejection() {
+        for (scenario in 0..2) {
+            val p = Peer().apply { state = 2; nonce = 44; deferStart = true }
+            val s = p.session(); s.prepare(p); s.activate(p)
+            if (scenario == 0) { p.requestedOwnerOverride = 88 }
+            if (scenario == 2) { p.appliedSequence = 4; p.nonce = 77; p.state = 1; p.nativeReason = 3 }
+            p.now += if (scenario == 1) 1_500_000_000L else 250_000_000L
+            assertThrows(IOException::class.java) { s.tick(p) }
+            assertFalse(p.operations.contains(3))
+            assertEquals(1, p.operations.count { it == 1 })
         }
     }
 }

@@ -91,7 +91,7 @@ class ProductActivity : Activity() {
     private fun home() {
         card {
             addView(text("独立导航，留在仪表", 30, true))
-            addView(text("车机可切换其他应用；仪表继续显示所选应用，不自动退回主屏镜像。", 18))
+            addView(text("从原应用图标打开可在车机操作，同一任务继续投屏；车机切到其他应用后，由副屏继续承接。", 18))
             addView(status)
             addView(connection)
             addView(detail)
@@ -100,7 +100,7 @@ class ProductActivity : Activity() {
         card {
             addView(text("当前应用", 16))
             addView(text(selected?.label ?: "尚未选择导航应用", 27, true))
-            addView(text(if (selected?.navigation == true) "导航专注 · 独立副屏 · ${if (settings.underlay) "顶部状态 / 中央地图 / 底部数据" else "大中心窗 · 16:9"}"
+            addView(text(if (selected?.navigation == true) "导航专注 · 同任务双端共显 · ${if (settings.underlay) "顶部状态 / 中央地图 / 底部数据" else "大中心窗 · 16:9"}"
                 else "请在应用中心选择；不同应用的副屏兼容性不同", 17))
             addView(button("更换应用") { page = 1; build() })
         }
@@ -120,7 +120,7 @@ class ProductActivity : Activity() {
 
     private fun applications() {
         body.addView(text("选择独立投屏应用", 26, true))
-        body.addView(text("优先推荐已验证的高德分身；其余应用需支持 Android 副屏，失败时不会偷偷镜像主屏。", 16))
+        body.addView(text("优先推荐高德/高德分身；主屏打开所选应用时共显，离开后同任务进入副屏。不采集其他应用，失败不切换为全主屏镜像。", 16))
         val search = EditText(this).apply {
             hint = "搜索应用名称或包名"
             setTextColor(textColor); setHintTextColor(muted); textSize = 20f
@@ -167,7 +167,7 @@ class ProductActivity : Activity() {
             addView(toggle("导航仪表布局：顶部状态、中央地图、底部数据", settings.underlay) { settings.underlay = it })
             addView(text("开启使用全屏紧凑布局，关闭使用 768×432 大中心窗；边缘柔和融合，停止或失联自动恢复。需配套 1.2.0 仪表 App，下次开始生效；车速、挡位、里程仍来自原厂。", 16))
             addView(toggle("中心裁剪填充画面", settings.crop) { settings.crop = it })
-            addView(text("独立应用按副屏比例排版；裁剪选项用于主屏镜像取景，不改变车速、挡位等仪表元素。设置在下一次开始时生效。", 16))
+            addView(text("副屏按仪表比例排版；从原图标打开时共显主屏的所选应用，取景比例随裁剪选项变化。不是两份独立导航；不会改变仪表原生信息。下次开始生效。", 16))
             addView(toggle("日间浅色界面", settings.light) { settings.light = it; build() })
             addView(text("上面的开关只改变 APK 界面。仪表融合底色自动跟随原厂深浅模式；地图配色仍由导航应用自己的昼夜设置决定。", 16))
         }
@@ -203,7 +203,7 @@ class ProductActivity : Activity() {
         val begin = { control.start(app.target()); updateStatus() }
         if (app.navigation) { begin() } else {
             AlertDialog.Builder(this).setTitle("投屏其他应用")
-                .setMessage("驾驶中仅使用导航；不要观看娱乐视频或分心操作。此应用的副屏兼容性未确认，失败不会回退镜像主屏。")
+                .setMessage("驾驶中仅使用导航；不要观看娱乐视频或分心操作。此应用跨屏兼容性未确认；只有所选应用在主屏前台时共显，失败不采集无关应用。")
                 .setPositiveButton("开始") { _, _ -> begin() }.setNegativeButton("取消", null).show()
         }
     }

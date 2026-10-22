@@ -1,8 +1,8 @@
 # Dashcast 仪表导航
 
-BYD Android 车机 → QNX 仪表的 USB 独立应用投屏。当前源码 **1.2.0 / code38**，Kotlin 四页产品入口；恢复右下里程位置、原厂深浅主题融合和四边渐变，新增16:9大中心窗。健康会话没有人为累计时长、帧数或流量上限。
+BYD Android 车机 → QNX 仪表的 USB 应用投屏。当前源码 **1.3.0 / code39**，Kotlin 四页产品入口；原应用图标访问同一导航任务，主屏共显/后台副屏交接，停止前归还任务。继承1.2.0右下里程、原厂主题融合和16:9大中心窗。健康会话没有人为累计时长、帧数或流量上限。
 
-- 首页一键开始/停止导航投屏；车机切其他应用时，仪表保持所选独立副屏应用。
+- 首页一键开始/停止；原应用图标打开时车机可操作同一任务，切其他应用后由副屏承接；不是两份独立导航，停止不强停地图。
 - 应用搜索、收藏、默认选择；高德分身优先，不兼容时不偷偷回退主屏镜像。
 - 顶部状态、中央地图、底部原生功率/车速/电量/续航；原生数据绑定不由 APK 重画。支持比例保持/中心裁剪、兼容小窗、日间/夜间主题。
 - 前台服务持续拥有同一条会话，直至停止、实际断开或异常；不定时重连，通知栏可停止。
@@ -10,7 +10,7 @@ BYD Android 车机 → QNX 仪表的 USB 独立应用投屏。当前源码 **1.2
 - 诊断页提供 ADB 连接、一键日志导出到下载目录；历史工程工具不再作为默认页面。
 - 视频不使用激活码、token 或设备绑定；正常 ADB 调试和 USB 访问许可保留。
 
-[1.2.0 主题融合与大中心窗](docs/PRODUCT_1.2.0.md) · [构建](docs/BUILD.md) · [验证边界](docs/VALIDATION.md) · [架构](docs/ARCHITECTURE.md)
+[1.3.0 原图标与导航任务交接](docs/PRODUCT_1.3.0.md) · [1.2.0 仪表显示](docs/PRODUCT_1.2.0.md) · [构建](docs/BUILD.md) · [验证边界](docs/VALIDATION.md) · [架构](docs/ARCHITECTURE.md)
 
 ## 产品与安全边界
 
@@ -35,7 +35,7 @@ Windows 用 gradlew.bat。首次依赖需要网络；准备完缓存才能 --off
 
 Kotlin 产品界面、状态协调、应用目录、配置、角色工作流和持续合成控制位于 phase1/android；已打通的 Java 编码/DCV1/NCM/shell ABI 保留。phase1/qnx 提供脚本、精确 ARM/Thumb 适配源及便携控制器；analysis 与 tools 提供哈希固定组件生成和公开内容检查。
 
-MCU、参考 OS、MLO/IFS/Boot、接收器和 USB 角色脚本不改；1.1.2 相对1.1.1仪表只改 App 内 KZB，HMI原字节保持，保留原厂数据源和告警资源。公开源码不含原厂/参考固件原件、APK、SDK、密钥、ADB 身份或原始实车日志；配套另行分发。组件工具需要精确原始 HMI/KZB/TOC，输出不是可刷 FULL；两端匹配 RWN2+NLC 状态，[详见构建](docs/BUILD.md)。
+本版相对1.2.0仅改APK，仪表FULL/53个App成员全部原字节保持，仍需1.2.0仪表App；MCU、参考OS、MLO/IFS/Boot和USB角色脚本不改。新原图标交接/导航保留/硬件切源尚未实车，不用测试数代替目标机验收。公开源码不含原厂/参考固件原件、APK、SDK、密钥、ADB身份或原始实车日志；配套另行分发。组件工具需要精确原始HMI/KZB/TOC，输出不是可刷FULL，[详见构建](docs/BUILD.md)。
 
 [使用](docs/USAGE.md) · [发布边界](docs/PUBLISHING.md) · [安全](SECURITY.md) · [依赖来源](THIRD_PARTY_NOTICES.md) · [许可证待选](LICENSE_STATUS.md) · [贡献](CONTRIBUTING.md)
 

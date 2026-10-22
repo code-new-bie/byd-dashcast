@@ -1,5 +1,9 @@
 # 构建与复现
 
+## 1.3.0 APK任务交接（当前）
+
+APK code39，JDK21/AGP9.3/内置Kotlin工具链与命令不变。本版没有新仪表组件，继续使用下节1.2.0的HMI/KZB/receiver；不要重复对已修改组件打补丁或为了版本号重打MCU/OS。公开源码独立构建使用本机签名，不等于维护者原签名覆盖包。[升级和边界](PRODUCT_1.3.0.md)。
+
 ## 1.2.0 原厂主题与中心窗（当前）
 
 APK code38，构建工具链及签名规则不变。自行提供精确原始HMI/KZB/TOC及1.1.2接收器（SHA256 `7c5e36bfaedafb963dba9ff42619c50254fb0c4a45da378402a560dc4bad08fe`），安装现有requirements-native.txt依赖，输出父目录须存在：
