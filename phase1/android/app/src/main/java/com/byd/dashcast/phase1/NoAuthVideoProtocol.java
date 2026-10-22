@@ -64,6 +64,12 @@ final class NoAuthVideoProtocol {
         return packet(START, 0, 0, 0, payload.array());
     }
 
+    static byte[] startCenterWindow() {
+        ByteBuffer payload = ByteBuffer.allocate(24).order(ByteOrder.BIG_ENDIAN);
+        payload.putInt(576).putInt(128).putInt(768).putInt(432).putInt(FPS).putInt(2);
+        return packet(START, 0, 0, 0, payload.array());
+    }
+
     static byte[] heartbeat(int counter) throws IOException {
         return heartbeat(counter, false);
     }

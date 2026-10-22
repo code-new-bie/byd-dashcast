@@ -1,5 +1,15 @@
 # 构建与复现
 
+## 1.2.0 原厂主题与中心窗（当前）
+
+APK code38，构建工具链及签名规则不变。自行提供精确原始HMI/KZB/TOC及1.1.2接收器（SHA256 `7c5e36bfaedafb963dba9ff42619c50254fb0c4a45da378402a560dc4bad08fe`），安装现有requirements-native.txt依赖，输出父目录须存在：
+
+```bash
+python3 tools/build_display_fusion_components.py --hmi /private/original-rc_hmi.exe --kzb /private/original-bic_byd_stha.kzb --toc /private/original-bic_byd_stha.kzb.txt --receiver /private/receiver-1.1.2 --output build/display-fusion
+```
+
+输出HMI/KZB/receiver三组件和审计JSON，不是可刷升级包；无私有固件路径依赖，已有输出/输入不符拒绝。正常升级仍需匹配APK＋App，cfg/USB角色/原MCU/参考OS/Boot保持。[本版范围](PRODUCT_1.2.0.md)。下面旧工具保留历史复现，不用它们打本版配套。
+
 ## 1.1.2 导航布局优化（当前）
 
 APK code37，Gradle命令和原签名规则不变。HMI输出与1.1.1相同，仪表相对1.1.1仅KZB布局变化，receiver/角色/OS/MCU保持；公开工具不含原件也不生成升级ZIP。安装requirements-native.txt，父目录build须已存在，自备精确原始HMI、KZB及其TOC：

@@ -27,14 +27,26 @@ final class CaptureOptions {
     private final Integer topPercent;
     private final Integer rightPercent;
     private final Integer bottomPercent;
+    private final boolean centerWindow;
 
     private CaptureOptions(Mode mode, int left, int top, int right, int bottom) {
+        this(mode, left, top, right, bottom, false);
+    }
+
+    private CaptureOptions(Mode mode, int left, int top, int right, int bottom, boolean centerWindow) {
         this.mode = mode;
         leftPercent = left;
         topPercent = top;
         rightPercent = right;
         bottomPercent = bottom;
+        this.centerWindow = centerWindow;
     }
+
+    CaptureOptions forCenterWindow() {
+        return new CaptureOptions(mode, leftPercent, topPercent, rightPercent, bottomPercent, true);
+    }
+
+    boolean centerWindow() { return centerWindow; }
 
     static CaptureOptions of(Mode mode) {
         Objects.requireNonNull(mode, "Capture mode required");
@@ -56,6 +68,13 @@ final class CaptureOptions {
     static CaptureOptions parse(String token) {
         if (token == null || token.isEmpty() || token.length() > MAX_TOKEN_CHARS) {
             throw new IllegalArgumentException("Missing or oversized capture selection");
+        }
+        if (token.startsWith("center-")) {
+            String selection = token.substring(7);
+            if (!"fit".equals(selection) && !"crop".equals(selection)) {
+                throw new IllegalArgumentException("Center window supports explicit fit/crop only");
+            }
+            return parse(selection).forCenterWindow();
         }
         String[] words = token.split(":", -1);
         if (words.length == 1) {
@@ -138,6 +157,12 @@ final class CaptureOptions {
     }
 
     String token() {
+        if (centerWindow) {
+            if (mode != Mode.FIT && mode != Mode.CROP) {
+                throw new IllegalArgumentException("Center window requires fit/crop");
+            }
+            return "center-" + (mode == Mode.FIT ? "fit" : "crop");
+        }
         switch (mode) {
             case FIT:
                 return "fit";

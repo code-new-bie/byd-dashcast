@@ -77,7 +77,8 @@ final class ContinuousProjectionTask implements ProjectionSessionController.Task
             client = new NoAuthVideoClient(session::connect, abort, log::accept, true);
             if (ContinuousSessionPolicy.unlimited(seconds)) { client.enableUnlimitedStream(); }
             if (productComposition) {
-                client.enableProductComposition(new java.security.SecureRandom().nextInt(Integer.MAX_VALUE - 1) + 1);
+                client.enableProductComposition(new java.security.SecureRandom().nextInt(Integer.MAX_VALUE - 1) + 1,
+                        options.centerWindow());
             } else if (compositionTrial) {
                 client.enableCompositionTrial(new java.security.SecureRandom().nextInt(Integer.MAX_VALUE - 1) + 1,
                         () -> stop.set(true));

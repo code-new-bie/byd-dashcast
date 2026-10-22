@@ -48,6 +48,7 @@ final class NoAuthVideoClient implements Closeable {
     private InstrumentDisplayProbe displayProbe;
     private CompositionControl composition;
     private boolean productProfile;
+    private boolean centerWindow;
     private boolean compositionActivated;
     private long productSourceBegan;
 
@@ -60,11 +61,16 @@ final class NoAuthVideoClient implements Closeable {
     }
 
     void enableProductComposition(int nonce) throws IOException {
+        enableProductComposition(nonce, false);
+    }
+
+    void enableProductComposition(int nonce, boolean centerWindow) throws IOException {
         if (video != null || closed || !continuous) {
             throw new IOException("PRODUCT_COMPOSITION_REQUIRES_FRESH_CONTINUOUS_SESSION");
         }
-        composition = new ProductCompositionSession(logger, nanoTime, nonce);
+        composition = new ProductCompositionSession(logger, nanoTime, nonce, centerWindow);
         productProfile = true;
+        this.centerWindow = centerWindow;
     }
 
     void enableCompositionTrial(int nonce, Runnable stopRequested) throws IOException {
@@ -124,7 +130,8 @@ final class NoAuthVideoClient implements Closeable {
             negotiated = true;
             cleanupConfirmed = false;
             lastHeartbeat = nanoTime.getAsLong();
-            NoAuthVideoProtocol.Reply reply = exchange(NoAuthVideoProtocol.start(composition != null),
+            NoAuthVideoProtocol.Reply reply = exchange(centerWindow ? NoAuthVideoProtocol.startCenterWindow()
+                    : NoAuthVideoProtocol.start(composition != null),
                     NoAuthVideoProtocol.START, 0, 0);
             if ((reply.flags & 1) == 0 || reply.submissions != 0) {
                 throw new IOException("DCV1_MEDIA_CONTEXT_NOT_READY");

@@ -19,24 +19,26 @@ class ProductCompositionSessionTest {
         var ownerOverride: Int? = null
         var navigationOverride: Int? = null
         var pending = false
+        var nativeMode = 0
+        var nativeModeOverride: Int? = null
         val operations = mutableListOf<Int>()
         lateinit var bytes: ByteArray
         var offset = 0
-        fun session() = ProductCompositionSession({ }, LongSupplier { now }, 77)
+        fun session(center: Boolean = false) = ProductCompositionSession({ }, LongSupplier { now }, 77, center)
         override fun write(request: ByteArray) {
             val packet = ByteBuffer.wrap(request)
             assertEquals(10, packet.getInt(4))
             val op = packet.getInt(28)
             operations += op
-            if (op == 1) { nonce = packet.getInt(32); state = 1 }
-            if (op == 2 && error == 0) { assertEquals(nonce, packet.getInt(32)); state = 2 }
+            if (op == 1) { nonce = packet.getInt(32); state = 1; nativeMode = if (packet.getInt(36) == 5001) 1 else 0 }
+            if (op == 2 && error == 0) { assertEquals(nonce, packet.getInt(32)); state = 2; nativeMode = 0 }
             if (op == 3) { assertEquals(nonce, packet.getInt(32)); assertEquals(5000, packet.getInt(36)) }
             val words = IntArray(32)
             words[0] = 0x31474244; words[1] = 1; words[2] = 128
             words[3] = if (pending) 4 else 2; words[8] = 2; words[9] = state; words[10] = pid
             words[12] = (now / 1_000_000_000L).toInt(); words[13] = (now % 1_000_000_000L).toInt()
             words[14] = words[12] + 5; words[15] = words[13]; words[18] = epoch
-            words[21] = ownerOverride ?: nonce; words[30] = 0; words[31] = capability
+            words[21] = ownerOverride ?: nonce; words[30] = nativeModeOverride ?: nativeMode; words[31] = capability
             words[29] = navigationOverride ?: if (state == 1) ProductCompositionSession.NAVIGATION_ACTIVE
                 else ProductCompositionSession.NAVIGATION_READY
             words[16] = if (nonce == 0) 0 else skip; words[17] = words[16]
@@ -186,6 +188,28 @@ class ProductCompositionSessionTest {
             p.now += 250_000_000L
             assertThrows(IOException::class.java) { s.tick(p) }
             assertEquals(renewals, p.operations.count { it == 3 })
+        }
+    }
+
+    @Test fun centerModeRenewsOnTheSameConnectionAndRestoresWithoutChangingLeaseBounds() {
+        val p = Peer(); val s = p.session(true)
+        s.prepare(p); s.activate(p)
+        repeat(3600) { p.now += 1_000_000_000L; s.tick(p) }
+        assertEquals(1, p.nativeMode)
+        assertEquals(1, p.operations.count { it == 1 })
+        assertEquals(3600, p.operations.count { it == 3 })
+        s.restore(p); assertEquals(0, p.nativeMode)
+    }
+
+    @Test fun wrongNativeLayoutProfileCannotRenewEitherFullOrCenterSession() {
+        for (center in listOf(false, true)) {
+            val p = Peer(); val s = p.session(center); s.prepare(p); s.activate(p)
+            p.nativeModeOverride = if (center) 0 else 1
+            p.now += 1_000_000_000L
+            assertThrows(IOException::class.java) { s.tick(p) }
+            assertFalse(p.operations.contains(3))
+            p.nativeModeOverride = null
+            s.restore(p)
         }
     }
 }

@@ -9,10 +9,11 @@ import java.util.function.LongSupplier
  * @author Codex
  * @date 2026/10/21
  */
-internal class ProductCompositionSession(
+internal class ProductCompositionSession @JvmOverloads constructor(
     private val log: NoAuthVideoClient.Logger,
     private val clock: LongSupplier,
-    private val nonce: Int
+    private val nonce: Int,
+    private val centerWindow: Boolean = false
 ) : CompositionControl {
     private var before: InstrumentBackgroundPoc.Reply? = null
     private var sent = false
@@ -32,7 +33,7 @@ internal class ProductCompositionSession(
         check(!sent && before == null) { "PRODUCT_COMPOSITION_SINGLE_USE" }
         val reply = exchange(channel, QUERY)
         requireReply(reply)
-        if (reply.word(31) != CAPABILITY || reply.word(30) != 0 || reply.word(29) != NAVIGATION_READY) {
+        if (reply.word(31) != CAPABILITY || reply.word(30) !in 0..1 || reply.word(29) != NAVIGATION_READY) {
             throw IOException("PRODUCT_MATCHING_FIRMWARE_REQUIRED")
         }
         if (reply.word(9) == 1 || reply.word(3) != reply.word(8)) {
@@ -101,6 +102,9 @@ internal class ProductCompositionSession(
             if (reply.word(29) == NAVIGATION_PENDING && now - began < ACTIVATION_DEADLINE) { return }
             throw IOException("PRODUCT_NAVIGATION_LAYOUT_UNCONFIRMED")
         }
+        if (reply.word(30) != if (centerWindow) 1 else 0) {
+            throw IOException("PRODUCT_LAYOUT_PROFILE_MISMATCH")
+        }
         if (!active) {
             active = true
             log.log("PRODUCT_NATIVE_BACKGROUND_ACTIVE layout=native-navigation; native property effects confirmed, visual output still requires observation")
@@ -159,7 +163,7 @@ internal class ProductCompositionSession(
         (reply.unsigned(word) - requireNotNull(before).unsigned(word)) and 0xffffffffL
 
     private fun exchange(channel: NoAuthVideoTransport, operation: Int): InstrumentBackgroundPoc.Reply =
-        InstrumentCompositionTrial.exchangePacket(channel, operation, request(operation, nonce))
+        InstrumentCompositionTrial.exchangePacket(channel, operation, request(operation, nonce, centerWindow))
 
     companion object {
         const val CAPABILITY = 0x52574e32
@@ -177,7 +181,16 @@ internal class ProductCompositionSession(
 
         @JvmStatic
         fun request(operation: Int, nonce: Int): ByteArray {
+            return request(operation, nonce, false)
+        }
+
+        @JvmStatic
+        fun request(operation: Int, nonce: Int, centerWindow: Boolean): ByteArray {
             require(operation in QUERY..RENEW && nonce > 0) { "PRODUCT_LEASE_REQUEST" }
+            if (centerWindow && operation == START) {
+                return ByteBuffer.allocate(40).putInt(0x44435631).putInt(10).putInt(16)
+                    .putInt(0).putInt(0).putInt(0).putInt(1).putInt(START).putInt(nonce).putInt(5001).array()
+            }
             if (operation != RENEW) {
                 return InstrumentBackgroundPoc.request(operation, if (operation == QUERY) 0 else nonce)
             }

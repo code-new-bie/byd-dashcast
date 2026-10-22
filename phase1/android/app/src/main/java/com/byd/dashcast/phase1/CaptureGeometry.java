@@ -47,9 +47,15 @@ final class CaptureGeometry {
     }
 
     static CaptureGeometry create(int displayWidth, int displayHeight, CaptureOptions options) {
+        return create(displayWidth, displayHeight, options, ENCODED_WIDTH, ENCODED_HEIGHT);
+    }
+
+    static CaptureGeometry create(int displayWidth, int displayHeight, CaptureOptions options,
+            int outputWidth, int outputHeight) {
         Objects.requireNonNull(options, "Capture selection required");
         if (displayWidth < 2 || displayHeight < 2 || displayWidth > MAX_DISPLAY_SIZE
-                || displayHeight > MAX_DISPLAY_SIZE) {
+                || displayHeight > MAX_DISPLAY_SIZE || outputWidth < 2 || outputHeight < 2
+                || outputWidth > MAX_DISPLAY_SIZE || outputHeight > MAX_DISPLAY_SIZE) {
             throw new IllegalArgumentException("Display dimensions must be 2..4096 pixels");
         }
         Bounds input = bounds(0, 0, displayWidth, displayHeight);
@@ -60,21 +66,21 @@ final class CaptureGeometry {
                     displayHeight * options.bottomPercent() / PERCENT_SCALE);
         }
         if (options.mode() == CaptureOptions.Mode.CROP) {
-            input = crop(input);
+            input = crop(input, outputWidth, outputHeight);
         }
         Bounds output = options.mode() == CaptureOptions.Mode.STRETCH
                 || options.mode() == CaptureOptions.Mode.CROP
-                ? bounds(0, 0, ENCODED_WIDTH, ENCODED_HEIGHT) : fit(input);
+                ? bounds(0, 0, outputWidth, outputHeight) : fit(input, outputWidth, outputHeight);
         return new CaptureGeometry(input, output);
     }
 
-    private static Bounds crop(Bounds input) {
+    private static Bounds crop(Bounds input, int outputWidth, int outputHeight) {
         int width = input.width();
         int height = input.height();
-        if ((long)width * ENCODED_HEIGHT > (long)height * ENCODED_WIDTH) {
-            width = Math.max(2, height * ENCODED_WIDTH / ENCODED_HEIGHT);
+        if ((long)width * outputHeight > (long)height * outputWidth) {
+            width = Math.max(2, height * outputWidth / outputHeight);
         } else {
-            height = Math.max(2, width * ENCODED_HEIGHT / ENCODED_WIDTH);
+            height = Math.max(2, width * outputHeight / outputWidth);
         }
         width = Math.min(width, input.width());
         height = Math.min(height, input.height());
@@ -83,16 +89,16 @@ final class CaptureGeometry {
         return bounds(left, top, left + width, top + height);
     }
 
-    private static Bounds fit(Bounds input) {
-        int width = ENCODED_WIDTH;
-        int height = ENCODED_HEIGHT;
-        if ((long)input.width() * ENCODED_HEIGHT > (long)input.height() * ENCODED_WIDTH) {
-            height = Math.max(1, ENCODED_WIDTH * input.height() / input.width());
+    private static Bounds fit(Bounds input, int outputWidth, int outputHeight) {
+        int width = outputWidth;
+        int height = outputHeight;
+        if ((long)input.width() * outputHeight > (long)input.height() * outputWidth) {
+            height = Math.max(1, outputWidth * input.height() / input.width());
         } else {
-            width = Math.max(1, ENCODED_HEIGHT * input.width() / input.height());
+            width = Math.max(1, outputHeight * input.width() / input.height());
         }
-        int left = (ENCODED_WIDTH - width) / 2;
-        int top = (ENCODED_HEIGHT - height) / 2;
+        int left = (outputWidth - width) / 2;
+        int top = (outputHeight - height) / 2;
         return bounds(left, top, left + width, top + height);
     }
 

@@ -1,5 +1,17 @@
 # Native background controller — implementation, not a flashable HMI adapter
 
+2026-10-22 current 1.2.0: `display-fusion.thumb` adds an explicit full/center
+selection inside the SAME inspected zero-padding cave (1568 bytes used). Lease,
+owner, expiry and native opacity readback remain bounded. `analysis/display_fusion.py`
+adds inherited DCTheme driven by the original state2, retains original theme
+transitions, and uses OEM dark/light bottom-panel colors. Two native halves
+use four-edge/four-corner GLES2 masks in physical framebuffer coordinates.
+The original mode/data/warning resources remain intact. Eight native shaders
+plus the Android center resampler compile/link on desktop ANGLE, NOT QNX.
+34 native/resource tests and 400 JVM tests are offline evidence only; target
+GPU/theme switching/geometry and all warnings remain vehicle gates.
+See docs/PRODUCT_1.2.0.md in the public source. Below is historical evidence.
+
 2026-10-21 current 1.1.2: HMI binary and this local Thumb remain EXACTLY 1.1.1.
 `analysis/navigation_layout_refine.py` changes only KZB coordinates and two owned
 band subtrees. Each band keeps its 0/1 opacity anchor and uses 33 non-overlapping

@@ -29,5 +29,8 @@ internal class ProductSettings(context: Context) {
         if (!next.add(component)) { next.remove(component) }
         preferences.edit().putStringSet("favorites", next).apply()
     }
-    fun options(): CaptureOptions = CaptureOptions.of(if (crop) CaptureOptions.Mode.CROP else CaptureOptions.Mode.FIT)
+    fun options(): CaptureOptions {
+        val selection = CaptureOptions.of(if (crop) CaptureOptions.Mode.CROP else CaptureOptions.Mode.FIT)
+        return if (underlay) selection else selection.forCenterWindow()
+    }
 }

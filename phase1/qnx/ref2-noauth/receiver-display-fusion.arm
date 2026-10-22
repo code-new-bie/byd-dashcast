@@ -1,0 +1,85 @@
+// Exact profiles only; encoded AVC remains 1920x720 for the existing decoder.
+// SLOT composition_rect 0x1041ac 316
+push {r4, r5, r6, r7, r8, lr}
+mov r4, r0
+mov r5, r1
+ldr r8, [r4, #20]
+rev r8, r8
+cmp r8, #2
+bhi dc_rect_fail
+mov r6, #0
+dc_rect_loop:
+add r0, r4, r6
+bl #0x103f84
+cmp r8, #1
+beq dc_full
+cmp r8, #2
+beq dc_center
+cmp r6, #0
+moveq r7, #640
+cmp r6, #4
+moveq r7, #240
+cmp r6, #8
+moveq r7, #640
+cmp r6, #12
+moveq r7, #240
+b dc_common
+dc_center:
+cmp r6, #0
+moveq r7, #576
+cmp r6, #4
+moveq r7, #128
+cmp r6, #8
+moveq r7, #768
+cmp r6, #12
+moveq r7, #432
+b dc_common
+dc_full:
+cmp r6, #0
+moveq r7, #0
+cmp r6, #4
+moveq r7, #0
+cmp r6, #8
+moveq r7, #1920
+cmp r6, #12
+moveq r7, #720
+dc_common:
+cmp r6, #16
+moveq r7, #30
+cmp r6, #20
+moveq r7, r8
+cmp r0, r7
+bne dc_rect_fail
+cmp r6, #20
+strlo r0, [r5, r6]
+add r6, r6, #4
+cmp r6, #24
+blo dc_rect_loop
+mov r0, #0
+pop {r4, r5, r6, r7, r8, pc}
+dc_rect_fail:
+mvn r0, #0
+pop {r4, r5, r6, r7, r8, pc}
+
+// Both modern owned parents are below the HMI. Legacy small window stays at 1.
+// SLOT composition_window_order 0x102c80 72
+add r2, sp, #0xc
+mov ip, #1
+ldr r0, [r5, #0xc0]
+cmp r0, #1920
+cmpne r0, #768
+ldreq r0, [r5, #0xa4]
+cmpeq r0, r10
+mvneq ip, #2
+str ip, [r2]
+bx lr
+
+// SLOT owned_layer_format 0x1029ec 56
+movw r2, #0xcc68
+movw ip, #0xec08
+movt ip, #0x10
+ldr ip, [ip, #0xc0]
+cmp ip, #1920
+cmpne ip, #768
+movweq r2, #0xae68
+bx lr

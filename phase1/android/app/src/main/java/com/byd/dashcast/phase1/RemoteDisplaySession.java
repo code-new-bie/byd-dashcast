@@ -29,20 +29,28 @@ final class RemoteDisplaySession implements AutoCloseable {
     private VirtualDisplay display;
 
     RemoteDisplaySession(Surface surface, ProjectionTarget target) throws Exception {
+        this(surface, target, DISPLAY_WIDTH, DISPLAY_HEIGHT);
+    }
+
+    RemoteDisplaySession(Surface surface, ProjectionTarget target, int width, int height) throws Exception {
         if (surface == null || target == null || !target.isRemote()) {
             throw new IllegalArgumentException("Remote display requires a surface and remote target");
+        }
+        if (!(width == DISPLAY_WIDTH && height == DISPLAY_HEIGHT)
+                && !(width == 1280 && height == 720)) {
+            throw new IllegalArgumentException("Remote display requires an exact supported profile");
         }
         try {
             Context context = shellContext();
             System.err.println("SHELL_CAPTURE_REMOTE_CONTEXT package=" + context.getPackageName()
                     + " uid=" + Process.myUid());
-            display = createVirtualDisplay(context, surface);
+            display = createVirtualDisplay(context, surface, width, height);
             Display androidDisplay = display.getDisplay();
             if (androidDisplay == null || androidDisplay.getDisplayId() < 0) {
                 throw new IOException("SHELL_CAPTURE_REMOTE_DISPLAY_INFO_MISSING");
             }
             System.err.println("SHELL_CAPTURE_REMOTE_DISPLAY_CREATED id=" + androidDisplay.getDisplayId()
-                    + " size=" + DISPLAY_WIDTH + "x" + DISPLAY_HEIGHT + " density=" + DISPLAY_DENSITY_DPI
+                    + " size=" + width + "x" + height + " density=" + DISPLAY_DENSITY_DPI
                     + " flags=PUBLIC|PRESENTATION|OWN_CONTENT_ONLY component=" + target.component());
             launchOnDisplay(androidDisplay.getDisplayId(), launchComponent(context, target.component()));
         } catch (Exception error) {
@@ -57,14 +65,14 @@ final class RemoteDisplaySession implements AutoCloseable {
         }
     }
 
-    private static VirtualDisplay createVirtualDisplay(Context context, Surface surface) throws Exception {
+    private static VirtualDisplay createVirtualDisplay(Context context, Surface surface, int width, int height) throws Exception {
         Class<?> globalClass = Class.forName("android.hardware.display.DisplayManagerGlobal");
         Object global = globalClass.getMethod("getInstance").invoke(null);
         Method create = globalClass.getMethod("createVirtualDisplay", Context.class,
                 Class.forName("android.media.projection.MediaProjection"), String.class, int.class, int.class,
                 int.class, Surface.class, int.class, VirtualDisplay.Callback.class, Handler.class, String.class);
         Object result = create.invoke(global, context, null, "dashcast-remote-" + System.currentTimeMillis(),
-                DISPLAY_WIDTH, DISPLAY_HEIGHT, DISPLAY_DENSITY_DPI, surface,
+                width, height, DISPLAY_DENSITY_DPI, surface,
                 VIRTUAL_DISPLAY_FLAG_PUBLIC | VIRTUAL_DISPLAY_FLAG_PRESENTATION | VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY,
                 null, null, null);
         if (!(result instanceof VirtualDisplay)) {

@@ -251,7 +251,8 @@ public final class ProjectionService extends Service {
             boolean composition = intent.getBooleanExtra("composition_trial", false);
             boolean probe = intent.getBooleanExtra("capture_only_probe", false);
             boolean underlay = intent.getBooleanExtra("product_underlay", false);
-            if (product && (probe || composition || !ContinuousSessionPolicy.unlimited(seconds))) {
+            if (product && (probe || composition || !ContinuousSessionPolicy.unlimited(seconds)
+                    || underlay == options.centerWindow()) || !product && options.centerWindow()) {
                 throw new IOException("Invalid product session profile");
             }
             if (composition && (probe || seconds != 10) || probe && (seconds != 5 || !target.isRemote())) {
@@ -287,7 +288,9 @@ public final class ProjectionService extends Service {
             ContinuousProjectionTask continuous = probe ? null
                     : new ContinuousProjectionTask(this, seconds, JOURNAL::append, options, target, composition);
             continuousTask = continuous;
-            if (product && underlay) { continuous.enableProductComposition(); }
+            if (product) {
+                continuous.enableProductComposition();
+            }
             ProjectionSessionController.Task task = probe
                     ? new RemoteDisplayProbeTask(this, target, JOURNAL::append)
                     : continuous;

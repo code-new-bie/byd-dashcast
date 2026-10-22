@@ -110,6 +110,7 @@ public final class ShellScreenCapture {
         MediaCodec codec = encoder();
         Surface surface = null;
         AutoCloseable display = null;
+        CenterFrameRenderer center = null;
         boolean started = false;
         Exception failure = null;
         try {
@@ -117,10 +118,15 @@ public final class ShellScreenCapture {
             surface = codec.createInputSurface();
             codec.start();
             started = true;
-            display = target.isRemote()
-                    ? new RemoteDisplaySession(surface, target)
-                    : new Mirror(surface, options);
-            stream(codec, seconds, control);
+            if (options.centerWindow()) {
+                center = new CenterFrameRenderer(surface);
+                display = target.isRemote()
+                        ? new RemoteDisplaySession(center.inputSurface(), target, 1280, 720)
+                        : new Mirror(center.inputSurface(), options, 1280, 720);
+            } else {
+                display = target.isRemote() ? new RemoteDisplaySession(surface, target) : new Mirror(surface, options);
+            }
+            stream(codec, seconds, control, center);
         } catch (Exception error) {
             failure = error;
             throw error;
@@ -132,6 +138,11 @@ public final class ShellScreenCapture {
                 }
             } catch (Exception error) {
                 cleanup = error;
+            }
+            try {
+                if (center != null) { center.close(); }
+            } catch (Exception error) {
+                cleanup = collect(cleanup, error);
             }
             try {
                 if (started) {
@@ -172,7 +183,8 @@ public final class ShellScreenCapture {
         return first;
     }
 
-    private static void stream(MediaCodec codec, int seconds, CaptureStopControl control) throws IOException {
+    private static void stream(MediaCodec codec, int seconds, CaptureStopControl control,
+            CenterFrameRenderer center) throws IOException {
         long began = System.nanoTime();
         long drainUntil = 0;
         boolean unlimited = control != null && ContinuousSessionPolicy.unlimited(seconds);
@@ -192,6 +204,7 @@ public final class ShellScreenCapture {
                 eos = true;
                 drainUntil = System.nanoTime() + 2_000_000_000L;
             }
+            if (!eos && center != null) { center.renderIfAvailable(); }
             int index = codec.dequeueOutputBuffer(info, 10_000);
             if (index == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
                 MediaFormat output = codec.getOutputFormat();
@@ -316,6 +329,10 @@ public final class ShellScreenCapture {
         private IBinder token;
 
         Mirror(Surface surface, CaptureOptions options) throws Exception {
+            this(surface, options, NoAuthVideoProtocol.WIDTH, NoAuthVideoProtocol.HEIGHT);
+        }
+
+        Mirror(Surface surface, CaptureOptions options, int outputWidth, int outputHeight) throws Exception {
             Class<?> manager = Class.forName("android.hardware.display.DisplayManagerGlobal");
             Object global = manager.getMethod("getInstance").invoke(null);
             Object display = manager.getMethod("getDisplayInfo", int.class).invoke(global, 0);
@@ -328,7 +345,7 @@ public final class ShellScreenCapture {
             if (width < 1 || height < 1 || width > 4096 || height > 4096 || stack < 0) {
                 throw new IOException("SHELL_CAPTURE_UNEXPECTED_DISPLAY");
             }
-            CaptureGeometry geometry = CaptureGeometry.create(width, height, options);
+            CaptureGeometry geometry = CaptureGeometry.create(width, height, options, outputWidth, outputHeight);
             token = (IBinder) control.getMethod("createDisplay", String.class, boolean.class)
                     .invoke(null, "dashcast-phase1-capture", false);
             if (token == null) {
