@@ -55,7 +55,9 @@ final class RemoteDisplaySession implements AutoCloseable {
             throw new IllegalArgumentException("Remote display requires a surface and remote target");
         }
         if (!(width == DISPLAY_WIDTH && height == DISPLAY_HEIGHT)
-                && !(width == 1280 && height == 720)) {
+                && !(width == 1280 && height == 720)
+                && !(width == 1920 && height == 480)
+                && !(width == 1200 && height == 640)) {
             throw new IllegalArgumentException("Remote display requires an exact supported profile");
         }
         try {

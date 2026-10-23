@@ -252,7 +252,8 @@ public final class ProjectionService extends Service {
             boolean probe = intent.getBooleanExtra("capture_only_probe", false);
             boolean underlay = intent.getBooleanExtra("product_underlay", false);
             if (product && (probe || composition || !ContinuousSessionPolicy.unlimited(seconds)
-                    || underlay == options.centerWindow()) || !product && options.centerWindow()) {
+                    || underlay == options.centerWindow() || !options.contentViewport())
+                    || !product && (options.centerWindow() || options.contentViewport())) {
                 throw new IOException("Invalid product session profile");
             }
             if (composition && (probe || seconds != 10) || probe && (seconds != 5 || !target.isRemote())) {

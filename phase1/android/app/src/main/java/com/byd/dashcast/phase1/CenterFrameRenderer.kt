@@ -20,7 +20,10 @@ import java.util.concurrent.atomic.AtomicBoolean
  * @author Codex
  * @date 2026/10/22
  */
-internal class CenterFrameRenderer(output: Surface) : AutoCloseable {
+internal class CenterFrameRenderer @JvmOverloads constructor(
+    output: Surface,
+    private val viewport: ContentViewport? = null
+) : AutoCloseable {
     private var display = EGL14.EGL_NO_DISPLAY
     private var context = EGL14.EGL_NO_CONTEXT
     private var window = EGL14.EGL_NO_SURFACE
@@ -71,10 +74,10 @@ internal class CenterFrameRenderer(output: Surface) : AutoCloseable {
         GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE)
         GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE)
         program = GLES20.glCreateProgram()
-        val vertex = shader(GLES20.GL_VERTEX_SHADER, VERTEX)
+        val vertex = shader(GLES20.GL_VERTEX_SHADER, ContentViewport.VERTEX)
         var fragment = 0
         try {
-            fragment = shader(GLES20.GL_FRAGMENT_SHADER, FRAGMENT)
+            fragment = shader(GLES20.GL_FRAGMENT_SHADER, ContentViewport.FRAGMENT)
             GLES20.glAttachShader(program, vertex)
             GLES20.glAttachShader(program, fragment)
             GLES20.glLinkProgram(program)
@@ -88,12 +91,13 @@ internal class CenterFrameRenderer(output: Surface) : AutoCloseable {
         val worker = HandlerThread("dashcast-center-frames").apply { start() }
         callbacks = worker
         source = SurfaceTexture(texture).also {
-            it.setDefaultBufferSize(INPUT_WIDTH, INPUT_HEIGHT)
+            it.setDefaultBufferSize(viewport?.sourceWidth ?: INPUT_WIDTH, viewport?.sourceHeight ?: INPUT_HEIGHT)
             it.setOnFrameAvailableListener({ pending.set(true) }, Handler(worker.looper))
             input = Surface(it)
         }
         checkGl("initialize")
-        System.err.println("SHELL_CAPTURE_CENTER_RENDERER input=1280x720 encoded=1920x720 destination=768x432; inverse resampling, not distorted final geometry")
+        System.err.println("SHELL_CAPTURE_CONTENT_RENDERER viewport=$viewport encoded=1920x720; " +
+            "layout uses effective inner aspect, edge-clamped bleed; legacy center=${viewport == null}")
     }
 
     fun inputSurface(): Surface = input ?: throw IllegalStateException("CENTER_RENDERER_CLOSED")
@@ -112,6 +116,8 @@ internal class CenterFrameRenderer(output: Surface) : AutoCloseable {
         GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, texture)
         GLES20.glUniform1i(GLES20.glGetUniformLocation(program, "image"), 0)
         GLES20.glUniformMatrix4fv(GLES20.glGetUniformLocation(program, "transform"), 1, false, matrix, 0)
+        val bounds = viewport?.normalized() ?: floatArrayOf(0f, 0f, 1f, 1f)
+        GLES20.glUniform4fv(GLES20.glGetUniformLocation(program, "content"), 1, bounds, 0)
         val position = GLES20.glGetAttribLocation(program, "position")
         val uv = GLES20.glGetAttribLocation(program, "uv")
         vertices.position(0)
@@ -192,10 +198,5 @@ internal class CenterFrameRenderer(output: Surface) : AutoCloseable {
         const val INPUT_WIDTH = 1280
         const val INPUT_HEIGHT = 720
         private const val EGL_RECORDABLE_ANDROID = 0x3142
-        private const val VERTEX = "attribute vec4 position;attribute vec2 uv;uniform mat4 transform;" +
-            "varying vec2 tex;void main(){gl_Position=position;tex=(transform*vec4(uv,0.0,1.0)).xy;}"
-        private const val FRAGMENT = "#extension GL_OES_EGL_image_external : require\n" +
-            "precision mediump float;varying vec2 tex;uniform samplerExternalOES image;" +
-            "void main(){gl_FragColor=texture2D(image,tex);}"
     }
 }

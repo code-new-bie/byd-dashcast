@@ -28,18 +28,25 @@ final class CaptureOptions {
     private final Integer rightPercent;
     private final Integer bottomPercent;
     private final boolean centerWindow;
+    private final boolean contentViewport;
 
     private CaptureOptions(Mode mode, int left, int top, int right, int bottom) {
         this(mode, left, top, right, bottom, false);
     }
 
     private CaptureOptions(Mode mode, int left, int top, int right, int bottom, boolean centerWindow) {
+        this(mode, left, top, right, bottom, centerWindow, false);
+    }
+
+    private CaptureOptions(Mode mode, int left, int top, int right, int bottom,
+            boolean centerWindow, boolean contentViewport) {
         this.mode = mode;
         leftPercent = left;
         topPercent = top;
         rightPercent = right;
         bottomPercent = bottom;
         this.centerWindow = centerWindow;
+        this.contentViewport = contentViewport;
     }
 
     CaptureOptions forCenterWindow() {
@@ -47,6 +54,15 @@ final class CaptureOptions {
     }
 
     boolean centerWindow() { return centerWindow; }
+
+    CaptureOptions forContentViewport(boolean center) {
+        if (mode != Mode.FIT && mode != Mode.CROP) {
+            throw new IllegalArgumentException("Content viewport supports fit/crop only");
+        }
+        return new CaptureOptions(mode, leftPercent, topPercent, rightPercent, bottomPercent, center, true);
+    }
+
+    boolean contentViewport() { return contentViewport; }
 
     static CaptureOptions of(Mode mode) {
         Objects.requireNonNull(mode, "Capture mode required");
@@ -68,6 +84,15 @@ final class CaptureOptions {
     static CaptureOptions parse(String token) {
         if (token == null || token.isEmpty() || token.length() > MAX_TOKEN_CHARS) {
             throw new IllegalArgumentException("Missing or oversized capture selection");
+        }
+        if (token.startsWith("viewport-")) {
+            switch (token) {
+                case "viewport-full-fit": return of(Mode.FIT).forContentViewport(false);
+                case "viewport-full-crop": return of(Mode.CROP).forContentViewport(false);
+                case "viewport-center-fit": return of(Mode.FIT).forContentViewport(true);
+                case "viewport-center-crop": return of(Mode.CROP).forContentViewport(true);
+                default: throw new IllegalArgumentException("Unknown fixed content viewport");
+            }
         }
         if (token.startsWith("center-")) {
             String selection = token.substring(7);
@@ -157,6 +182,9 @@ final class CaptureOptions {
     }
 
     String token() {
+        if (contentViewport) {
+            return "viewport-" + (centerWindow ? "center-" : "full-") + (mode == Mode.FIT ? "fit" : "crop");
+        }
         if (centerWindow) {
             if (mode != Mode.FIT && mode != Mode.CROP) {
                 throw new IllegalArgumentException("Center window requires fit/crop");

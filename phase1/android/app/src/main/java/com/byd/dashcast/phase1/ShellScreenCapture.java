@@ -121,16 +121,23 @@ public final class ShellScreenCapture {
             started = true;
             Surface captureSurface = surface;
             int logicalWidth = NoAuthVideoProtocol.WIDTH;
-            if (options.centerWindow()) {
+            int logicalHeight = NoAuthVideoProtocol.HEIGHT;
+            if (options.contentViewport()) {
+                ContentViewport viewport = options.centerWindow() ? ContentViewport.center() : ContentViewport.full();
+                center = new CenterFrameRenderer(surface, viewport);
+                captureSurface = center.inputSurface();
+                logicalWidth = viewport.getSourceWidth();
+                logicalHeight = viewport.getSourceHeight();
+            } else if (options.centerWindow()) {
                 center = new CenterFrameRenderer(surface);
                 captureSurface = center.inputSurface();
                 logicalWidth = 1280;
             }
             if (target.isRemote()) {
-                remote = new RemoteDisplaySession(captureSurface, target, logicalWidth, 720, options);
+                remote = new RemoteDisplaySession(captureSurface, target, logicalWidth, logicalHeight, options);
                 display = remote;
             } else {
-                display = new Mirror(captureSurface, options, logicalWidth, 720);
+                display = new Mirror(captureSurface, options, logicalWidth, logicalHeight);
             }
             stream(codec, seconds, control, center, remote);
         } catch (Exception error) {

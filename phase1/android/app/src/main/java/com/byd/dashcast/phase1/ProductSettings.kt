@@ -31,6 +31,6 @@ internal class ProductSettings(context: Context) {
     }
     fun options(): CaptureOptions {
         val selection = CaptureOptions.of(if (crop) CaptureOptions.Mode.CROP else CaptureOptions.Mode.FIT)
-        return if (underlay) selection else selection.forCenterWindow()
+        return selection.forContentViewport(!underlay)
     }
 }

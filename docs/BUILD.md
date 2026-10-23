@@ -1,5 +1,11 @@
 # 构建与复现
 
+## 1.4.0 RWV3配套组件（当前）
+
+APK code40，Android构建命令/原工具链不变。公开独立构建使用自己的签名，不复制维护者签名或ADB身份。需要同时匹配仪表App；MCU/参考OS/Boot/角色保持。
+
+组件复现需要操作者自行提供：精确原始HMI/KZB/TOC与1.2.0 receiver（SHA8b490f2fd8b6b5b8f97f93e2f085122838e12c67670e60fd7770cb455ac63aa6）。`python tools/build_viewport_components.py --hmi ORIGINAL_HMI --kzb ORIGINAL_KZB --toc ORIGINAL_TOC --receiver RECEIVER_120 --output NEW_DIRECTORY`。仅生成三个组件，不是FULL升级包；输入hash/路径/已有输出不匹配时拒绝，不在现有修改成品上重复套补丁。ColorBrush叶已有初始刷，原state2直接切深浅；没有新增仪表GL shader。历史CLI保留用于复现旧版。下文各“当前”仅指历史版本。
+
 ## 1.3.0 APK任务交接（当前）
 
 APK code39，JDK21/AGP9.3/内置Kotlin工具链与命令不变。本版没有新仪表组件，继续使用下节1.2.0的HMI/KZB/receiver；不要重复对已修改组件打补丁或为了版本号重打MCU/OS。公开源码独立构建使用本机签名，不等于维护者原签名覆盖包。[升级和边界](PRODUCT_1.3.0.md)。

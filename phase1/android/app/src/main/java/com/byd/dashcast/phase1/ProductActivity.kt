@@ -100,7 +100,7 @@ class ProductActivity : Activity() {
         card {
             addView(text("当前应用", 16))
             addView(text(selected?.label ?: "尚未选择导航应用", 27, true))
-            addView(text(if (selected?.navigation == true) "导航专注 · 同任务双端共显 · ${if (settings.underlay) "顶部状态 / 中央地图 / 底部数据" else "大中心窗 · 16:9"}"
+            addView(text(if (selected?.navigation == true) "导航专注 · 同任务双端共显 · ${if (settings.underlay) "顶部状态 / 中央地图 / 底部数据" else "大中心窗 · 有效区15:8"}"
                 else "请在应用中心选择；不同应用的副屏兼容性不同", 17))
             addView(button("更换应用") { page = 1; build() })
         }
@@ -165,9 +165,9 @@ class ProductActivity : Activity() {
         card {
             addView(text("画面与外观", 26, true))
             addView(toggle("导航仪表布局：顶部状态、中央地图、底部数据", settings.underlay) { settings.underlay = it })
-            addView(text("开启使用全屏紧凑布局，关闭使用 768×432 大中心窗；边缘柔和融合，停止或失联自动恢复。需配套 1.2.0 仪表 App，下次开始生效；车速、挡位、里程仍来自原厂。", 16))
+            addView(text("开启：全屏1728×432有效内容区；关闭：768×432外窗、720×384有效内框。四边渐变不算可读空间。需同时升级配套1.4.0仪表App，下次开始生效；原生信息和告警保留。", 16))
             addView(toggle("中心裁剪填充画面", settings.crop) { settings.crop = it })
-            addView(text("副屏按仪表比例排版；从原图标打开时共显主屏的所选应用，取景比例随裁剪选项变化。不是两份独立导航；不会改变仪表原生信息。下次开始生效。", 16))
+            addView(text("副屏按有效内框比例排版，不把完整界面盖在渐变下。建议关闭裁剪以保留全部提示；从原图标打开时主屏保持自身比例，用完整适配共显，可能留边。不是两份独立导航。下次开始生效。", 16))
             addView(toggle("日间浅色界面", settings.light) { settings.light = it; build() })
             addView(text("上面的开关只改变 APK 界面。仪表融合底色自动跟随原厂深浅模式；地图配色仍由导航应用自己的昼夜设置决定。", 16))
         }
