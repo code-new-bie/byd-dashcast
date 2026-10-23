@@ -157,8 +157,8 @@
     },
     {
       "path": "analysis/integrated_layout.py",
-      "bytes": 13182,
-      "sha256": "b63cd157dfd2a9cea7e59677c8bc48bed2fcb3df6e4750e5680d8c266c79d411",
+      "bytes": 13335,
+      "sha256": "7a14acb5003f8830af175a9c792d784e2f04199142b87f2e914216ae1d92f1fc",
       "origin": "analysis/integrated_layout.py",
       "transformations": []
     },
@@ -299,8 +299,8 @@
     },
     {
       "path": "docs/PRODUCT_1.7.0.md",
-      "bytes": 3603,
-      "sha256": "192efdd9119934c0399aad16e15133923210211546d98e138ba59d546091ba84",
+      "bytes": 4066,
+      "sha256": "184a445a4b1698a82d120c3fd35da60421d38616983eeddfe2f0ab1c73b97dcf",
       "origin": "publication/template/docs/PRODUCT_1.7.0.md",
       "transformations": []
     },

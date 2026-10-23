@@ -39,7 +39,9 @@ def rectangles(center):
     union; opaque cores are reached before the instrument's information rows.
     """
     inner = CENTER_INNER if center else FULL_INNER
-    outer = CENTER_OUTER if center else (16, 80, 1888, 492)
+    # Power/speed glyphs begin at y548, before range/OK at y579. Reach the
+    # opaque core at y544, not merely before the lower range-information row.
+    outer = CENTER_OUTER if center else (16, 80, 1888, 464)
     x, y, w, h = outer
     a, b, c, d = inner
     rows = [(0, 0, 1920, y, 1), (0, y + h, 1920, 720-y-h, 1),
