@@ -4,11 +4,12 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class ContentViewportTest {
-    @Test fun fullHasFourToOneContentNotEightToThreeCanvas() {
+    @Test fun fullExcludesOpaqueInformationCoresAndFeathersFromTheSourceLayout() {
         val p = ContentViewport.full()
-        assertEquals(4.0, p.sourceWidth.toDouble() / p.sourceHeight, 0.0)
-        assertEquals(4.0, p.encodedWidth.toDouble() / p.encodedHeight, 0.0)
-        assertArrayEquals(floatArrayOf(.05f, 160f / 720, .9f, .6f), p.normalized(), .00001f)
+        assertEquals(4.5, p.sourceWidth.toDouble() / p.sourceHeight, 0.0)
+        assertEquals(4.5, p.encodedWidth.toDouble() / p.encodedHeight, 0.0)
+        assertArrayEquals(floatArrayOf(.05f, 192f / 720, .9f, 384f / 720), p.normalized(), .00001f)
+        assertEquals(528, p.encodedTop+p.encodedHeight)
     }
     @Test fun centerInnerAspectIncludesBothFeatherMarginsAndWindowResampling() {
         val p = ContentViewport.center()

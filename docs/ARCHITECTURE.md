@@ -1,4 +1,8 @@
-# 当前架构（1.6.0 独立应用与精确任务归属）
+# 当前架构（1.7.0 RWV4双端布局）
+
+承接1.6独立任务/许可/源PTS。源UI按有效区与VD密度布局，经原1920×720 AVC/DCV1/NCM传输；QNX窗口配置不变。HMI相同本地租约写继承DCLayout，新增2D ADAS/Small/装饰Road/安全带单叶状态组只改呈现。200个原生ColorBrush羽化叶在原厂主题上保护信息区，ADAS底板十级羽化，原警告状态与车辆数据保持。RWV4配对码阻止旧几何混用。原厂Kanzi和实际ADAS/导航业务仍需目标机，未把未知3D结构猜成2D。[范围](PRODUCT_1.7.0.md)。
+
+## 1.6.0 独立应用与精确归属（历史）
 
 同用户专用VirtualDisplay直接输出Surface/EGL/AVC，主屏原任务与用户数据不搬移/缩放/清除，也没有主屏镜像兜底。原车导航使用核验版本独立Meter入口，通用应用先过多实例能力门禁。启动发现只考虑新自有display；绑定后仅查owned taskId/user/root/display。清理只回收已证明归属的任务并聚合所有步骤失败，VD带DESTROY_CONTENT_ON_REMOVAL，避免清理失败时把剩余内容迁回主屏。
 

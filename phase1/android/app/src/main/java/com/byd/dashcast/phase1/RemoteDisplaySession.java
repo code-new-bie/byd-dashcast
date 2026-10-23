@@ -45,10 +45,7 @@ final class RemoteDisplaySession implements AutoCloseable {
         if (surface == null || target == null || !target.isRemote()) {
             throw new IllegalArgumentException("Independent application display required");
         }
-        if (!(width == 1920 && height == 720) && !(width == 1280 && height == 720)
-                && !(width == 1920 && height == 480) && !(width == 1200 && height == 640)) {
-            throw new IllegalArgumentException("Unsupported independent display profile");
-        }
+        int densityDpi = ProjectionDisplayProfile.densityDpi(width, height);
         try {
             Context context = shellContext();
             IndependentAppPlan.Plan plan = IndependentProjectionEntry.resolve(context, target);
@@ -61,14 +58,15 @@ final class RemoteDisplaySession implements AutoCloseable {
                     throw new IOException("APP_NATIVE_SECONDARY_ALREADY_IN_USE; existing task left untouched");
                 }
             }
-            display = createVirtualDisplay(context, surface, width, height);
+            display = createVirtualDisplay(context, surface, width, height, densityDpi);
             Display info = display.getDisplay();
             if (info == null || info.getDisplayId() <= 0) {
                 throw new IOException("APP_INDEPENDENT_DISPLAY_MISSING");
             }
             displayId = info.getDisplayId();
             System.err.println("SHELL_CAPTURE_REMOTE_DISPLAY_CREATED id=" + displayId
-                    + " size=" + width + "x" + height + " direct_surface=true own_content_only=true");
+                    + " size=" + width + "x" + height + " density=" + densityDpi
+                    + " direct_surface=true own_content_only=true");
             policy = new IndependentTaskPolicy(existing, component, user, displayId);
             launch(plan.arguments(displayId, user));
             long deadline = System.nanoTime() + 10_000_000_000L;
@@ -108,7 +106,7 @@ final class RemoteDisplaySession implements AutoCloseable {
     }
 
     private static VirtualDisplay createVirtualDisplay(Context context, Surface surface,
-            int width, int height) throws Exception {
+            int width, int height, int densityDpi) throws Exception {
         Class<?> type = Class.forName("android.hardware.display.DisplayManagerGlobal");
         Object manager = type.getMethod("getInstance").invoke(null);
         Method create = type.getMethod("createVirtualDisplay", Context.class,
@@ -116,7 +114,7 @@ final class RemoteDisplaySession implements AutoCloseable {
                 int.class, int.class, int.class, Surface.class, int.class,
                 VirtualDisplay.Callback.class, Handler.class, String.class);
         Object result = create.invoke(manager, context, null, "dashcast-independent-" + System.nanoTime(),
-                width, height, 160, surface, FLAGS, null, null, null);
+                width, height, densityDpi, surface, FLAGS, null, null, null);
         if (!(result instanceof VirtualDisplay)) { throw new IOException("APP_INDEPENDENT_DISPLAY_CREATE_FAILED"); }
         return (VirtualDisplay) result;
     }

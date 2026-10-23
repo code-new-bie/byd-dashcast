@@ -1,7 +1,7 @@
 package com.byd.dashcast.phase1
 
 /** Physical content bounds, not the encoded canvas or the feathered outer window.
- * Geometry is paired with RWV3 instrument firmware. Source UI is laid out at the
+ * Geometry is paired with RWV4 instrument firmware. Source UI is laid out at the
  * inner aspect before resampling; only edge pixels bleed beneath native feathers.
  * @author Codex
  * @date 2026/10/23
@@ -25,7 +25,7 @@ internal data class ContentViewport(
         (720 - encodedTop - encodedHeight) / 720f, encodedWidth / 1920f, encodedHeight / 720f)
 
     companion object {
-        @JvmStatic fun full(): ContentViewport = ContentViewport(1920, 480, 96, 128, 1728, 432)
+        @JvmStatic fun full(): ContentViewport = ContentViewport(1728, 384, 96, 144, 1728, 384)
         @JvmStatic fun center(): ContentViewport = ContentViewport(1200, 640, 60, 40, 1800, 640)
 
         // The SurfaceTexture matrix is applied AFTER effective-viewport mapping.

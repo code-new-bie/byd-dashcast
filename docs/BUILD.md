@@ -1,5 +1,9 @@
 # 构建与复现
 
+## 1.7.0 RWV4双端配套（当前）
+
+APK code43，工具链和Gradle命令不变。先安装requirements-native.txt，再自备精确原始HMI/KZB/TOC与1.2 receiver：`python tools/build_integrated_components.py --hmi ORIGINAL_HMI --kzb ORIGINAL_KZB --toc ORIGINAL_TOC --receiver RECEIVER_120 --output NEW_DIRECTORY`。三个输出组件不是可刷ZIP；输入hash/已有输出不符拒绝。不要对旧改动成品重复套补丁。APK/仪表App必须配套，MCU/OS/Boot/角色不变。[操作及边界](PRODUCT_1.7.0.md)。下文“当前”均为历史写作状态。
+
 ## 1.6.0 APK质量修复（当前）
 
 APK code42；工具链/构建命令不变。原车导航独立入口仅适配已核验versionCode220102029；其他应用根据多实例能力检查，不创建额外Android用户或修改原应用APK。新任务归属/清理、USB授权续接与真实PTS均有自动反例，源码自建仍用自己的签名。仪表沿用1.4.0 RWV3原字节，组件工具无新增补丁；不要重复刷写MCU/OS来验证APK修复。[范围与操作](PRODUCT_1.6.0.md)。

@@ -85,9 +85,11 @@ def theme_manager(d, strings, props, paths):
     return bytes(result) + raw[c.offset:]
 
 
-def build_viewport_kzb(original, toc):
+def build_viewport_kzb(original, toc, shape_factory=rectangles, layout_rules=None):
     if digest(original) != KZB_SHA:
         raise ValueError("Exact original KZB required")
+    if layout_rules is None:
+        layout_rules = RULES
     d = KzbDirectory(original)
     strings, props = d.dictionary("/$strings"), d.dictionary("/$property_dictionary")
     if PROPERTY in props:
@@ -96,13 +98,13 @@ def build_viewport_kzb(original, toc):
     paths = []
     shapes = {}
     for center, root in ((False, TOP), (True, BOTTOM)):
-        shapes[root] = rectangles(center)
+        shapes[root] = shape_factory(center)
         for i in range(len(shapes[root])):
             paths.append(f"Content/{root}/Edge{i:03d}")
     for value in ([PROPERTY, TOP, BOTTOM, "DCIdle", "DCFull", "DCCenter",
                    "kzb://bic_byd_stha" + MANAGER] + paths
                   + [f"Edge{i:03d}" for i in range(max(map(len, shapes.values()))) ]
-                  + [p for p, _, _ in RULES + CENTER_RULES]):
+                  + [p for p, _, _ in layout_rules + CENTER_RULES]):
         if value not in strings:
             strings.append(value)
     class Extended:
@@ -136,7 +138,7 @@ def build_viewport_kzb(original, toc):
     types = words(struct.unpack_from("<I", types)[0] + 1) + types[4:] + words(strings.index(PROPERTY), 1, 0, 1, 0)
     opacity = lambda v: struct.pack("<f", v)
     states = [("DCIdle", 0, []),
-              ("DCFull", 1, RULES + [(TOP, "Node.Opacity", opacity(1)), (BOTTOM, "Node.Opacity", opacity(0))]),
+              ("DCFull", 1, layout_rules + [(TOP, "Node.Opacity", opacity(1)), (BOTTOM, "Node.Opacity", opacity(0))]),
               ("DCCenter", 2, CENTER_RULES + [(TOP, "Node.Opacity", opacity(0)), (BOTTOM, "Node.Opacity", opacity(1))])]
     changes = {"/$strings": dictionary(strings), "/$property_dictionary": dictionary(props),
                "/$property_types": types, "/StartupPrefab": startup,
