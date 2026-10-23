@@ -1,5 +1,9 @@
 # 构建与复现
 
+## 1.7.1 紧凑里程布局（当前）
+
+APK code44仅版本/标题更新。安装既有requirements-native.txt，自备精确原始HMI/KZB/TOC与1.2 receiver，运行`python tools/build_compact_info_components.py --hmi ORIGINAL_HMI --kzb ORIGINAL_KZB --toc ORIGINAL_TOC --receiver RECEIVER_120 --output NEW_DIRECTORY`。HMI/receiver与1.7精确相同，KZB只改自有全幅状态；输出三组件不是刷机ZIP。拒绝未知输入/覆盖旧输出，不对已打补丁成品再套。[升级/边界](PRODUCT_1.7.1.md)。以下“当前”为历史状态。
+
 ## 1.7.0 RWV4双端配套（当前）
 
 APK code43，工具链和Gradle命令不变。先安装requirements-native.txt，再自备精确原始HMI/KZB/TOC与1.2 receiver：`python tools/build_integrated_components.py --hmi ORIGINAL_HMI --kzb ORIGINAL_KZB --toc ORIGINAL_TOC --receiver RECEIVER_120 --output NEW_DIRECTORY`。三个输出组件不是可刷ZIP；输入hash/已有输出不符拒绝。不要对旧改动成品重复套补丁。APK/仪表App必须配套，MCU/OS/Boot/角色不变。[操作及边界](PRODUCT_1.7.0.md)。下文“当前”均为历史写作状态。

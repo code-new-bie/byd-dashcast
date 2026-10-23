@@ -1,5 +1,5 @@
 {
-  "snapshot_version": "1.7.0",
+  "snapshot_version": "1.7.1",
   "snapshot_date": "2026-10-23",
   "ncm_original_author_confirmed": true,
   "project_license": "NOT_SELECTED_BY_OWNER",
@@ -62,8 +62,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "bytes": 22642,
-      "sha256": "fec3a8ed239501395bb744b366271b0202c99711b2a824cde620e9ac47097974",
+      "bytes": 23209,
+      "sha256": "a8d807186c9e1018b9c87b832b32ca926c12786cd4e4a3d714a963dd1ac48894",
       "origin": "publication/template/CHANGELOG.md",
       "transformations": []
     },
@@ -83,8 +83,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 4287,
-      "sha256": "a379ec729b4c8e881e0fc0d4fdb03319a43cfda14090564c681729aa41210905",
+      "bytes": 4351,
+      "sha256": "2d60445a6dbab074a06bdcd92540328de319827093ba67171323f13e9e483a56",
       "origin": "publication/template/README.md",
       "transformations": []
     },
@@ -116,6 +116,13 @@
       "bytes": 12149,
       "sha256": "5a2abab54816d5ea7045d172e6c532dc811043ca2160275d4cf1d4e43061a455",
       "origin": "analysis/background_poc_native.py",
+      "transformations": []
+    },
+    {
+      "path": "analysis/compact_info_layout.py",
+      "bytes": 4501,
+      "sha256": "18286b7879519adfd67fe63dad8a48fe3ba77c8de071da82a1b9dad334d7c454",
+      "origin": "analysis/compact_info_layout.py",
       "transformations": []
     },
     {
@@ -222,15 +229,15 @@
     },
     {
       "path": "docs/ARCHITECTURE.md",
-      "bytes": 10564,
-      "sha256": "99f134cd4946cb670127e5e46c9e6bca44a56c01bc1b13904b297ecedf132e9e",
+      "bytes": 10864,
+      "sha256": "a7e61deea6caa76f654bf20c022e6e772fa2f82406a97d818c0b8a067259f5db",
       "origin": "publication/template/docs/ARCHITECTURE.md",
       "transformations": []
     },
     {
       "path": "docs/BUILD.md",
-      "bytes": 9566,
-      "sha256": "848cba67e4e519e8b763b383a13212a4e32b1610233f90845b3ed53ce6789d45",
+      "bytes": 10127,
+      "sha256": "7a32f101cefa58a87c656903b0b09cef9d8b5822fcb220e71e8c9464d2d886bd",
       "origin": "publication/template/docs/BUILD.md",
       "transformations": []
     },
@@ -302,6 +309,13 @@
       "bytes": 4066,
       "sha256": "184a445a4b1698a82d120c3fd35da60421d38616983eeddfe2f0ab1c73b97dcf",
       "origin": "publication/template/docs/PRODUCT_1.7.0.md",
+      "transformations": []
+    },
+    {
+      "path": "docs/PRODUCT_1.7.1.md",
+      "bytes": 2775,
+      "sha256": "1cd7851f168f370c62412424ba93f576e5447f7fa9c12855e45333a024cc4980",
+      "origin": "publication/template/docs/PRODUCT_1.7.1.md",
       "transformations": []
     },
     {
@@ -439,15 +453,15 @@
     },
     {
       "path": "docs/USAGE.md",
-      "bytes": 11921,
-      "sha256": "3f8c43cb95864dce8a5a01edb4d8e4f537ed1e0ec56b9432065f566c0e841a51",
+      "bytes": 12307,
+      "sha256": "aa4c9e0be2003e87ac7cb4613a5d7fffaf11c4301275b9201c9fdfa52081c707",
       "origin": "publication/template/docs/USAGE.md",
       "transformations": []
     },
     {
       "path": "docs/VALIDATION.md",
-      "bytes": 12222,
-      "sha256": "6df069a739a07dc91d9710825f36205fc00845f27b8aa2362594cc5c4f503240",
+      "bytes": 12717,
+      "sha256": "e97ee6de0119552bcf745cf53b9faea3c87432479712f9a2c9d8c316b46604d2",
       "origin": "publication/template/docs/VALIDATION.md",
       "transformations": []
     },
@@ -461,7 +475,7 @@
     {
       "path": "phase1/android/app/build.gradle",
       "bytes": 1106,
-      "sha256": "33a9b3c6bdbc85f47610bdeb100168f449c54bff3425734ee85337b0a84125e6",
+      "sha256": "6be1a13fb2799939f0891965bcea256e3837518c1f047f1e1b4430f18c2857c0",
       "origin": "phase1/android/app/build.gradle",
       "transformations": []
     },
@@ -1217,7 +1231,7 @@
     {
       "path": "phase1/android/app/src/main/res/values/strings.xml",
       "bytes": 2531,
-      "sha256": "a0adbe34b36721092cf054b74931c062096afdefee3efa2aa9cfdddd94f516e4",
+      "sha256": "1990095eb833cea58740c77b3ea54168e513bf94898129c057ef0ab0453afee8",
       "origin": "phase1/android/app/src/main/res/values/strings.xml",
       "transformations": []
     },
@@ -1970,6 +1984,13 @@
       "transformations": []
     },
     {
+      "path": "tools/build_compact_info_components.py",
+      "bytes": 1742,
+      "sha256": "1c7237b288b6ff36e22e74110afa3e3599b58141ea61c6569487d13717db5eb0",
+      "origin": "publication/template/tools/build_compact_info_components.py",
+      "transformations": []
+    },
+    {
       "path": "tools/build_composition_components.py",
       "bytes": 2329,
       "sha256": "807633ad2aa3d1c1f3454258e824cab3c84e1c599c4daaa0ce308b83f6466e0f",
@@ -2044,6 +2065,13 @@
       "bytes": 2031,
       "sha256": "4764f33a02616d2e7c4eac619627685e8897a6ea07ee7fe460b4d9bd1232c135",
       "origin": "publication/template/tools/tests/test_background_overlay_cli.py",
+      "transformations": []
+    },
+    {
+      "path": "tools/tests/test_compact_info_cli.py",
+      "bytes": 1934,
+      "sha256": "943e7d54490926146867c3c9a0462a199d7b70a5366921e28fb8f9d3706acf01",
+      "origin": "publication/template/tools/tests/test_compact_info_cli.py",
       "transformations": []
     },
     {
