@@ -90,8 +90,8 @@ class ProductActivity : Activity() {
 
     private fun home() {
         card {
-            addView(text("独立导航，留在仪表", 30, true))
-            addView(text("从原应用图标打开可在车机操作，同一任务继续投屏；车机切到其他应用后，由副屏继续承接。", 18))
+            addView(text("独立应用画面，留在仪表", 30, true))
+            addView(text("使用应用独立副屏入口或新任务；主屏原任务、尺寸和原图标保持，账号数据仍属于同一应用。", 18))
             addView(status)
             addView(connection)
             addView(detail)
@@ -120,7 +120,7 @@ class ProductActivity : Activity() {
 
     private fun applications() {
         body.addView(text("选择独立投屏应用", 26, true))
-        body.addView(text("优先推荐高德/高德分身；主屏打开所选应用时共显，离开后同任务进入副屏。不采集其他应用，失败不切换为全主屏镜像。", 16))
+        body.addView(text("所有应用统一检查独立画面能力。支持专用副屏入口或标准多实例；单实例且无独立入口的应用会明确拒绝，不搬走主屏任务，不回退镜像。", 16))
         val search = EditText(this).apply {
             hint = "搜索应用名称或包名"
             setTextColor(textColor); setHintTextColor(muted); textSize = 20f
@@ -167,7 +167,7 @@ class ProductActivity : Activity() {
             addView(toggle("导航仪表布局：顶部状态、中央地图、底部数据", settings.underlay) { settings.underlay = it })
             addView(text("开启：全屏1728×432有效内容区；关闭：768×432外窗、720×384有效内框。四边渐变不算可读空间。需同时升级配套1.4.0仪表App，下次开始生效；原生信息和告警保留。", 16))
             addView(toggle("中心裁剪填充画面", settings.crop) { settings.crop = it })
-            addView(text("副屏按有效内框比例排版，不把完整界面盖在渐变下。建议关闭裁剪以保留全部提示；从原图标打开时主屏保持自身比例，用完整适配共显，可能留边。不是两份独立导航。下次开始生效。", 16))
+            addView(text("仪表始终使用固定副屏和为异形屏预留的内容区。原图标不会切换采集源或改变仪表比例；主题和布局设置在下次开始生效。应用自身的副屏适配效果仍取决于应用。", 16))
             addView(toggle("日间浅色界面", settings.light) { settings.light = it; build() })
             addView(text("上面的开关只改变 APK 界面。仪表融合底色自动跟随原厂深浅模式；地图配色仍由导航应用自己的昼夜设置决定。", 16))
         }
@@ -203,7 +203,7 @@ class ProductActivity : Activity() {
         val begin = { control.start(app.target()); updateStatus() }
         if (app.navigation) { begin() } else {
             AlertDialog.Builder(this).setTitle("投屏其他应用")
-                .setMessage("驾驶中仅使用导航；不要观看娱乐视频或分心操作。此应用跨屏兼容性未确认；只有所选应用在主屏前台时共显，失败不采集无关应用。")
+                .setMessage("驾驶中仅使用导航；不要观看娱乐视频或分心操作。此应用的多实例兼容性未确认；不能独立运行时会停止，不会搬移原任务或镜像主屏。")
                 .setPositiveButton("开始") { _, _ -> begin() }.setNegativeButton("取消", null).show()
         }
     }

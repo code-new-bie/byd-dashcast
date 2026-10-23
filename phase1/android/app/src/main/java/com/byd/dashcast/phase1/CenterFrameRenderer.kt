@@ -29,6 +29,12 @@ internal class CenterFrameRenderer @JvmOverloads constructor(
     private var window = EGL14.EGL_NO_SURFACE
     private var texture = 0
     private var program = 0
+    private var positionLocation = -1
+    private var uvLocation = -1
+    private var imageLocation = -1
+    private var transformLocation = -1
+    private var contentLocation = -1
+    private val contentBounds = viewport?.normalized() ?: floatArrayOf(0f, 0f, 1f, 1f)
     private var source: SurfaceTexture? = null
     private var input: Surface? = null
     private var callbacks: HandlerThread? = null
@@ -88,6 +94,14 @@ internal class CenterFrameRenderer @JvmOverloads constructor(
             GLES20.glDeleteShader(vertex)
             if (fragment != 0) { GLES20.glDeleteShader(fragment) }
         }
+        positionLocation = GLES20.glGetAttribLocation(program, "position")
+        uvLocation = GLES20.glGetAttribLocation(program, "uv")
+        imageLocation = GLES20.glGetUniformLocation(program, "image")
+        transformLocation = GLES20.glGetUniformLocation(program, "transform")
+        contentLocation = GLES20.glGetUniformLocation(program, "content")
+        if (listOf(positionLocation, uvLocation, imageLocation, transformLocation, contentLocation).any { it < 0 }) {
+            throw IOException("CENTER_GL_SHADER_INTERFACE_MISSING")
+        }
         val worker = HandlerThread("dashcast-center-frames").apply { start() }
         callbacks = worker
         source = SurfaceTexture(texture).also {
@@ -97,7 +111,7 @@ internal class CenterFrameRenderer @JvmOverloads constructor(
         }
         checkGl("initialize")
         System.err.println("SHELL_CAPTURE_CONTENT_RENDERER viewport=$viewport encoded=1920x720; " +
-            "layout uses effective inner aspect, edge-clamped bleed; legacy center=${viewport == null}")
+            "layout uses effective inner aspect, softened padding only; legacy center=${viewport == null}")
     }
 
     fun inputSurface(): Surface = input ?: throw IllegalStateException("CENTER_RENDERER_CLOSED")
@@ -114,18 +128,15 @@ internal class CenterFrameRenderer @JvmOverloads constructor(
         GLES20.glUseProgram(program)
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
         GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, texture)
-        GLES20.glUniform1i(GLES20.glGetUniformLocation(program, "image"), 0)
-        GLES20.glUniformMatrix4fv(GLES20.glGetUniformLocation(program, "transform"), 1, false, matrix, 0)
-        val bounds = viewport?.normalized() ?: floatArrayOf(0f, 0f, 1f, 1f)
-        GLES20.glUniform4fv(GLES20.glGetUniformLocation(program, "content"), 1, bounds, 0)
-        val position = GLES20.glGetAttribLocation(program, "position")
-        val uv = GLES20.glGetAttribLocation(program, "uv")
+        GLES20.glUniform1i(imageLocation, 0)
+        GLES20.glUniformMatrix4fv(transformLocation, 1, false, matrix, 0)
+        GLES20.glUniform4fv(contentLocation, 1, contentBounds, 0)
         vertices.position(0)
-        GLES20.glVertexAttribPointer(position, 2, GLES20.GL_FLOAT, false, 16, vertices)
-        GLES20.glEnableVertexAttribArray(position)
+        GLES20.glVertexAttribPointer(positionLocation, 2, GLES20.GL_FLOAT, false, 16, vertices)
+        GLES20.glEnableVertexAttribArray(positionLocation)
         vertices.position(2)
-        GLES20.glVertexAttribPointer(uv, 2, GLES20.GL_FLOAT, false, 16, vertices)
-        GLES20.glEnableVertexAttribArray(uv)
+        GLES20.glVertexAttribPointer(uvLocation, 2, GLES20.GL_FLOAT, false, 16, vertices)
+        GLES20.glEnableVertexAttribArray(uvLocation)
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
         checkGl("draw")
         requireEgl(EGLExt.eglPresentationTimeANDROID(display, window, timestamp), "timestamp")

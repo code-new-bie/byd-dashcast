@@ -14,7 +14,7 @@ internal data class ProductApp(val component: String, val label: String, val nav
 
 internal object ProductAppCatalog {
     // Category advice, not a claim that every version supports Android secondary displays.
-    private val navigationPackages = setOf("com.autonavi.amapautoclone", "com.autonavi.amapauto",
+    private val navigationPackages = setOf("com.byd.automap", "com.autonavi.amapautoclone", "com.autonavi.amapauto",
         "com.autonavi.minimap", "com.baidu.BaiduMap", "com.baidu.navi", "com.tencent.map")
     fun navigation(component: String): Boolean = component.substringBefore('/') in navigationPackages
     fun load(context: Context): List<ProductApp> {

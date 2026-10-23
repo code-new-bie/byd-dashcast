@@ -3,13 +3,14 @@ package com.byd.dashcast.phase1;
 import java.io.IOException;
 
 /**
- * Preserves every encoded access unit and assigns a bounded transport PTS cadence.
+ * Preserves every encoded access unit and its original monotonic presentation timestamp.
  *
  * <p>The source encoder may produce more than the requested rate on the Android head unit.
  * Rate limiting belongs at the encoder's Surface input and in the transport pacer. Dropping a
- * coded P picture can invalidate the following reference-dependent pictures. All valid pictures
- * are re-timestamped to a fixed target cadence before they enter DCV1. The
- * class measures the resulting PTS cadence; it does not claim decoded-display timing.</p>
+ * coded P picture can invalidate the following reference-dependent pictures. Rewriting a slow
+ * source to 33,333-us increments also compresses its timeline without improving real FPS.
+ * The input limiter and transport pacer enforce rate ceilings; this class validates and measures
+ * the real timeline. The existing DCV1 gap/staleness protections remain authoritative.</p>
  *
  * @author Codex
  * @date 2026/10/14
@@ -18,7 +19,6 @@ final class FrameRateGate {
     private static final long MICROS_PER_SECOND = 1_000_000L;
     private static final long RATE_SCALE = 100L;
     private final int targetFps;
-    private final long intervalMicros;
     private long firstInputPts = -1L;
     private long lastInputPts = -1L;
     private long firstOutputPts = -1L;
@@ -31,11 +31,10 @@ final class FrameRateGate {
             throw new IllegalArgumentException("Target FPS must be 1..120");
         }
         this.targetFps = targetFps;
-        intervalMicros = MICROS_PER_SECOND / targetFps;
     }
 
     /**
-     * Returns the fixed transport PTS for every valid picture without discarding coded references.
+     * Returns the source PTS unchanged, without dropping references or hiding source gaps.
      */
     long outputPts(long ptsMicros) throws IOException {
         if (ptsMicros < 0L || lastInputPts >= 0L && ptsMicros <= lastInputPts) {
@@ -48,10 +47,8 @@ final class FrameRateGate {
         inputFrames = ContinuousSessionPolicy.add(inputFrames, 1);
         if (firstOutputPts < 0L) {
             firstOutputPts = ptsMicros;
-            lastOutputPts = ptsMicros;
-        } else {
-            lastOutputPts = advanceOutputPts(lastOutputPts);
         }
+        lastOutputPts = ptsMicros;
         outputFrames = ContinuousSessionPolicy.add(outputFrames, 1);
         return lastOutputPts;
     }
@@ -59,14 +56,6 @@ final class FrameRateGate {
     /** Compatibility helper; valid encoded pictures are always preserved. */
     boolean accept(long ptsMicros) throws IOException {
         return outputPts(ptsMicros) >= 0L;
-    }
-
-    private long advanceOutputPts(long ptsMicros) throws IOException {
-        long next = ptsMicros + intervalMicros;
-        if (next <= ptsMicros) {
-            throw new IOException("FRAME_RATE_GATE_OUTPUT_PTS_OVERFLOW");
-        }
-        return next;
     }
 
     long inputFrames() {
@@ -88,8 +77,9 @@ final class FrameRateGate {
                 + " dropped_frames=0"
                 + " input_pts_fps_x100=" + rateX100(inputFrames, firstInputPts, lastInputPts)
                 + " output_pts_fps_x100=" + rateX100(outputFrames, firstOutputPts, lastOutputPts)
-                + " output_interval_us=" + intervalMicros
-                + " retimed=true preserve_encoded_references=true; PTS cadence only, instrument decoded/display FPS not measured";
+                + " output_interval_us=variable"
+                + " retimed=false preserve_source_timeline=true preserve_encoded_references=true;"
+                + " source PTS cadence only, instrument decoded/display FPS not measured";
     }
 
     private static long rateX100(long frames, long firstPts, long lastPts) {

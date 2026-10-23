@@ -27,7 +27,7 @@ public final class ShellScreenCapture {
     /**
      * Keep a static Surface input alive at the requested 30 FPS when the display has no new
      * buffer. This is a codec-side repeat of the last picture, not a fabricated motion frame;
-     * FrameRateGate still controls what enters DCV1.
+     * The input FPS limit and transport pacer still bound the stream; source PTS is preserved.
      */
     static final long REPEAT_PREVIOUS_FRAME_AFTER_US = ProjectionLimits.TARGET_FRAME_INTERVAL_US;
 

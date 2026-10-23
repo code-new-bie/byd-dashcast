@@ -4,7 +4,6 @@ import java.io.IOException;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
@@ -24,21 +23,40 @@ public final class FrameRateGateTest {
         assertEquals(7L, gate.outputFrames());
         assertEquals(0L, gate.droppedFrames());
         assertTrue(gate.statistics().contains("target_fps=30"));
-        assertTrue(gate.statistics().contains("output_pts_fps_x100=3000"));
-        assertTrue(gate.statistics().contains("output_interval_us=33333"));
-        assertTrue(gate.statistics().contains("retimed=true"));
+        assertTrue(gate.statistics().contains("output_interval_us=variable"));
+        assertTrue(gate.statistics().contains("retimed=false"));
+        assertTrue(gate.statistics().contains("preserve_source_timeline=true"));
     }
 
     @Test
-    public void retimesAcceptedPicturesToFixedTargetCadence() throws Exception {
+    public void preservesAcceptedPicturesOnTheRealSourceTimeline() throws Exception {
         FrameRateGate gate = new FrameRateGate(30);
         assertEquals(100_000L, gate.outputPts(100_000L));
-        assertEquals(133_333L, gate.outputPts(116_000L));
-        assertEquals(166_666L, gate.outputPts(150_000L));
-        assertEquals(199_999L, gate.outputPts(166_000L));
-        assertEquals(233_332L, gate.outputPts(190_000L));
+        assertEquals(116_000L, gate.outputPts(116_000L));
+        assertEquals(150_000L, gate.outputPts(150_000L));
+        assertEquals(166_000L, gate.outputPts(166_000L));
+        assertEquals(190_000L, gate.outputPts(190_000L));
         assertEquals(5L, gate.outputFrames());
-        assertTrue(gate.statistics().contains("output_pts_fps_x100=3000"));
+        assertTrue(gate.statistics().contains("output_pts_fps_x100=4444"));
+    }
+
+    @Test
+    public void slowSourceIsNotFalselyReportedAsThirtyFramesPerSecond() throws Exception {
+        FrameRateGate gate = new FrameRateGate(30);
+        for (int i = 0; i < 100; i++) { assertEquals(i * 100_000L, gate.outputPts(i * 100_000L)); }
+        assertTrue(gate.statistics().contains("input_pts_fps_x100=1000"));
+        assertTrue(gate.statistics().contains("output_pts_fps_x100=1000"));
+        assertEquals(100L, gate.outputFrames());
+        assertEquals(0L, gate.droppedFrames());
+    }
+
+    @Test
+    public void realStallRemainsVisibleToExistingDownstreamStalenessProtection() throws Exception {
+        FrameRateGate gate = new FrameRateGate(30);
+        gate.outputPts(0);
+        assertEquals(9_672_573L, gate.outputPts(9_672_573L));
+        assertEquals(Long.MAX_VALUE, gate.outputPts(Long.MAX_VALUE));
+        assertThrows(IOException.class, () -> gate.outputPts(Long.MAX_VALUE));
     }
 
     @Test

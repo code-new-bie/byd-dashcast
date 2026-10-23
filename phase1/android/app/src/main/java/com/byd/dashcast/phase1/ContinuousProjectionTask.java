@@ -146,8 +146,8 @@ final class ContinuousProjectionTask implements ProjectionSessionController.Task
                         ownedClient.begin();
                         begun[0] = true;
                     }
-                    // PTS retiming alone does not prevent burst writes when the encoder releases
-                    // several output units together. Schedule each synchronous write on the
+                    // Preserve real source PTS, but prevent encoder batches from bursting.
+                    // Schedule each synchronous write on the
                     // monotonic 30 FPS clock; a slow ACK path is recorded as late, never hidden.
                     framePacer.awaitNextSlot();
                     ownedClient.frame(data, outputPts);

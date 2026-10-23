@@ -35,7 +35,7 @@ internal class ProductController private constructor(context: Context) {
         private set
     @Volatile var adbReady: Boolean = false
         private set
-    @Volatile private var pendingStart: StartRequest? = null
+    private val usbPermission = UsbPermissionContinuation<StartRequest>()
     private data class StartRequest(val target: ProjectionTarget, val options: CaptureOptions, val underlay: Boolean, val generation: Long)
     val busy: Boolean get() = occupied.get()
 
@@ -44,16 +44,16 @@ internal class ProductController private constructor(context: Context) {
             override fun onReceive(context: Context, intent: Intent) {
                 if (intent.action != Usb.ACTION_PERM) { return }
                 val device = intent.getParcelableExtra<UsbDevice>(Usb.EXTRA_DEVICE)
-                val next = pendingStart
                 if (device == null || !target(device)) { return }
-                pendingStart = null
-                if (!Usb.hasPermission(app, device)) {
+                val outcome = usbPermission.consume(device.deviceName, startGeneration.get(),
+                    Usb.hasPermission(app, device))
+                if (outcome.result == UsbPermissionContinuation.Result.DENIED) {
                     message = "USB 访问未获允许；可再次点开始授权，不需要视频授权"
                     log("PRODUCT_USB_PERMISSION_DENIED")
-                } else if (next != null) {
+                } else if (outcome.result == UsbPermissionContinuation.Result.GRANTED) {
+                    val next = outcome.request ?: return
                     // Queue behind the operation that opened the dialog; an already-granted
                     // permission broadcast can arrive before that operation's finally block.
-                    pendingStart = next
                     try {
                         worker.execute {
                             if (!occupied.compareAndSet(false, true)) {
@@ -61,14 +61,13 @@ internal class ProductController private constructor(context: Context) {
                                 return@execute
                             }
                             try {
-                                if (pendingStart === next) { pendingStart = null; startReady(next) }
+                                if (next.generation == startGeneration.get()) { prepareStart(next) }
                             } catch (error: Exception) {
                                 message = ProductErrors.explain(error)
                                 log("PRODUCT_PERMISSION_RESUME_FAILED $error")
                             } finally { occupied.set(false) }
                         }
                     } catch (error: RejectedExecutionException) {
-                        pendingStart = null
                         message = "USB 已授权，请再次点开始"
                         log("PRODUCT_PERMISSION_QUEUE_REJECTED $error")
                     }
@@ -84,26 +83,35 @@ internal class ProductController private constructor(context: Context) {
         if (ProjectionService.active()) { message = "已有投屏会话，请先停止再切换应用"; return }
         if (busy) { message = "当前操作尚未完成，请稍候"; return }
         val request = StartRequest(target, settings.options(), settings.underlay, startGeneration.incrementAndGet())
-        operation("正在连接仪表并准备投屏") {
-            recoverIfNecessary()
-            requireClean()
-            if (!adbReady) { authenticate() }
-            if (request.generation != startGeneration.get()) { return@operation }
-            val result = transition(InstrumentUsbCommand.NCM)
-            if (request.generation != startGeneration.get()) { return@operation }
-            log("PRODUCT_START_ROLE=$result")
-            val device = targetDevice() ?: throw IOException("NCM_NOT_ENUMERATED: 尚未发现仪表连接，可保持数据线连接后重试")
-            if (!Usb.hasPermission(app, device)) {
-                pendingStart = request
-                message = "请允许访问仪表 USB；授权后会自动开始"
-                Usb.requestPermission(app, device)
-            } else { startReady(request) }
-        }
+        operation("正在连接仪表并准备投屏") { prepareStart(request) }
+    }
+
+    private fun prepareStart(request: StartRequest) {
+        if (request.generation != startGeneration.get()) { return }
+        IndependentProjectionEntry.resolve(app, request.target)
+        if (!recoverIfNecessary(request)) { return }
+        requireClean()
+        if (!adbReady) { authenticate() }
+        if (request.generation != startGeneration.get()) { return }
+        val result = transition(InstrumentUsbCommand.NCM)
+        if (request.generation != startGeneration.get()) { return }
+        log("PRODUCT_START_ROLE=$result")
+        val device = targetDevice() ?: throw IOException("NCM_NOT_ENUMERATED: 尚未发现仪表连接，可保持数据线连接后重试")
+        if (!Usb.hasPermission(app, device)) { requestStartPermission(request, device) }
+        else { startReady(request) }
+    }
+
+    private fun requestStartPermission(request: StartRequest, device: UsbDevice) {
+        if (request.generation != startGeneration.get()) { return }
+        usbPermission.begin(device.deviceName, request.generation, request)
+        message = "请允许访问仪表 USB；授权后会继续恢复并开始投屏"
+        log("PRODUCT_USB_PERMISSION_WAIT generation=${request.generation}")
+        Usb.requestPermission(app, device)
     }
 
     fun stop() {
         startGeneration.incrementAndGet()
-        pendingStart = null
+        usbPermission.clear()
         val wasActive = ProjectionService.active()
         ProjectionService.requestStop(app)
         message = if (wasActive) "正在停止并恢复原生仪表背景" else "已取消待启动投屏；没有新的视频会话启动"
@@ -112,7 +120,7 @@ internal class ProductController private constructor(context: Context) {
 
     fun switchRole(command: InstrumentUsbCommand) {
         if (!settings.setupComplete) { message = "请先完成首次连接设置"; return }
-        if (command == InstrumentUsbCommand.HOST) { startGeneration.incrementAndGet(); pendingStart = null }
+        if (command == InstrumentUsbCommand.HOST) { startGeneration.incrementAndGet(); usbPermission.clear() }
         operation(if (command == InstrumentUsbCommand.HOST) "正在停止投屏、释放 USB 并恢复 U 盘模式" else "正在连接仪表模式") {
             if (command == InstrumentUsbCommand.NCM && !ProjectionService.active() &&
                 ProjectionService.state() == ProjectionSessionController.State.DISCONNECTED && observe().allNcm == 0) {
@@ -261,11 +269,15 @@ internal class ProductController private constructor(context: Context) {
         }
     }
 
-    private fun recoverIfNecessary() {
-        if (ProjectionService.state() != ProjectionSessionController.State.DISCONNECTED) { return }
+    private fun recoverIfNecessary(request: StartRequest? = null): Boolean {
+        if (ProjectionService.state() != ProjectionSessionController.State.DISCONNECTED) { return true }
         check(Looper.myLooper() != Looper.getMainLooper()) { "Recovery I/O must never run on the UI thread" }
         val device = targetDevice() ?: throw IOException("DETACHED_RECOVERY_RECONNECT_REQUIRED")
         if (!Usb.hasPermission(app, device)) {
+            if (request != null) {
+                requestStartPermission(request, device)
+                return false
+            }
             Usb.requestPermission(app, device)
             throw IOException("USB_PERMISSION_REQUIRED")
         }
@@ -297,6 +309,7 @@ internal class ProductController private constructor(context: Context) {
             ProjectionService.confirmDetachedRecovery()
             log("PRODUCT_DETACHED_RECOVERY_CONFIRMED read_only=true; no media START or CAN command sent by recovery")
         }
+        return true
     }
 
     private fun operation(status: String, action: () -> Unit) {
@@ -332,6 +345,10 @@ internal object ProductErrors {
     fun explain(error: Exception): String {
         val text = error.message.orEmpty()
         return when {
+            text.contains("APP_SINGLE_INSTANCE_UNSUPPORTED") -> "此应用只提供单界面实例，不能独立投屏；原应用未移动，也未改用镜像"
+            text.contains("APP_NATIVE_SECONDARY_VERSION_UNVERIFIED") -> "此版本的独立仪表入口尚未验证，未操作原应用；请导出诊断信息"
+            text.contains("APP_NATIVE_SECONDARY_ALREADY_IN_USE") -> "应用自带的副屏界面已被使用，本次未接管或移动"
+            text.contains("APP_INDEPENDENT") || text.contains("APP_PRIMARY_MIRROR_DISABLED") -> "应用未能建立独立画面，已停止；不会镜像主屏或搬移原任务"
             text.contains("AUTH", true) || text.contains("authentication", true) -> "ADB 尚未授权；请允许车机的 USB 调试弹窗后重试"
             text.contains("MATCHING_FIRMWARE") -> "仪表固件与导航布局不匹配；请使用本次 ${BuildConfig.VERSION_NAME} 配套仪表包"
             text.contains("NAVIGATION_LAYOUT_UNCONFIRMED") -> "原生导航布局未确认，已停止；请确认使用配套仪表包"

@@ -6,7 +6,7 @@ import java.io.IOException;
  * Measures the actual picture access units emitted by the Android encoder.
  *
  * <p>This is deliberately separate from {@link FrameRateGate}: the gate controls the stream
- * entering DCV1, while this class answers whether the encoder itself produced a sufficiently
+ * entering DCV1 without rewriting its source timeline, while this class answers whether the encoder itself produced a sufficiently
  * long, stable 30 FPS sample. It never duplicates a picture and it never treats a transport ACK
  * as a decoded or displayed frame.</p>
  */

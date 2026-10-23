@@ -120,6 +120,20 @@ public final class NoAuthVideoClientTest {
     }
 
     @Test
+    public void preservedSourceGapCannotBypassTheExistingTwoSecondGuard() throws Exception {
+        Link link = new Link().offer().ack(7, 0, 0, 0, 0, 0)
+                .ack(1, 0, 0, 1, 0, 0).ack(2, 1, 0, 7, 1, 0).ack(3, 0, 0, 0, 1, 0);
+        NoAuthVideoClient client = client(link, new AtomicBoolean(), new ArrayList<>());
+        FrameRateGate timeline = new FrameRateGate(30);
+        client.begin();
+        client.frame(IDR, timeline.outputPts(0));
+        assertThrows(IOException.class, () -> client.frame(IDR, timeline.outputPts(3_000_000)));
+        client.close();
+        assertTrue(client.cleanupConfirmed());
+        assertEquals(1L, link.writes.stream().filter(packet -> packet[7] == 2).count());
+    }
+
+    @Test
     public void f1IsExplicitShortOnlyAndChecksCapabilityBeforeHello() throws Exception {
         Link link = new Link().offer();
         link.reads.add(header(0x89, 40, 0, 0));

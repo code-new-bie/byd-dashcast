@@ -35,7 +35,12 @@ internal data class ContentViewport(
         const val FRAGMENT = "#extension GL_OES_EGL_image_external : require\n" +
             "precision mediump float;varying vec2 tex;uniform samplerExternalOES image;" +
             "uniform mat4 transform;uniform vec4 content;" +
-            "void main(){vec2 p=clamp((tex-content.xy)/content.zw,0.0,1.0);" +
-            "gl_FragColor=texture2D(image,(transform*vec4(p,0.0,1.0)).xy);}"
+            "vec4 sampleAt(vec2 p){return texture2D(image,(transform*vec4(p,0.0,1.0)).xy);}" +
+            "void main(){vec2 q=(tex-content.xy)/content.zw;vec2 p=clamp(q,0.0,1.0);" +
+            "vec4 sharp=sampleAt(p);float d=max(max(-q.x,q.x-1.0),max(-q.y,q.y-1.0));" +
+            "if(d>0.0){vec2 b=clamp(p,vec2(0.04),vec2(0.96));" +
+            "vec4 soft=0.25*(sampleAt(b+vec2(0.02,0.02))+sampleAt(b+vec2(-0.02,0.02))+" +
+            "sampleAt(b+vec2(0.02,-0.02))+sampleAt(b+vec2(-0.02,-0.02)));" +
+            "gl_FragColor=mix(sharp,soft,smoothstep(0.0,0.012,d));}else{gl_FragColor=sharp;}}"
     }
 }
