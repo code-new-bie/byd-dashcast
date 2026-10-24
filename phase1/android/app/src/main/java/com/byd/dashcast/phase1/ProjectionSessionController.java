@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 final class ProjectionSessionController {
     enum State {
-        IDLE, STARTING, STREAMING, STOPPING, STOPPED, FAILED, DISCONNECTED, QUARANTINED
+        IDLE, STARTING, STREAMING, STOPPING, STOPPED, FAILED, DISCONNECTED, RECOVERY_REQUIRED, QUARANTINED
     }
 
     interface Task {
@@ -40,6 +40,15 @@ final class ProjectionSessionController {
         }
     }
 
+    /** Only for a completed local teardown; a missing peer reply is not a local resource leak. */
+    static final class PeerCleanupPendingException extends IOException {
+        private static final long serialVersionUID = 1L;
+
+        PeerCleanupPendingException(String detail, Throwable cause) {
+            super("PEER_RECOVERY_REQUIRED: " + detail, cause);
+        }
+    }
+
     private final Executor executor;
     private final Observer observer;
     private State state = State.IDLE;
@@ -54,7 +63,7 @@ final class ProjectionSessionController {
 
     synchronized boolean start(Task task) {
         Objects.requireNonNull(task);
-        if (active || state == State.QUARANTINED || state == State.DISCONNECTED) {
+        if (active || state == State.QUARANTINED || state == State.DISCONNECTED || state == State.RECOVERY_REQUIRED) {
             return false;
         }
         active = true;
@@ -104,6 +113,9 @@ final class ProjectionSessionController {
             task.run(ownedStop, ownedAbort, this::streaming, this::cleaning);
         } catch (DetachedSessionException error) {
             outcome = State.DISCONNECTED;
+            detail = error.getMessage();
+        } catch (PeerCleanupPendingException error) {
+            outcome = State.RECOVERY_REQUIRED;
             detail = error.getMessage();
         } catch (CleanupUnconfirmedException error) {
             outcome = State.QUARANTINED;

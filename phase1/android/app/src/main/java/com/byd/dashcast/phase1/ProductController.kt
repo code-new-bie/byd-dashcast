@@ -90,6 +90,9 @@ internal class ProductController private constructor(context: Context) {
         if (request.generation != startGeneration.get()) { return }
         IndependentProjectionEntry.resolve(app, request.target)
         if (!recoverIfNecessary(request)) { return }
+        // A terminal worker state is published before Android destroys its
+        // finishing Service. Do not enqueue START into that old instance.
+        awaitPreviousServiceExit()
         requireClean()
         if (!adbReady) { authenticate() }
         if (request.generation != startGeneration.get()) { return }
@@ -116,6 +119,12 @@ internal class ProductController private constructor(context: Context) {
         ProjectionService.requestStop(app)
         message = if (wasActive) "正在停止并恢复原生仪表背景" else "已取消待启动投屏；没有新的视频会话启动"
         log("PRODUCT_USER_STOP")
+    }
+
+    fun changingTarget() {
+        stop()
+        message = "已更换应用；原投屏清理完成后点击开始，不会叠加启动"
+        log("PRODUCT_TARGET_CHANGED old_session_stop_requested")
     }
 
     fun switchRole(command: InstrumentUsbCommand) {
@@ -148,9 +157,10 @@ internal class ProductController private constructor(context: Context) {
     fun exportLogs() = operation("正在导出日志到下载目录") {
         val file = DownloadLogExporter.fileName(System.currentTimeMillis())
         DownloadLogExporter.export(MediaStoreDownloadStore(app.contentResolver), file,
-            "APK ${BuildConfig.VERSION_NAME}\n" + history.coordinatorSnapshot() + "\n" + ProjectionService.journal(),
+            "APK ${BuildConfig.VERSION_NAME}\n" + history.coordinatorSnapshot() + "\n" + ProjectionService.journal() +
+                "\n" + RecoveryIncidentStore.snapshot(app),
             LogHub.snapshot(), "Product relay evidence is recorded in report.txt; no new system probes.\n",
-            "NCM observation=${observe()}\n${ProjectionService.status()}\n")
+            "NCM observation=${observe()}\n${ProjectionService.status()}\n" + RecoveryIncidentStore.snapshot(app))
         message = "已导出到下载目录：$file"
         log("PRODUCT_LOG_EXPORTED file=$file")
     }
@@ -166,7 +176,8 @@ internal class ProductController private constructor(context: Context) {
     } catch (error: RuntimeException) { "USB 状态不可用：${error.javaClass.simpleName}" }
 
     fun diagnosticText(): String = "Dashcast ${BuildConfig.VERSION_NAME}\nADB=${adbReady}\n${usbSummary()}\n" +
-        ProjectionService.status() + "\n\n" + history.coordinatorSnapshot() + "\n" + ProjectionService.journal()
+        ProjectionService.status() + "\n\n" + history.coordinatorSnapshot() + "\n" + ProjectionService.journal() +
+        "\n" + RecoveryIncidentStore.snapshot(app)
 
     private fun startReady(request: StartRequest) {
         if (request.generation != startGeneration.get()) { return }
@@ -234,7 +245,7 @@ internal class ProductController private constructor(context: Context) {
                     log("PRODUCT_HOT_HOST_ALT0_AND_BOTH_RELEASES_CONFIRMED")
                 } catch (error: Exception) {
                     // A partial claim may exist. Conservative quarantine, never race a new command.
-                    ProjectionService.quarantine("PRODUCT_HOT_RELEASE_UNCONFIRMED: $error")
+                    quarantine("PRODUCT_HOT_RELEASE_UNCONFIRMED: $error")
                     throw IOException("USB_CLEANUP_UNCONFIRMED: USB 释放未确认；未发送模式切换", error)
                 }
             }
@@ -267,10 +278,15 @@ internal class ProductController private constructor(context: Context) {
         if (ProjectionService.state() == ProjectionSessionController.State.DISCONNECTED) {
             throw IOException("DETACHED_RECOVERY_REQUIRED")
         }
+        if (ProjectionService.state() == ProjectionSessionController.State.RECOVERY_REQUIRED) {
+            throw IOException("PEER_RECOVERY_REQUIRED")
+        }
     }
 
     private fun recoverIfNecessary(request: StartRequest? = null): Boolean {
-        if (ProjectionService.state() != ProjectionSessionController.State.DISCONNECTED) { return true }
+        val expected = ProjectionService.state()
+        if (expected != ProjectionSessionController.State.DISCONNECTED &&
+            expected != ProjectionSessionController.State.RECOVERY_REQUIRED) { return true }
         check(Looper.myLooper() != Looper.getMainLooper()) { "Recovery I/O must never run on the UI thread" }
         val device = targetDevice() ?: throw IOException("DETACHED_RECOVERY_RECONNECT_REQUIRED")
         if (!Usb.hasPermission(app, device)) {
@@ -286,30 +302,52 @@ internal class ProductController private constructor(context: Context) {
             val cancellation = AtomicBoolean()
             val session = try { UsbNcmSession.open(app, cancellation) } catch (error: Exception) {
                 if (DetachedPeerRecovery.localCleanupUnconfirmed(error)) {
-                    ProjectionService.quarantine("CLEANUP_UNCONFIRMED recovery open: $error")
+                    quarantine("CLEANUP_UNCONFIRMED recovery open: $error")
                 }
                 throw error
             }
             try {
                 session.use {
                     session.connectRecovery(cancellation).use { channel ->
-                        DetachedPeerRecovery.verify(channel) { Thread.sleep(100) }
+                        DetachedPeerRecovery.verifyAwaitIdle(channel, { Thread.sleep(100) }, System::nanoTime)
                     }
                 }
             } catch (error: Exception) {
                 if (!session.localResourcesClosed()) {
-                    ProjectionService.quarantine("CLEANUP_UNCONFIRMED recovery local resources: $error")
+                    quarantine("CLEANUP_UNCONFIRMED recovery local resources: $error")
+                } else {
+                    ProjectionService.notePeerRecoveryFailure(expected, "PEER_RECOVERY_NOT_CONFIRMED: ${error.message}")
+                    rememberIncident(expected, "PEER_RECOVERY_NOT_CONFIRMED: ${error.message}")
                 }
                 throw error
             }
             if (!session.localResourcesClosed()) {
-                ProjectionService.quarantine("CLEANUP_UNCONFIRMED recovery local resources")
+                quarantine("CLEANUP_UNCONFIRMED recovery local resources")
                 throw IOException("CLEANUP_UNCONFIRMED recovery local resources")
             }
-            ProjectionService.confirmDetachedRecovery()
+            ProjectionService.confirmPeerRecovery(expected)
             log("PRODUCT_DETACHED_RECOVERY_CONFIRMED read_only=true; no media START or CAN command sent by recovery")
         }
         return true
+    }
+
+    private fun awaitPreviousServiceExit() {
+        repeat(100) {
+            if (ProjectionService.readyForNewService()) { return }
+            if (ProjectionService.active()) { throw IOException("SESSION_ACTIVE") }
+            Thread.sleep(20)
+        }
+        throw IOException("SERVICE_FINISHING: 正在完成上次退出，请稍后点开始")
+    }
+
+    private fun quarantine(detail: String) {
+        ProjectionService.quarantine(detail)
+        rememberIncident(ProjectionSessionController.State.QUARANTINED, detail)
+    }
+
+    private fun rememberIncident(state: ProjectionSessionController.State, detail: String) {
+        try { RecoveryIncidentStore.record(app, state, detail) }
+        catch (error: RuntimeException) { log("CLEANUP_DIAGNOSTIC_SAVE_FAILED $error") }
     }
 
     private fun operation(status: String, action: () -> Unit) {
@@ -353,6 +391,9 @@ internal object ProductErrors {
             text.contains("MATCHING_FIRMWARE") -> "仪表固件与导航布局不匹配；请使用本次 ${BuildConfig.VERSION_NAME} 配套仪表包"
             text.contains("NAVIGATION_LAYOUT_UNCONFIRMED") -> "原生导航布局未确认，已停止；请确认使用配套仪表包"
             text.contains("PRODUCT_SOURCE_NOT_READY") -> "地图画面尚未准备好，已停止本次启动；原仪表背景未关闭，可稍候重试"
+            text.contains("PEER_RECOVERY_NATIVE_CLEANUP_FAULT") -> "仪表报告真实底层清理错误，保护未解除；需重启仪表恢复，未发送新的投屏或切模式命令"
+            text.contains("PEER_RECOVERY_INCOMPATIBLE") -> "仪表缺少受保护的恢复查询能力；请更新本次1.7.2配套仪表App，未叠加投屏"
+            text.contains("PEER_RECOVERY") -> "本地资源已释放；点击开始将只读确认仪表恢复后继续，无需重启或拔线。确认未通过不会叠加投屏"
             text.contains("DETACHED_RECOVERY_RECONNECT_REQUIRED") -> "数据线已断开，本地资源已释放；重新接线后点击开始或连接模式即可检查恢复，无需重启"
             text.contains("DETACHED_RECOVERY") -> "仪表正在恢复；本地操作已解锁，稍候重新接线并重试。恢复确认前不会叠加投屏或强切模式"
             text.contains("CLEANUP_UNCONFIRMED") -> "上次清理未确认，已停止重试；请重启仪表和应用恢复"

@@ -147,6 +147,7 @@ class ProductActivity : Activity() {
                     settings.toggleFavorite(app.component); show(search.text.toString())
                 }, LinearLayout.LayoutParams(dp(100), dp(60)))
                 item.addView(button(if (settings.target == app.component) "已选择" else "选择", true) {
+                    if (settings.target != app.component) { control.changingTarget() }
                     settings.target = app.component; page = 0; build()
                 }, LinearLayout.LayoutParams(dp(100), dp(60)))
                 container.addView(item)
@@ -210,7 +211,7 @@ class ProductActivity : Activity() {
 
     private fun firstRun() {
         AlertDialog.Builder(this).setTitle("首次连接 Dashcast")
-            .setMessage("1. 仪表使用本次 1.2.0 配套 App，MCU 和参考 OS 不改。\n2. 仪表与车机连接 USB 数据线，可保持连接切模式。\n3. 首次开始时允许 ADB 调试和 USB 访问。\n\n全屏或大中心窗可在设置中选择，停止恢复原厂主题。驾驶时不要操作设置或观看视频；若任何原生信息异常，立即停止投屏。本版本不宣称道路安全认证。")
+            .setMessage("1. 仪表使用配套 RWV4 App（1.7.2 仪表包），MCU 和参考 OS 不改。\n2. 仪表与车机连接 USB 数据线，可保持连接切模式。\n3. 首次开始时允许 ADB 调试和 USB 访问。\n\n全屏或大中心窗可在设置中选择，停止恢复原厂主题。驾驶时不要操作设置或观看视频；若任何原生信息异常，立即停止投屏。本版本不宣称道路安全认证。")
             .setPositiveButton("已安装配套仪表包，开始设置") { _, _ -> settings.setupComplete = true; control.connect(); updateStatus() }
             .setNegativeButton("稍后", null).show()
     }
@@ -227,13 +228,15 @@ class ProductActivity : Activity() {
                 ProjectionSessionController.State.QUARANTINED -> "需要恢复 · 未确认的清理已隔离"
                 ProjectionSessionController.State.FAILED -> "投屏未完成 · 可查看诊断详情"
                 ProjectionSessionController.State.DISCONNECTED -> "连接已断开 · 重新接线后可恢复，无需重启"
+                ProjectionSessionController.State.RECOVERY_REQUIRED -> "等待仪表恢复确认 · 点击开始安全检查"
                 ProjectionSessionController.State.STOPPED -> "投屏已停止 · 连接已释放"
                 else -> "准备就绪 · 选择应用开始"
             }
         }
         connection.text = "${if (control.adbReady) "ADB 已连接" else "ADB 待连接"}  ·  ${control.usbSummary()}"
         detail.text = if (!control.busy && (state == ProjectionSessionController.State.FAILED ||
-            state == ProjectionSessionController.State.QUARANTINED || state == ProjectionSessionController.State.DISCONNECTED)) {
+            state == ProjectionSessionController.State.QUARANTINED || state == ProjectionSessionController.State.DISCONNECTED ||
+            state == ProjectionSessionController.State.RECOVERY_REQUIRED)) {
             ProductErrors.explain(java.io.IOException(ProjectionService.status()))
         } else { control.message }
         primary?.isEnabled = !control.busy && !ProjectionService.blocksOperations()

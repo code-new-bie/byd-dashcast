@@ -194,7 +194,9 @@ final class ContinuousProjectionTask implements ProjectionSessionController.Task
         }
         boolean captureClean = !captureAttempted || source != null && source.exitConfirmed();
         boolean receiverClean = client == null || client.cleanupConfirmed();
-        if (physicallyDetached.get() && captureClean && usbClean && !openCleanupUnconfirmed(failure)) {
+        boolean localUsbClosed = usbClean && (session == null || session.localResourcesClosed());
+        boolean partialOpenUnknown = session == null && openCleanupUnconfirmed(failure);
+        if (physicallyDetached.get() && captureClean && localUsbClosed && !partialOpenUnknown) {
             log.accept("PHYSICAL_DETACH_LOCAL_CLEANUP_CONFIRMED; read-only peer recovery required after reconnect");
             throw new ProjectionSessionController.DetachedSessionException(failure);
         }
@@ -207,10 +209,19 @@ final class ContinuousProjectionTask implements ProjectionSessionController.Task
                 log.accept("CONTINUOUS_CLEANUP_FAILURE " + suppressed);
             }
         }
-        if (!captureClean || !receiverClean || !usbClean || openCleanupUnconfirmed(failure)) {
+        CleanupRecoveryPolicy.Outcome outcome = CleanupRecoveryPolicy.classify(
+                captureClean, localUsbClosed, partialOpenUnknown, receiverClean);
+        String proof = "capture_exit=" + captureClean + " receiver=" + receiverClean
+                + " USB=" + usbClean + " local_usb_closed=" + localUsbClosed
+                + " partial_open_unknown=" + partialOpenUnknown
+                + "; causes=" + CleanupRecoveryPolicy.describe(failure);
+        log.accept("CLEANUP_EVIDENCE outcome=" + outcome + " " + proof);
+        if (outcome == CleanupRecoveryPolicy.Outcome.PEER_RECOVERY_REQUIRED) {
+            throw new ProjectionSessionController.PeerCleanupPendingException(proof, failure);
+        }
+        if (outcome == CleanupRecoveryPolicy.Outcome.LOCAL_UNCONFIRMED) {
             throw new ProjectionSessionController.CleanupUnconfirmedException(
-                    "CLEANUP_UNCONFIRMED capture_exit=" + captureClean + " receiver=" + receiverClean
-                            + " USB=" + usbClean, failure);
+                    "CLEANUP_UNCONFIRMED " + proof, failure);
         }
         if (failure != null) {
             throw failure;

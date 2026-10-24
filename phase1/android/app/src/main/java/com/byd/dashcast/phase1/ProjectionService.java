@@ -143,6 +143,8 @@ public final class ProjectionService extends Service {
         return owner != null && owner.active();
     }
 
+    static boolean readyForNewService() { return current == null; }
+
     static void quarantine(String detail) {
         JOURNAL.state(ProjectionSessionController.State.QUARANTINED, detail);
     }
@@ -152,11 +154,25 @@ public final class ProjectionService extends Service {
     }
 
     static void confirmDetachedRecovery() throws IOException {
-        if (active() || JOURNAL.currentState() != ProjectionSessionController.State.DISCONNECTED) {
+        confirmPeerRecovery(ProjectionSessionController.State.DISCONNECTED);
+    }
+
+    static void notePeerRecoveryFailure(ProjectionSessionController.State expected, String detail) {
+        if (!active() && JOURNAL.currentState() == expected
+                && (expected == ProjectionSessionController.State.RECOVERY_REQUIRED
+                    || expected == ProjectionSessionController.State.DISCONNECTED)) {
+            JOURNAL.state(expected, detail);
+        }
+    }
+
+    static void confirmPeerRecovery(ProjectionSessionController.State expected) throws IOException {
+        if (active() || JOURNAL.currentState() != expected
+                || expected != ProjectionSessionController.State.DISCONNECTED
+                && expected != ProjectionSessionController.State.RECOVERY_REQUIRED) {
             throw new IOException("DETACHED_RECOVERY_STATE_CHANGED");
         }
         JOURNAL.state(ProjectionSessionController.State.STOPPED,
-                "DETACHED_PEER_RECOVERY_CONFIRMED; local resources closed and fresh peer idle snapshot verified");
+                "PEER_RECOVERY_CONFIRMED; local resources closed and fresh peer idle snapshot verified");
     }
 
     @Override
@@ -169,8 +185,14 @@ public final class ProjectionService extends Service {
         }, new ThreadPoolExecutor.AbortPolicy());
         controller = new ProjectionSessionController(worker, (state, detail) -> {
             JOURNAL.state(state, detail);
+            try {
+                RecoveryIncidentStore.record(this, state, detail);
+            } catch (RuntimeException diagnosticError) {
+                JOURNAL.append("CLEANUP_DIAGNOSTIC_SAVE_FAILED " + diagnosticError);
+            }
             if (state == ProjectionSessionController.State.STOPPED || state == ProjectionSessionController.State.FAILED
                     || state == ProjectionSessionController.State.DISCONNECTED
+                    || state == ProjectionSessionController.State.RECOVERY_REQUIRED
                     || state == ProjectionSessionController.State.QUARANTINED) {
                 finishing = true;
                 // Publish quarantine BEFORE releasing the process gate; never let a new Service
@@ -222,7 +244,8 @@ public final class ProjectionService extends Service {
         boolean confirmed = product ? new ProductSettings(this).getSetupComplete()
                 : intent.getBooleanExtra("parked_matching_firmware", false);
         if (!START.equals(intent.getAction()) || !confirmed
-                || JOURNAL.quarantined()) {
+                || JOURNAL.quarantined() || JOURNAL.currentState() == ProjectionSessionController.State.RECOVERY_REQUIRED
+                || JOURNAL.currentState() == ProjectionSessionController.State.DISCONNECTED) {
             JOURNAL.append("START_BLOCKED: missing user confirmation or previous cleanup unconfirmed");
             if (!controller.active()) {
                 stopSelf();

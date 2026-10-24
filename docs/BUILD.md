@@ -1,5 +1,9 @@
 # 构建与复现
 
+## 1.7.2 受保护清理查询（当前）
+
+APK code45，构建命令不变。自备精确原始HMI/KZB/TOC与1.2 receiver，安装既有requirements-native.txt，运行`python tools/build_cleanup_recovery_components.py --hmi ORIGINAL_HMI --kzb ORIGINAL_KZB --toc ORIGINAL_TOC --receiver RECEIVER_120 --output NEW_DIRECTORY`。HMI/KZB同1.7.1，receiver只加受保护恢复QUERY；三个输出不是可刷ZIP。旧源码工具继续复现各自历史版本。[升级](PRODUCT_1.7.2.md)。
+
 ## 1.7.1 紧凑里程布局（当前）
 
 APK code44仅版本/标题更新。安装既有requirements-native.txt，自备精确原始HMI/KZB/TOC与1.2 receiver，运行`python tools/build_compact_info_components.py --hmi ORIGINAL_HMI --kzb ORIGINAL_KZB --toc ORIGINAL_TOC --receiver RECEIVER_120 --output NEW_DIRECTORY`。HMI/receiver与1.7精确相同，KZB只改自有全幅状态；输出三组件不是刷机ZIP。拒绝未知输入/覆盖旧输出，不对已打补丁成品再套。[升级/边界](PRODUCT_1.7.1.md)。以下“当前”为历史状态。
