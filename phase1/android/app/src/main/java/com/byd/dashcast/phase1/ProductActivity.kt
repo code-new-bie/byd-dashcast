@@ -100,7 +100,8 @@ class ProductActivity : Activity() {
         card {
             addView(text("当前应用", 16))
             addView(text(selected?.label ?: "尚未选择导航应用", 27, true))
-            addView(text(if (selected?.navigation == true) "导航专注 · 同任务双端共显 · ${if (settings.underlay) "顶部状态 / 中央地图 / 底部数据" else "大中心窗 · 有效区15:8"}"
+            addView(text(selected?.capability?.summary ?: "请在应用中心查看当前已安装应用的独立入口能力", 17))
+            addView(text(if (selected?.navigation == true) "导航专注 · 同一账号 / 独立任务 · ${if (settings.underlay) "顶部状态 / 中央地图 / 底部数据" else "大中心窗 · 有效区15:8"}"
                 else "请在应用中心选择；不同应用的副屏兼容性不同", 17))
             addView(button("更换应用") { page = 1; build() })
         }
@@ -120,7 +121,8 @@ class ProductActivity : Activity() {
 
     private fun applications() {
         body.addView(text("选择独立投屏应用", 26, true))
-        body.addView(text("所有应用统一检查独立画面能力。支持专用副屏入口或标准多实例；单实例且无独立入口的应用会明确拒绝，不搬走主屏任务，不回退镜像。", 16))
+        body.addView(text("先显示已安装入口的检查结果；具备入口条件不等于已通过实车。无独立入口的单任务应用不强开，不搬走主屏任务。", 16))
+        body.addView(button("刷新应用能力") { apps = ProductAppCatalog.load(this); build() })
         val search = EditText(this).apply {
             hint = "搜索应用名称或包名"
             setTextColor(textColor); setHintTextColor(muted); textSize = 20f
@@ -142,13 +144,21 @@ class ProductActivity : Activity() {
                 val info = column()
                 info.addView(text(app.label, 22, true))
                 info.addView(text(if (app.navigation) "导航应用 · 推荐类别" else "其他应用 · 副屏兼容性由应用决定", 14))
+                info.addView(text(app.capability.summary, 14))
                 item.addView(info, LinearLayout.LayoutParams(0, -2, 1f))
                 item.addView(button(if (app.component in favorites) "已收藏" else "收藏") {
                     settings.toggleFavorite(app.component); show(search.text.toString())
                 }, LinearLayout.LayoutParams(dp(100), dp(60)))
-                item.addView(button(if (settings.target == app.component) "已选择" else "选择", true) {
-                    if (settings.target != app.component) { control.changingTarget() }
-                    settings.target = app.component; page = 0; build()
+                item.addView(button(if (!app.capability.allowed) "原因" else if (settings.target == app.component) "已选择" else "选择", true) {
+                    if (!app.capability.allowed) {
+                        control.recordAppCapability(app)
+                        AlertDialog.Builder(this).setTitle(app.label).setMessage(app.capability.summary +
+                            "\n\n这不是仪表或USB报错。导出日志包含实际版本、入口和具体拒绝条件。")
+                            .setPositiveButton("知道了", null).show()
+                    } else {
+                        if (settings.target != app.component) { control.changingTarget() }
+                        settings.target = app.component; page = 0; build()
+                    }
                 }, LinearLayout.LayoutParams(dp(100), dp(60)))
                 container.addView(item)
                 list.addView(container, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) })
@@ -239,7 +249,8 @@ class ProductActivity : Activity() {
             state == ProjectionSessionController.State.RECOVERY_REQUIRED)) {
             ProductErrors.explain(java.io.IOException(ProjectionService.status()))
         } else { control.message }
-        primary?.isEnabled = !control.busy && !ProjectionService.blocksOperations()
+        primary?.isEnabled = !control.busy && !ProjectionService.blocksOperations() &&
+            ProductAppCatalog.select(apps, settings.target)?.capability?.allowed == true
     }
 
     private fun card(content: LinearLayout.() -> Unit) {

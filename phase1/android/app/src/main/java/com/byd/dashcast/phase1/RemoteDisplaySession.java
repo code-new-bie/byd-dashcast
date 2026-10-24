@@ -48,7 +48,8 @@ final class RemoteDisplaySession implements AutoCloseable {
         int densityDpi = ProjectionDisplayProfile.densityDpi(width, height);
         try {
             Context context = shellContext();
-            IndependentAppPlan.Plan plan = IndependentProjectionEntry.resolve(context, target);
+            IndependentAppPlan.Plan plan = IndependentProjectionEntry.resolve(context, target,
+                    line -> System.err.println("SHELL_CAPTURE_" + line));
             component = plan.getTaskRoot();
             access = new AndroidTaskAccess();
             user = access.currentUser();

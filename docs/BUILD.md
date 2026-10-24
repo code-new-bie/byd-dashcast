@@ -1,5 +1,9 @@
 # 构建与复现
 
+## 1.7.3 APK入口修复（当前）
+
+APK code46，原工具链/命令不变；独立构建使用自己的签名。仪表全部原字节沿用1.7.2，无新增组件补丁；已匹配者只更新APK，不重新刷MCU/OS。后续各“当前”保留历史状态。[能力范围/使用](PRODUCT_1.7.3.md)。
+
 ## 1.7.2 受保护清理查询（当前）
 
 APK code45，构建命令不变。自备精确原始HMI/KZB/TOC与1.2 receiver，安装既有requirements-native.txt，运行`python tools/build_cleanup_recovery_components.py --hmi ORIGINAL_HMI --kzb ORIGINAL_KZB --toc ORIGINAL_TOC --receiver RECEIVER_120 --output NEW_DIRECTORY`。HMI/KZB同1.7.1，receiver只加受保护恢复QUERY；三个输出不是可刷ZIP。旧源码工具继续复现各自历史版本。[升级](PRODUCT_1.7.2.md)。

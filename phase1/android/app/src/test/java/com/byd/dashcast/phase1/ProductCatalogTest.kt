@@ -5,7 +5,8 @@ import org.junit.Test
 
 class ProductCatalogTest {
     @Test fun knownNavigationIsAdviceNotMainScreenFallback() {
-        val nav = ProductApp("com.autonavi.amapautoclone/.Main", "高德分身", true)
+        val nav = ProductApp("com.autonavi.amapautoclone/.Main", "高德分身", true,
+            AppEntryCapability(true, false, "", ""))
         val video = ProductApp("com.example.video/.Main", "视频", false)
         assertTrue(ProductAppCatalog.navigation(nav.component))
         assertFalse(ProductAppCatalog.navigation(video.component))

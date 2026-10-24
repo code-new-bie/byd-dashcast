@@ -88,7 +88,8 @@ internal class ProductController private constructor(context: Context) {
 
     private fun prepareStart(request: StartRequest) {
         if (request.generation != startGeneration.get()) { return }
-        IndependentProjectionEntry.resolve(app, request.target)
+        log("PRODUCT_START_REQUEST target=${request.target} generation=${request.generation}")
+        IndependentProjectionEntry.resolve(app, request.target, java.util.function.Consumer { log(it) })
         if (!recoverIfNecessary(request)) { return }
         // A terminal worker state is published before Android destroys its
         // finishing Service. Do not enqueue START into that old instance.
@@ -127,6 +128,12 @@ internal class ProductController private constructor(context: Context) {
         log("PRODUCT_TARGET_CHANGED old_session_stop_requested")
     }
 
+    fun recordAppCapability(selected: ProductApp) {
+        log("PRODUCT_APP_CAPABILITY_SELECTED component=${IndependentAppPlan.safe(selected.component)} " +
+            "allowed=${selected.capability.allowed}")
+        log(selected.capability.evidence.take(2200))
+    }
+
     fun switchRole(command: InstrumentUsbCommand) {
         if (!settings.setupComplete) { message = "请先完成首次连接设置"; return }
         if (command == InstrumentUsbCommand.HOST) { startGeneration.incrementAndGet(); usbPermission.clear() }
@@ -156,9 +163,10 @@ internal class ProductController private constructor(context: Context) {
 
     fun exportLogs() = operation("正在导出日志到下载目录") {
         val file = DownloadLogExporter.fileName(System.currentTimeMillis())
+        val entryDiagnostics = ProductAppCatalog.diagnostics(ProductAppCatalog.load(app))
         DownloadLogExporter.export(MediaStoreDownloadStore(app.contentResolver), file,
             "APK ${BuildConfig.VERSION_NAME}\n" + history.coordinatorSnapshot() + "\n" + ProjectionService.journal() +
-                "\n" + RecoveryIncidentStore.snapshot(app),
+                "\n" + RecoveryIncidentStore.snapshot(app) + "\n" + entryDiagnostics,
             LogHub.snapshot(), "Product relay evidence is recorded in report.txt; no new system probes.\n",
             "NCM observation=${observe()}\n${ProjectionService.status()}\n" + RecoveryIncidentStore.snapshot(app))
         message = "已导出到下载目录：$file"
@@ -383,7 +391,11 @@ internal object ProductErrors {
     fun explain(error: Exception): String {
         val text = error.message.orEmpty()
         return when {
-            text.contains("APP_SINGLE_INSTANCE_UNSUPPORTED") -> "此应用只提供单界面实例，不能独立投屏；原应用未移动，也未改用镜像"
+            text.contains("APP_SINGLE_INSTANCE_UNSUPPORTED") -> "当前入口或同任务链含单实例页面，暂不能独立投屏；主屏原任务未移动，具体入口见日志"
+            text.contains("APP_NATIVE_SECONDARY_AFFINITY_NOT_INDEPENDENT") -> "应用副屏入口与主屏任务未分离；未移动主屏导航，详情见应用能力及导出日志"
+            text.contains("APP_NATIVE_SECONDARY_VERSION_UNAVAILABLE") -> "无法读取已安装导航版本；请刷新应用列表后导出日志"
+            text.contains("APP_NATIVE_SECONDARY_ENTRY_MISMATCH") -> "导航副屏入口与已知能力不符；未启动或改动原任务"
+            text.contains("APP_NATIVE_SECONDARY_MODE_UNSUPPORTED") -> "导航副屏入口的任务模式不支持独立画面"
             text.contains("APP_NATIVE_SECONDARY_VERSION_UNVERIFIED") -> "此版本的独立仪表入口尚未验证，未操作原应用；请导出诊断信息"
             text.contains("APP_NATIVE_SECONDARY_ALREADY_IN_USE") -> "应用自带的副屏界面已被使用，本次未接管或移动"
             text.contains("APP_INDEPENDENT") || text.contains("APP_PRIMARY_MIRROR_DISABLED") -> "应用未能建立独立画面，已停止；不会镜像主屏或搬移原任务"

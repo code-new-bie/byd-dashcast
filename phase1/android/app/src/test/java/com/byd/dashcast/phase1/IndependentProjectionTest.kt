@@ -72,10 +72,10 @@ class IndependentProjectionTest {
         }
     }
 
-    @Test fun nativeAdapterDoesNotGuessCompatibilityAcrossAppVersionsOrAffinities() {
+    @Test fun nativeAdapterUsesInstalledCapabilitiesInsteadOfAnExactVersionGate() {
         val main = facts("com.byd.automap/com.byd.automap.central.CentralActivity", 2, "main")
         val meter = facts(IndependentAppPlan.BYD_METER, 2, "meter")
-        assertThrows(IOException::class.java) { IndependentAppPlan.select(main, meter, 1) }
+        assertTrue(IndependentAppPlan.select(main, meter, 1).nativeSecondary)
         assertThrows(IOException::class.java) {
             IndependentAppPlan.select(main, meter.copy(affinity = "main"), IndependentAppPlan.VERIFIED_BYD_VERSION)
         }

@@ -6,6 +6,8 @@ import java.io.IOException
 internal object IndependentAppPlan {
     const val BYD_PACKAGE = "com.byd.automap"
     const val BYD_METER = "$BYD_PACKAGE/com.byd.automap.extra.MeterActivity"
+    const val BYD_PRIMARY = "$BYD_PACKAGE/com.byd.automap.central.CentralActivity"
+    // Historical evidence version, not a runtime allowlist of one APK build.
     const val VERIFIED_BYD_VERSION = 220102029L
 
     data class Activity(
@@ -36,8 +38,16 @@ internal object IndependentAppPlan {
 
     @JvmStatic
     fun requireMultiInstance(activities: List<Activity>) {
-        if (activities.isEmpty() || activities.any { it.launchMode !in 0..1 || it.reparents }) {
-            throw IOException("APP_SINGLE_INSTANCE_UNSUPPORTED; application requires a dedicated secondary entry")
+        val entry = activities.firstOrNull() ?: throw IOException("APP_INDEPENDENT_ENTRY_UNAVAILABLE empty_scope")
+        // Separate-affinity screens (e.g. an unrelated settings task) do not prove
+        // that the selected task reuses a primary instance. Same-affinity redirects
+        // remain conservatively blocked; launching them can steal that instance.
+        val unsafe = activities.firstOrNull { it.enabled &&
+            (it.root == entry.root || it.affinity == entry.affinity) &&
+            (it.launchMode !in 0..1 || it.reparents) }
+        if (unsafe != null) {
+            throw IOException("APP_SINGLE_INSTANCE_UNSUPPORTED; scope=selected_task offending=${safe(unsafe.root)}" +
+                " mode=${unsafe.launchMode} reparent=${unsafe.reparents}")
         }
     }
 
@@ -51,10 +61,14 @@ internal object IndependentAppPlan {
             throw IOException("APP_INDEPENDENT_ENTRY_UNAVAILABLE")
         }
         if (ownPackage == BYD_PACKAGE) {
-            if (version != VERIFIED_BYD_VERSION || candidate.component != BYD_METER ||
-                candidate.affinity.isNullOrEmpty() || candidate.affinity == requested.affinity ||
-                candidate.component == requested.component) {
-                throw IOException("APP_NATIVE_SECONDARY_VERSION_UNVERIFIED")
+            if (candidate.component != BYD_METER || candidate.root != BYD_METER) {
+                throw IOException("APP_NATIVE_SECONDARY_ENTRY_MISMATCH")
+            }
+            if (version <= 0) { throw IOException("APP_NATIVE_SECONDARY_VERSION_UNAVAILABLE") }
+            if (candidate.launchMode !in 0..2) { throw IOException("APP_NATIVE_SECONDARY_MODE_UNSUPPORTED") }
+            if (candidate.affinity.isNullOrEmpty() || requested.affinity.isNullOrEmpty() ||
+                candidate.affinity == requested.affinity || candidate.root == requested.root) {
+                throw IOException("APP_NATIVE_SECONDARY_AFFINITY_NOT_INDEPENDENT")
             }
             return Plan(candidate.component, true, candidate.root)
         }
@@ -63,4 +77,8 @@ internal object IndependentAppPlan {
         }
         return Plan(candidate.component, false, candidate.root)
     }
+
+    /** Package metadata is untrusted text; diagnostics must be bounded and single-line. */
+    internal fun safe(value: String?): String = value.orEmpty().take(384)
+        .map { if (it.isLetterOrDigit() || it in "._/:-$") it else '_' }.joinToString("")
 }

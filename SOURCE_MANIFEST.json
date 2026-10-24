@@ -1,10 +1,10 @@
 {
-  "snapshot_version": "1.7.2",
+  "snapshot_version": "1.7.3",
   "snapshot_date": "2026-10-24",
   "ncm_original_author_confirmed": true,
   "project_license": "NOT_SELECTED_BY_OWNER",
   "original_runtime_java_semantics_changed": true,
-  "runtime_changes": "Guarded read-only peer recovery after positive local teardown; real local uncertainty remains quarantined, sticky native cleanup errors never cleared; retain RWV4 compact information/ADAS/theme/viewport/density and owned tasks; MCU/OS/USB role and media implementation unchanged; no primary mirror/handoff fallback",
+  "runtime_changes": "Installed native-entry capabilities instead of a fixed version, launcher alias compared to primary, conservative selected-task affinity scope instead of package-wide rejection; capability UI and bounded version/entry diagnostics; retain guarded cleanup recovery, owned tasks and RWV4; instrument/MCU/OS/USB roles/media unchanged; no primary mirror/user-data fallback",
   "excluded_test_files": [
     "AdbVideoOfflineCheck.java",
     "ReferenceRenderEvidence.java",
@@ -62,8 +62,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "bytes": 23760,
-      "sha256": "710a6e99cd8b0fc49c9a932d0081cb141b17c877231818d8d48f61821003078c",
+      "bytes": 24306,
+      "sha256": "8ba528a67b435406c5703e628b48d6b7eef642710a79f0eea311e80bdb741543",
       "origin": "publication/template/CHANGELOG.md",
       "transformations": []
     },
@@ -83,8 +83,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 4342,
-      "sha256": "ec9113c892c7ad2858e1b1dc40f3e07c9ff1de5a04cec18fc6ca586e80220d10",
+      "bytes": 4646,
+      "sha256": "20ac4aea5c1f9b04c7819fc1beb7f1c076076d621b19cd1b8f057520d72212be",
       "origin": "publication/template/README.md",
       "transformations": []
     },
@@ -236,15 +236,15 @@
     },
     {
       "path": "docs/ARCHITECTURE.md",
-      "bytes": 11228,
-      "sha256": "8344f92aabaf4af68c5ac73700296f71a9022c875ed6ddced008afd2ac856ca1",
+      "bytes": 11582,
+      "sha256": "19c581c146a53a8c8a0d35e4a0eb1cf456434a32fda0baa8dd535cbbe9591352",
       "origin": "publication/template/docs/ARCHITECTURE.md",
       "transformations": []
     },
     {
       "path": "docs/BUILD.md",
-      "bytes": 10618,
-      "sha256": "d16f220915ac012ca301afa9f053a072411d5b2a5e5c6a619b8b09475b2a9dad",
+      "bytes": 10926,
+      "sha256": "dc5531cc9e88c04cf5efe71046d600c0217b85b2cfe0ad4a51d1fc66c3b4c4bb",
       "origin": "publication/template/docs/BUILD.md",
       "transformations": []
     },
@@ -330,6 +330,13 @@
       "bytes": 3548,
       "sha256": "544dee452b188ae555e3787d23f0bbd69e48a934712477a69a92d74246c9e9aa",
       "origin": "publication/template/docs/PRODUCT_1.7.2.md",
+      "transformations": []
+    },
+    {
+      "path": "docs/PRODUCT_1.7.3.md",
+      "bytes": 3727,
+      "sha256": "aa08709f985db4831c046ba60e77013e8ac3e0a01711879f8441039230629605",
+      "origin": "publication/template/docs/PRODUCT_1.7.3.md",
       "transformations": []
     },
     {
@@ -467,15 +474,15 @@
     },
     {
       "path": "docs/USAGE.md",
-      "bytes": 12797,
-      "sha256": "7540b4da941ec0b719c1235a5bf040261b310158116195a6eeae8e614645ed58",
+      "bytes": 13212,
+      "sha256": "6d59db3ab95a6b1a1cdb3e5254814cb43d8df764c09c145af91d033b78628423",
       "origin": "publication/template/docs/USAGE.md",
       "transformations": []
     },
     {
       "path": "docs/VALIDATION.md",
-      "bytes": 13173,
-      "sha256": "fa66289ffd38f88f8d7b9e1db9dadee5079e28b006b11effdf8ce8fdefbeae82",
+      "bytes": 13506,
+      "sha256": "bbb0d14afd6821d6c76104e600109543bfc330460bbd5f37032fe25552a70f2e",
       "origin": "publication/template/docs/VALIDATION.md",
       "transformations": []
     },
@@ -489,7 +496,7 @@
     {
       "path": "phase1/android/app/build.gradle",
       "bytes": 1106,
-      "sha256": "84d9fdf00cebbcb3b34b44eea716d672458f6ae72b3829b6041670d1f33a8faf",
+      "sha256": "9ed774ef917134baf5d39c0fb65e571c3d62fdb23182d2438673cdc4217edddd",
       "origin": "phase1/android/app/build.gradle",
       "transformations": []
     },
@@ -568,6 +575,13 @@
       "bytes": 7476,
       "sha256": "552e1613d54b1043d9abd3dff2290f366f336ad3d41087b3474b33e409f89104",
       "origin": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/AnnexBAccessUnitReader.java",
+      "transformations": []
+    },
+    {
+      "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/AppEntryCapability.kt",
+      "bytes": 1498,
+      "sha256": "89ff28264cfd263361516350cae89559907fe7bb174793e6e0c208dfb4c8249c",
+      "origin": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/AppEntryCapability.kt",
       "transformations": []
     },
     {
@@ -747,15 +761,15 @@
     },
     {
       "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/IndependentAppPlan.kt",
-      "bytes": 2934,
-      "sha256": "bed1aa3a856307e376ed1134d4c263c5b5701bdbe524087d271769659ee90575",
+      "bytes": 4239,
+      "sha256": "c33fedcbb3c314425db12345d9107a579e86b2eaa193c30770b806144d804b16",
       "origin": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/IndependentAppPlan.kt",
       "transformations": []
     },
     {
       "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/IndependentProjectionEntry.kt",
-      "bytes": 2455,
-      "sha256": "caf0530fc1b9be4cd2fe498283f27582144db73f382eaddd1668ec813f24dab3",
+      "bytes": 6046,
+      "sha256": "16c09e33c5b979c74862bc998bbd381f7836c2475267dea88e2a1d240102e870",
       "origin": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/IndependentProjectionEntry.kt",
       "transformations": []
     },
@@ -908,15 +922,15 @@
     },
     {
       "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/ProductActivity.kt",
-      "bytes": 16742,
-      "sha256": "ea70ccf22d21af7a62e6898f85742d7aa633151b9373b322679c7a72bb56fae1",
+      "bytes": 17624,
+      "sha256": "c1985eb4d4cd863dc4ba9148aff8678c15e3287f7b306767bb42c140467c4c66",
       "origin": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/ProductActivity.kt",
       "transformations": []
     },
     {
       "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/ProductAppCatalog.kt",
-      "bytes": 1894,
-      "sha256": "f49ccaa8301adda0208798434b964908e361cf674a1642babea1253d12a7ce7f",
+      "bytes": 2581,
+      "sha256": "22b9b5746208605826ce403e38a5f5d067bf26ea462b9ed8f2a3082f4230135a",
       "origin": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/ProductAppCatalog.kt",
       "transformations": []
     },
@@ -929,8 +943,8 @@
     },
     {
       "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/ProductController.kt",
-      "bytes": 23321,
-      "sha256": "04a1f6068e0e6eb5846a3ccaeba102fe67de37f7523afa03e23a17f69e66d7bf",
+      "bytes": 24470,
+      "sha256": "c002080a5a34b0c5656bd3d7d79972b522582a87d47fbb622fc611780a14c49b",
       "origin": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/ProductController.kt",
       "transformations": []
     },
@@ -1013,8 +1027,8 @@
     },
     {
       "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/RemoteDisplaySession.java",
-      "bytes": 9464,
-      "sha256": "63c80f3f9c53a3157933b7d9c987767cb944fd3bde23792f059d7bb3578641f7",
+      "bytes": 9537,
+      "sha256": "ef8c2e965436ced140fcfa05e6188bedb8b6a094c20a7055e38a0c169d5d051e",
       "origin": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/RemoteDisplaySession.java",
       "transformations": []
     },
@@ -1259,7 +1273,7 @@
     {
       "path": "phase1/android/app/src/main/res/values/strings.xml",
       "bytes": 2531,
-      "sha256": "184abe7cc702e4fb06eb128df0b22865ada31b3371227daa4b6b9fad4685fa5e",
+      "sha256": "7d2a42fb4b85a6200d8436614706afcea38623b8f8f6adc5415ed9f457fb17d1",
       "origin": "phase1/android/app/src/main/res/values/strings.xml",
       "transformations": []
     },
@@ -1306,6 +1320,13 @@
       "transformations": [
         "TEST_ONLY_REBIND_TO_CURRENT_DCV1_CONTRACT"
       ]
+    },
+    {
+      "path": "phase1/android/app/src/test/java/com/byd/dashcast/phase1/AppEntryCapabilityTest.kt",
+      "bytes": 4814,
+      "sha256": "da17cc03bfc5e8a7adee0caf59f6404ea7a4d90ea887ef4e3fc046eb57b1ae3e",
+      "origin": "phase1/android/app/src/test/java/com/byd/dashcast/phase1/AppEntryCapabilityTest.kt",
+      "transformations": []
     },
     {
       "path": "phase1/android/app/src/test/java/com/byd/dashcast/phase1/AppTaskHandoffTest.kt",
@@ -1435,8 +1456,8 @@
     },
     {
       "path": "phase1/android/app/src/test/java/com/byd/dashcast/phase1/IndependentProjectionTest.kt",
-      "bytes": 6732,
-      "sha256": "fdcb185bd1275e6fd763c3659484f653111fbd4b9a53d1bfa553544e96bb1cdc",
+      "bytes": 6716,
+      "sha256": "90841877e833d5c34c5032765200c589a3e738fd7495a74d512d615221721d89",
       "origin": "phase1/android/app/src/test/java/com/byd/dashcast/phase1/IndependentProjectionTest.kt",
       "transformations": []
     },
@@ -1568,8 +1589,8 @@
     },
     {
       "path": "phase1/android/app/src/test/java/com/byd/dashcast/phase1/ProductCatalogTest.kt",
-      "bytes": 1158,
-      "sha256": "750ca3dd653896fa2c66c4c47f65f70826e07e05dc91ae0905fc2be1af964d81",
+      "bytes": 1211,
+      "sha256": "f6fff0ba9f0c05cd823023684b8993235ce31e584986d1951b18ccf03b47f929",
       "origin": "phase1/android/app/src/test/java/com/byd/dashcast/phase1/ProductCatalogTest.kt",
       "transformations": []
     },
