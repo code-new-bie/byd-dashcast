@@ -80,6 +80,13 @@ class ProductCompositionSessionTest {
         assertThrows(IOException::class.java) { p.session().prepare(p) }
         assertEquals(listOf(0), p.operations)
     }
+    @Test fun frozenRwv3AndRwv4AreNotAcceptedWithWiderRwv5Content() {
+        for (old in listOf(0x52575633, 0x52575634)) {
+            val p = Peer().apply { capability = old }
+            assertThrows(IOException::class.java) { p.session().prepare(p) }
+            assertEquals(listOf(0), p.operations)
+        }
+    }
     @Test fun oldUnlimitedFirmwareWithoutLayoutFailsBeforeStartingLease() {
         val p = Peer().apply { navigationOverride = 0 }
         assertThrows(IOException::class.java) { p.session().prepare(p) }

@@ -1,8 +1,8 @@
 package com.byd.dashcast.phase1
 
 /** Physical content bounds, not the encoded canvas or the feathered outer window.
- * Geometry is paired with RWV4 instrument firmware. Source UI is laid out at the
- * inner aspect before resampling; only edge pixels bleed beneath native feathers.
+ * Geometry is paired with RWV5 instrument firmware. Source UI is laid out at the
+ * inner aspect before resampling. Only low-frequency color fills native feathers.
  * @author Codex
  * @date 2026/10/23
  */
@@ -25,8 +25,11 @@ internal data class ContentViewport(
         (720 - encodedTop - encodedHeight) / 720f, encodedWidth / 1920f, encodedHeight / 720f)
 
     companion object {
-        @JvmStatic fun full(): ContentViewport = ContentViewport(1728, 384, 96, 144, 1728, 384)
+        @JvmStatic fun full(): ContentViewport = ContentViewport(1536, 384, 192, 144, 1536, 384)
         @JvmStatic fun center(): ContentViewport = ContentViewport(1200, 640, 60, 40, 1800, 640)
+
+        const val PADDING_WIDTH = 32
+        const val PADDING_HEIGHT = 16
 
         // The SurfaceTexture matrix is applied AFTER effective-viewport mapping.
         // Applying it first would move/flip the inset when producers rotate buffers.
@@ -34,13 +37,21 @@ internal data class ContentViewport(
             "void main(){gl_Position=position;tex=uv;}"
         const val FRAGMENT = "#extension GL_OES_EGL_image_external : require\n" +
             "precision mediump float;varying vec2 tex;uniform samplerExternalOES image;" +
-            "uniform mat4 transform;uniform vec4 content;" +
+            "uniform mat4 transform;uniform vec4 content;uniform sampler2D padding;" +
             "vec4 sampleAt(vec2 p){return texture2D(image,(transform*vec4(p,0.0,1.0)).xy);}" +
-            "void main(){vec2 q=(tex-content.xy)/content.zw;vec2 p=clamp(q,0.0,1.0);" +
-            "vec4 sharp=sampleAt(p);float d=max(max(-q.x,q.x-1.0),max(-q.y,q.y-1.0));" +
-            "if(d>0.0){vec2 b=clamp(p,vec2(0.04),vec2(0.96));" +
-            "vec4 soft=0.25*(sampleAt(b+vec2(0.02,0.02))+sampleAt(b+vec2(-0.02,0.02))+" +
-            "sampleAt(b+vec2(0.02,-0.02))+sampleAt(b+vec2(-0.02,-0.02)));" +
-            "gl_FragColor=mix(sharp,soft,smoothstep(0.0,0.012,d));}else{gl_FragColor=sharp;}}"
+            "void main(){vec2 q=(tex-content.xy)/content.zw;" +
+            "if(q.x<0.0||q.x>1.0||q.y<0.0||q.y>1.0){" +
+            "gl_FragColor=texture2D(padding,clamp(q,0.0,1.0));}" +
+            "else{gl_FragColor=sampleAt(q);}}"
+
+        // Integrate once into 32x16, rather than many OES reads per padding pixel.
+        // No high-resolution glyph is clamped and extruded through the feather.
+        // This pass applies the producer transform; padding lookup must not repeat it.
+        const val PADDING_FRAGMENT = "#extension GL_OES_EGL_image_external : require\n" +
+            "precision mediump float;varying vec2 tex;uniform samplerExternalOES image;uniform mat4 transform;" +
+            "void main(){vec4 sum=vec4(0.0);" +
+            "for(int x=0;x<8;x++){for(int y=0;y<8;y++){" +
+            "vec2 p=clamp(tex+(vec2(float(x),float(y))-vec2(3.5))/vec2(64.0,32.0),0.0,1.0);" +
+            "sum+=texture2D(image,(transform*vec4(p,0.0,1.0)).xy);}}gl_FragColor=sum/64.0;}"
     }
 }

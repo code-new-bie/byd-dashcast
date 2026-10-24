@@ -1,10 +1,10 @@
 {
-  "snapshot_version": "1.7.3",
+  "snapshot_version": "1.8.0",
   "snapshot_date": "2026-10-24",
   "ncm_original_author_confirmed": true,
   "project_license": "NOT_SELECTED_BY_OWNER",
   "original_runtime_java_semantics_changed": true,
-  "runtime_changes": "Installed native-entry capabilities instead of a fixed version, launcher alias compared to primary, conservative selected-task affinity scope instead of package-wide rejection; capability UI and bounded version/entry diagnostics; retain guarded cleanup recovery, owned tasks and RWV4; instrument/MCU/OS/USB roles/media unchanged; no primary mirror/user-data fallback",
+  "runtime_changes": "Busy FRAME and idle share serialized HMI lease maintenance; two-pass low-frequency padding without sharp glyph extrusion; wider RWV5 native side feather with matched 1536x384 effective source; preserve compact mileage, guarded cleanup, task ownership, MCU/reference OS/Boot/USB/media; no universal singleTask or primary-mirror/user-data fallback",
   "excluded_test_files": [
     "AdbVideoOfflineCheck.java",
     "ReferenceRenderEvidence.java",
@@ -62,8 +62,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "bytes": 24306,
-      "sha256": "8ba528a67b435406c5703e628b48d6b7eef642710a79f0eea311e80bdb741543",
+      "bytes": 24997,
+      "sha256": "f25ce402209451fa4c0a392d2a089dbfa236a9732d6d5ad4fe0fc14ac03ec56d",
       "origin": "publication/template/CHANGELOG.md",
       "transformations": []
     },
@@ -83,8 +83,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 4646,
-      "sha256": "20ac4aea5c1f9b04c7819fc1beb7f1c076076d621b19cd1b8f057520d72212be",
+      "bytes": 4611,
+      "sha256": "e54191cab33099f748c17e3c521d496fe37290eb4669125f064dd811f3971ca1",
       "origin": "publication/template/README.md",
       "transformations": []
     },
@@ -212,6 +212,13 @@
       "transformations": []
     },
     {
+      "path": "analysis/soft_edge_layout.py",
+      "bytes": 5783,
+      "sha256": "d664f1fd17fdfa887ab9d8699b74eb83bf05ebbbf542ec5fb5ebea97e0bdf1e3",
+      "origin": "analysis/soft_edge_layout.py",
+      "transformations": []
+    },
+    {
       "path": "analysis/sv_container.py",
       "bytes": 3108,
       "sha256": "ce14a8edb6019cf003b6b5898653951d5f3a326f3ccf47eb9edd4291bb3aeecb",
@@ -236,15 +243,15 @@
     },
     {
       "path": "docs/ARCHITECTURE.md",
-      "bytes": 11582,
-      "sha256": "19c581c146a53a8c8a0d35e4a0eb1cf456434a32fda0baa8dd535cbbe9591352",
+      "bytes": 11965,
+      "sha256": "9ca55c2d1b2560295f4981f103e786f59b9a20ede79f7ab9794b334f1e169b58",
       "origin": "publication/template/docs/ARCHITECTURE.md",
       "transformations": []
     },
     {
       "path": "docs/BUILD.md",
-      "bytes": 10926,
-      "sha256": "dc5531cc9e88c04cf5efe71046d600c0217b85b2cfe0ad4a51d1fc66c3b4c4bb",
+      "bytes": 11452,
+      "sha256": "1a57339a21d56b4fc9369e927687b8f52dfc2980ed755bb375742243574fe660",
       "origin": "publication/template/docs/BUILD.md",
       "transformations": []
     },
@@ -337,6 +344,13 @@
       "bytes": 3727,
       "sha256": "aa08709f985db4831c046ba60e77013e8ac3e0a01711879f8441039230629605",
       "origin": "publication/template/docs/PRODUCT_1.7.3.md",
+      "transformations": []
+    },
+    {
+      "path": "docs/PRODUCT_1.8.0.md",
+      "bytes": 4424,
+      "sha256": "ef26c5d6699e57c59a8db3fea848e6108a1640cf2c5a04723c76db9140e4b6dc",
+      "origin": "publication/template/docs/PRODUCT_1.8.0.md",
       "transformations": []
     },
     {
@@ -474,15 +488,15 @@
     },
     {
       "path": "docs/USAGE.md",
-      "bytes": 13212,
-      "sha256": "6d59db3ab95a6b1a1cdb3e5254814cb43d8df764c09c145af91d033b78628423",
+      "bytes": 13503,
+      "sha256": "c51501cd6ed1d34735aa624e069837dcf0c6f723649e3ccd66fb917c1da902af",
       "origin": "publication/template/docs/USAGE.md",
       "transformations": []
     },
     {
       "path": "docs/VALIDATION.md",
-      "bytes": 13506,
-      "sha256": "bbb0d14afd6821d6c76104e600109543bfc330460bbd5f37032fe25552a70f2e",
+      "bytes": 14169,
+      "sha256": "e17f5fa65bff9ecabba2e4fc606c317d1d5acd3e94eda339e34dbdd9944b371b",
       "origin": "publication/template/docs/VALIDATION.md",
       "transformations": []
     },
@@ -496,7 +510,7 @@
     {
       "path": "phase1/android/app/build.gradle",
       "bytes": 1106,
-      "sha256": "9ed774ef917134baf5d39c0fb65e571c3d62fdb23182d2438673cdc4217edddd",
+      "sha256": "d4fdf78e18ffb0261013d3c20c55f858a466fc82e1d2d4b3331bb69dc171e319",
       "origin": "phase1/android/app/build.gradle",
       "transformations": []
     },
@@ -663,8 +677,8 @@
     },
     {
       "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/CenterFrameRenderer.kt",
-      "bytes": 10475,
-      "sha256": "5bc7be88f524f53cda3aa60546d411773dfe63621bcca5fc1b0b2dedb7553ea6",
+      "bytes": 14433,
+      "sha256": "e44a06c8e7a0071bf18f3b79310c3cf1e451d9080dd59263a419a64c4ee8fa40",
       "origin": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/CenterFrameRenderer.kt",
       "transformations": []
     },
@@ -684,8 +698,8 @@
     },
     {
       "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/ContentViewport.kt",
-      "bytes": 2411,
-      "sha256": "14a6d7c232e71a596b3e7d3c62ce4ffdb542532ed1ac527fa6f0589749c3802a",
+      "bytes": 2997,
+      "sha256": "10daf067284fb99b986d400c6dc6f936a6dc14541f52c91e3a2870b47fe5e444",
       "origin": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/ContentViewport.kt",
       "transformations": []
     },
@@ -894,8 +908,8 @@
     },
     {
       "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/NoAuthVideoClient.java",
-      "bytes": 14924,
-      "sha256": "fda600ead7407cccb4c96d3e681405ce59e6f372f4f4ca8cc14ba694efdeed20",
+      "bytes": 15144,
+      "sha256": "d2831e0edd99897081497a23f81241d553f96a7e2c41bd2e8dcf64c05b20d9d1",
       "origin": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/NoAuthVideoClient.java",
       "transformations": []
     },
@@ -922,8 +936,8 @@
     },
     {
       "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/ProductActivity.kt",
-      "bytes": 17624,
-      "sha256": "c1985eb4d4cd863dc4ba9148aff8678c15e3287f7b306767bb42c140467c4c66",
+      "bytes": 17714,
+      "sha256": "d3ed1ab33267a32671b9889cd82ff88ad9395005f34b8ba15086f71cfb55707d",
       "origin": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/ProductActivity.kt",
       "transformations": []
     },
@@ -936,8 +950,8 @@
     },
     {
       "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/ProductCompositionSession.kt",
-      "bytes": 9853,
-      "sha256": "3c57f9a23416b44be2288dfa74dd168d9a58518ea1ab4a0bc7b48fa7b21d1a6e",
+      "bytes": 9856,
+      "sha256": "81cf0b55aaa1c04de7e1d504945dccb3428e1c2cac7f8375dabd69176d5fc230",
       "origin": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/ProductCompositionSession.kt",
       "transformations": []
     },
@@ -964,8 +978,8 @@
     },
     {
       "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/ProjectionDisplayProfile.kt",
-      "bytes": 615,
-      "sha256": "bac962fa8aad0db5849b0cf5cae413a54ff4d83d68681f9724b9a1848e32c526",
+      "bytes": 681,
+      "sha256": "69513284bde079abf2be82883f86477fe8a1582a5bdda982ddac335f38f191a3",
       "origin": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/ProjectionDisplayProfile.kt",
       "transformations": []
     },
@@ -1273,7 +1287,7 @@
     {
       "path": "phase1/android/app/src/main/res/values/strings.xml",
       "bytes": 2531,
-      "sha256": "7d2a42fb4b85a6200d8436614706afcea38623b8f8f6adc5415ed9f457fb17d1",
+      "sha256": "426b21208b750e250644723f161c17844611b97149ff4c4af1e7295e497193b5",
       "origin": "phase1/android/app/src/main/res/values/strings.xml",
       "transformations": []
     },
@@ -1400,8 +1414,8 @@
     },
     {
       "path": "phase1/android/app/src/test/java/com/byd/dashcast/phase1/ContentViewportTest.kt",
-      "bytes": 2429,
-      "sha256": "381e01b62f6f11433cd8758213b0e80828ad01511e8c7212de8afcdf3dff8b69",
+      "bytes": 2830,
+      "sha256": "f4f18c21efd09be9b83f33f72a3fc3c1e381c959aad4bb83b57bbd004d03391c",
       "origin": "phase1/android/app/src/test/java/com/byd/dashcast/phase1/ContentViewportTest.kt",
       "transformations": []
     },
@@ -1596,15 +1610,22 @@
     },
     {
       "path": "phase1/android/app/src/test/java/com/byd/dashcast/phase1/ProductCompositionSessionTest.kt",
-      "bytes": 12156,
-      "sha256": "738d1ac4d2499ab95196304596d848e6ba2bf43295a1b58a66eea06f491cc1f5",
+      "bytes": 12477,
+      "sha256": "dc3e4b9061e8b7717be0b47815dfbee68f28cded57022fdf40d1c043e032cda3",
       "origin": "phase1/android/app/src/test/java/com/byd/dashcast/phase1/ProductCompositionSessionTest.kt",
       "transformations": []
     },
     {
+      "path": "phase1/android/app/src/test/java/com/byd/dashcast/phase1/ProductStreamMaintenanceTest.java",
+      "bytes": 15931,
+      "sha256": "ce878d5a4b9df83dd70bc98b851bf680ba528e65881b011981a2bee57f9a7d89",
+      "origin": "phase1/android/app/src/test/java/com/byd/dashcast/phase1/ProductStreamMaintenanceTest.java",
+      "transformations": []
+    },
+    {
       "path": "phase1/android/app/src/test/java/com/byd/dashcast/phase1/ProjectionDisplayProfileTest.kt",
-      "bytes": 1562,
-      "sha256": "2e323f45a37383b34930ce879017ba1281d013a868a40b23d02668ce2e95b432",
+      "bytes": 1636,
+      "sha256": "40b69018a505b5e80f6e043ad83c652a281b48c9132276e665bcfa52c8fc3f76",
       "origin": "phase1/android/app/src/test/java/com/byd/dashcast/phase1/ProjectionDisplayProfileTest.kt",
       "transformations": []
     },
@@ -2103,6 +2124,13 @@
       "transformations": []
     },
     {
+      "path": "tools/build_soft_edge_components.py",
+      "bytes": 1787,
+      "sha256": "84b86740b953a3a25c90530c4b1c4b9d2a7528c81208742c5c035841908f724a",
+      "origin": "publication/template/tools/build_soft_edge_components.py",
+      "transformations": []
+    },
+    {
       "path": "tools/build_unlimited_components.py",
       "bytes": 2455,
       "sha256": "cf8275c288b77a60926b51eeaa8b4f5d22344014c377357bc3b9ac70951526d6",
@@ -2198,6 +2226,13 @@
       "bytes": 6996,
       "sha256": "42db774d9550d7c1a8add12d41e3b0d7d2aef3f8bb7bb50089d8f3904a123ae1",
       "origin": "publication/template/tools/tests/test_public_tools.py",
+      "transformations": []
+    },
+    {
+      "path": "tools/tests/test_soft_edge_cli.py",
+      "bytes": 2118,
+      "sha256": "89ad792a056320184c1608d592677272e4436dfea75946b36f17d52e57ad6a4c",
+      "origin": "publication/template/tools/tests/test_soft_edge_cli.py",
       "transformations": []
     },
     {

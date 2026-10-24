@@ -221,7 +221,7 @@ class ProductActivity : Activity() {
 
     private fun firstRun() {
         AlertDialog.Builder(this).setTitle("首次连接 Dashcast")
-            .setMessage("1. 仪表使用配套 RWV4 App（1.7.2 仪表包），MCU 和参考 OS 不改。\n2. 仪表与车机连接 USB 数据线，可保持连接切模式。\n3. 首次开始时允许 ADB 调试和 USB 访问。\n\n全屏或大中心窗可在设置中选择，停止恢复原厂主题。驾驶时不要操作设置或观看视频；若任何原生信息异常，立即停止投屏。本版本不宣称道路安全认证。")
+            .setMessage("1. 仪表使用配套 RWV5 App（1.8.0 仪表包），保留原 MCU 和参考 OS。\n2. 仪表与车机连接 USB 数据线，可保持连接切模式。\n3. 首次开始时允许 ADB 调试和 USB 访问。\n\n全屏或大中心窗可在设置中选择，停止恢复原厂主题。应用需有独立入口或多实例能力，真正单任务应用不能强行复制。驾驶时不要操作设置或观看视频；若任何原生信息异常，立即停止投屏。本版本不宣称道路安全认证。")
             .setPositiveButton("已安装配套仪表包，开始设置") { _, _ -> settings.setupComplete = true; control.connect(); updateStatus() }
             .setNegativeButton("稍后", null).show()
     }

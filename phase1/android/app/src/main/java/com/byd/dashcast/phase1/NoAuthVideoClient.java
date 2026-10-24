@@ -169,9 +169,11 @@ final class NoAuthVideoClient implements Closeable {
         long wirePts = unlimited ? relativeMillis & ContinuousSessionPolicy.UINT32_MASK : relativeMillis;
         byte[] packet = unlimited ? NoAuthVideoProtocol.frameUnlimited(annexB, sequence, wirePts, acknowledged == 0)
                 : NoAuthVideoProtocol.frame(annexB, sequence, wirePts, continuous);
-        if (nanoTime.getAsLong() - lastHeartbeat >= 1_000_000_000L) {
-            heartbeat();
-        }
+        // ADB pulses before each read, but cannot pulse INSIDE a batched stdout
+        // callback while it synchronously paces/sends many pictures. A legal
+        // <=4096-byte WRTE of tiny AUs can occupy seconds under ACK backpressure.
+        // Service media and HMI on this same ordered owner before another FRAME.
+        maintain();
         long ackStart = nanoTime.getAsLong();
         evidence = exchange(packet, NoAuthVideoProtocol.FRAME, sequence, wirePts);
         long ackNanos = Math.max(0, nanoTime.getAsLong() - ackStart);
@@ -229,7 +231,7 @@ final class NoAuthVideoClient implements Closeable {
         throw new IOException("WINDOW_UNCONFIRMED: receiver did not report its visible video window");
     }
 
-    /** Serialized on the FRAME/STOP owner; an idle picture source is not a dead USB session. */
+    /** Called by both FRAME and idle, serialized on the FRAME/STOP owner. */
     void maintain() throws IOException {
         if (!started || closed || rejected) {
             return;

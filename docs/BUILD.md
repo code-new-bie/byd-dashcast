@@ -1,6 +1,10 @@
 # 构建与复现
 
-## 1.7.3 APK入口修复（当前）
+## 1.8.0 RWV5持续维护和双端软边（当前）
+
+APK code47，构建命令不变。自备精确原始HMI/KZB/TOC及1.2 receiver，运行`python tools/build_soft_edge_components.py --hmi ORIGINAL_HMI --kzb ORIGINAL_KZB --toc ORIGINAL_TOC --receiver RECEIVER_120 --output NEW_DIRECTORY`。三个组件必须成套，输出不是可刷ZIP；不改原MCU/参考OS。需要更新APK和仪表App，不能用1.7.2/RWV4假装新版渐变生效。[范围/操作](PRODUCT_1.8.0.md)。以下“当前”为各历史版本状态。
+
+## 1.7.3 APK入口修复（当时）
 
 APK code46，原工具链/命令不变；独立构建使用自己的签名。仪表全部原字节沿用1.7.2，无新增组件补丁；已匹配者只更新APK，不重新刷MCU/OS。后续各“当前”保留历史状态。[能力范围/使用](PRODUCT_1.7.3.md)。
 

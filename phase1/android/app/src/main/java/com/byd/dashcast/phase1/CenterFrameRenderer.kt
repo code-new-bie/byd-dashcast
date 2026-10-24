@@ -29,6 +29,14 @@ internal class CenterFrameRenderer @JvmOverloads constructor(
     private var window = EGL14.EGL_NO_SURFACE
     private var texture = 0
     private var program = 0
+    private var paddingTexture = 0
+    private var paddingFramebuffer = 0
+    private var paddingProgram = 0
+    private var paddingPosition = -1
+    private var paddingUv = -1
+    private var paddingImage = -1
+    private var paddingTransform = -1
+    private var paddingLocation = -1
     private var positionLocation = -1
     private var uvLocation = -1
     private var imageLocation = -1
@@ -79,29 +87,43 @@ internal class CenterFrameRenderer @JvmOverloads constructor(
         GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR)
         GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE)
         GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE)
-        program = GLES20.glCreateProgram()
-        val vertex = shader(GLES20.GL_VERTEX_SHADER, ContentViewport.VERTEX)
-        var fragment = 0
-        try {
-            fragment = shader(GLES20.GL_FRAGMENT_SHADER, ContentViewport.FRAGMENT)
-            GLES20.glAttachShader(program, vertex)
-            GLES20.glAttachShader(program, fragment)
-            GLES20.glLinkProgram(program)
-            val linked = IntArray(1)
-            GLES20.glGetProgramiv(program, GLES20.GL_LINK_STATUS, linked, 0)
-            if (linked[0] != GLES20.GL_TRUE) { throw IOException("CENTER_GL_LINK ${GLES20.glGetProgramInfoLog(program)}") }
-        } finally {
-            GLES20.glDeleteShader(vertex)
-            if (fragment != 0) { GLES20.glDeleteShader(fragment) }
-        }
+        program = linkProgram(ContentViewport.FRAGMENT)
+        paddingProgram = linkProgram(ContentViewport.PADDING_FRAGMENT)
         positionLocation = GLES20.glGetAttribLocation(program, "position")
         uvLocation = GLES20.glGetAttribLocation(program, "uv")
         imageLocation = GLES20.glGetUniformLocation(program, "image")
         transformLocation = GLES20.glGetUniformLocation(program, "transform")
         contentLocation = GLES20.glGetUniformLocation(program, "content")
-        if (listOf(positionLocation, uvLocation, imageLocation, transformLocation, contentLocation).any { it < 0 }) {
+        paddingLocation = GLES20.glGetUniformLocation(program, "padding")
+        paddingPosition = GLES20.glGetAttribLocation(paddingProgram, "position")
+        paddingUv = GLES20.glGetAttribLocation(paddingProgram, "uv")
+        paddingImage = GLES20.glGetUniformLocation(paddingProgram, "image")
+        paddingTransform = GLES20.glGetUniformLocation(paddingProgram, "transform")
+        if (listOf(positionLocation, uvLocation, imageLocation, transformLocation, contentLocation, paddingLocation,
+                paddingPosition, paddingUv, paddingImage, paddingTransform).any { it < 0 }) {
             throw IOException("CENTER_GL_SHADER_INTERFACE_MISSING")
         }
+        GLES20.glGenTextures(1, names, 0)
+        paddingTexture = names[0]
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, paddingTexture)
+        for (key in intArrayOf(GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_TEXTURE_MAG_FILTER)) {
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, key, GLES20.GL_LINEAR)
+        }
+        for (key in intArrayOf(GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_TEXTURE_WRAP_T)) {
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, key, GLES20.GL_CLAMP_TO_EDGE)
+        }
+        GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA,
+            ContentViewport.PADDING_WIDTH, ContentViewport.PADDING_HEIGHT, 0,
+            GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, null)
+        GLES20.glGenFramebuffers(1, names, 0)
+        paddingFramebuffer = names[0]
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, paddingFramebuffer)
+        GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER, GLES20.GL_COLOR_ATTACHMENT0,
+            GLES20.GL_TEXTURE_2D, paddingTexture, 0)
+        if (GLES20.glCheckFramebufferStatus(GLES20.GL_FRAMEBUFFER) != GLES20.GL_FRAMEBUFFER_COMPLETE) {
+            throw IOException("CENTER_GL_PADDING_FRAMEBUFFER_INCOMPLETE")
+        }
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0)
         val worker = HandlerThread("dashcast-center-frames").apply { start() }
         callbacks = worker
         source = SurfaceTexture(texture).also {
@@ -111,7 +133,7 @@ internal class CenterFrameRenderer @JvmOverloads constructor(
         }
         checkGl("initialize")
         System.err.println("SHELL_CAPTURE_CONTENT_RENDERER viewport=$viewport encoded=1920x720; " +
-            "layout uses effective inner aspect, softened padding only; legacy center=${viewport == null}")
+            "layout uses effective inner aspect, lowpass_padding=32x16x64 no_glyph_extrusion=true; legacy center=${viewport == null}")
     }
 
     fun inputSurface(): Surface = input ?: throw IllegalStateException("CENTER_RENDERER_CLOSED")
@@ -124,24 +146,45 @@ internal class CenterFrameRenderer @JvmOverloads constructor(
         owned.getTransformMatrix(matrix)
         val timestamp = owned.timestamp
         if (timestamp <= lastTimestamp) { return }
+        // A tiny low-pass pass removes legible high-frequency UI from the padding.
+        // Do not sample paddingTexture while it is attached to the draw framebuffer.
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE1)
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0)
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0)
+        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, texture)
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, paddingFramebuffer)
+        GLES20.glViewport(0, 0, ContentViewport.PADDING_WIDTH, ContentViewport.PADDING_HEIGHT)
+        GLES20.glUseProgram(paddingProgram)
+        GLES20.glUniform1i(paddingImage, 0)
+        GLES20.glUniformMatrix4fv(paddingTransform, 1, false, matrix, 0)
+        drawQuad(paddingPosition, paddingUv)
+        checkGl("padding")
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0)
         GLES20.glViewport(0, 0, NoAuthVideoProtocol.WIDTH, NoAuthVideoProtocol.HEIGHT)
         GLES20.glUseProgram(program)
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE1)
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, paddingTexture)
+        GLES20.glUniform1i(paddingLocation, 1)
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
-        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, texture)
         GLES20.glUniform1i(imageLocation, 0)
         GLES20.glUniformMatrix4fv(transformLocation, 1, false, matrix, 0)
         GLES20.glUniform4fv(contentLocation, 1, contentBounds, 0)
-        vertices.position(0)
-        GLES20.glVertexAttribPointer(positionLocation, 2, GLES20.GL_FLOAT, false, 16, vertices)
-        GLES20.glEnableVertexAttribArray(positionLocation)
-        vertices.position(2)
-        GLES20.glVertexAttribPointer(uvLocation, 2, GLES20.GL_FLOAT, false, 16, vertices)
-        GLES20.glEnableVertexAttribArray(uvLocation)
-        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
+        drawQuad(positionLocation, uvLocation)
         checkGl("draw")
         requireEgl(EGLExt.eglPresentationTimeANDROID(display, window, timestamp), "timestamp")
         requireEgl(EGL14.eglSwapBuffers(display, window), "swap")
         lastTimestamp = timestamp
+    }
+
+    private fun drawQuad(position: Int, uv: Int) {
+        vertices.position(0)
+        GLES20.glVertexAttribPointer(position, 2, GLES20.GL_FLOAT, false, 16, vertices)
+        GLES20.glEnableVertexAttribArray(position)
+        vertices.position(2)
+        GLES20.glVertexAttribPointer(uv, 2, GLES20.GL_FLOAT, false, 16, vertices)
+        GLES20.glEnableVertexAttribArray(uv)
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
     }
 
     override fun close() {
@@ -167,7 +210,10 @@ internal class CenterFrameRenderer @JvmOverloads constructor(
                 if (context != EGL14.EGL_NO_CONTEXT && window != EGL14.EGL_NO_SURFACE) {
                     requireEgl(EGL14.eglMakeCurrent(display, window, window, context), "cleanup-current")
                     if (program != 0) { GLES20.glDeleteProgram(program) }
+                    if (paddingProgram != 0) { GLES20.glDeleteProgram(paddingProgram) }
                     if (texture != 0) { GLES20.glDeleteTextures(1, intArrayOf(texture), 0) }
+                    if (paddingTexture != 0) { GLES20.glDeleteTextures(1, intArrayOf(paddingTexture), 0) }
+                    if (paddingFramebuffer != 0) { GLES20.glDeleteFramebuffers(1, intArrayOf(paddingFramebuffer), 0) }
                 }
             }
             release { requireEgl(EGL14.eglMakeCurrent(display, EGL14.EGL_NO_SURFACE, EGL14.EGL_NO_SURFACE,
@@ -178,7 +224,7 @@ internal class CenterFrameRenderer @JvmOverloads constructor(
             release { requireEgl(EGL14.eglTerminate(display), "cleanup-display") }
         }
         window = EGL14.EGL_NO_SURFACE; context = EGL14.EGL_NO_CONTEXT; display = EGL14.EGL_NO_DISPLAY
-        program = 0; texture = 0
+        program = 0; texture = 0; paddingProgram = 0; paddingTexture = 0; paddingFramebuffer = 0
         failure?.let { throw it }
     }
 
@@ -203,6 +249,31 @@ internal class CenterFrameRenderer @JvmOverloads constructor(
             throw IOException("CENTER_SHADER_COMPILE $detail")
         }
         return shader
+    }
+
+    private fun linkProgram(fragmentSource: String): Int {
+        val linkedProgram = GLES20.glCreateProgram()
+        var vertex = 0
+        var fragment = 0
+        try {
+            vertex = shader(GLES20.GL_VERTEX_SHADER, ContentViewport.VERTEX)
+            fragment = shader(GLES20.GL_FRAGMENT_SHADER, fragmentSource)
+            GLES20.glAttachShader(linkedProgram, vertex)
+            GLES20.glAttachShader(linkedProgram, fragment)
+            GLES20.glLinkProgram(linkedProgram)
+            val linked = IntArray(1)
+            GLES20.glGetProgramiv(linkedProgram, GLES20.GL_LINK_STATUS, linked, 0)
+            if (linked[0] != GLES20.GL_TRUE) {
+                throw IOException("CENTER_GL_LINK ${GLES20.glGetProgramInfoLog(linkedProgram)}")
+            }
+            return linkedProgram
+        } catch (failure: Exception) {
+            GLES20.glDeleteProgram(linkedProgram)
+            throw failure
+        } finally {
+            if (vertex != 0) { GLES20.glDeleteShader(vertex) }
+            if (fragment != 0) { GLES20.glDeleteShader(fragment) }
+        }
     }
 
     companion object {

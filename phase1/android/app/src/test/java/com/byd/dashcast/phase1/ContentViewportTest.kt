@@ -6,10 +6,16 @@ import org.junit.Test
 class ContentViewportTest {
     @Test fun fullExcludesOpaqueInformationCoresAndFeathersFromTheSourceLayout() {
         val p = ContentViewport.full()
-        assertEquals(4.5, p.sourceWidth.toDouble() / p.sourceHeight, 0.0)
-        assertEquals(4.5, p.encodedWidth.toDouble() / p.encodedHeight, 0.0)
-        assertArrayEquals(floatArrayOf(.05f, 192f / 720, .9f, 384f / 720), p.normalized(), .00001f)
+        assertEquals(4.0, p.sourceWidth.toDouble() / p.sourceHeight, 0.0)
+        assertEquals(4.0, p.encodedWidth.toDouble() / p.encodedHeight, 0.0)
+        assertArrayEquals(floatArrayOf(.1f, 192f / 720, .8f, 384f / 720), p.normalized(), .00001f)
         assertEquals(528, p.encodedTop+p.encodedHeight)
+    }
+    @Test fun paddingPassHasBoundedCostAndNeverSamplesSharpContentOutsideInnerBounds() {
+        assertEquals(512, ContentViewport.PADDING_WIDTH * ContentViewport.PADDING_HEIGHT)
+        assertFalse(ContentViewport.FRAGMENT.contains("mix(sharp"))
+        assertTrue(ContentViewport.FRAGMENT.contains("texture2D(padding"))
+        assertTrue(ContentViewport.PADDING_FRAGMENT.contains("sum/64.0"))
     }
     @Test fun centerInnerAspectIncludesBothFeatherMarginsAndWindowResampling() {
         val p = ContentViewport.center()
