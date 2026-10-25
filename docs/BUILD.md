@@ -1,5 +1,15 @@
 # 构建与复现
 
+## 1.11.0 RWV7曲边与场景（当前）
+
+APK code50，原JDK21/SDK35/AGP9.3工具链保持。操作者自备精确原始HMI/主KZB/3dscreen.kzb/TOC与1.2 receiver（不是已经打补丁的成品），安装requirements-native.txt，运行：
+
+```bash
+python tools/build_curved_scene_components.py --hmi ORIGINAL_HMI --kzb ORIGINAL_KZB --scene ORIGINAL_3DSCREEN_KZB --toc ORIGINAL_TOC --receiver RECEIVER_120 --output NEW_DIRECTORY
+```
+
+输出四个组件和审计，不是可刷FULL；输入哈希/路径或输出已存在时拒绝。不改MCU/参考OS/Boot，仓库不含原件/私钥。[升级及边界](PRODUCT_1.11.0.md)。以下“当前”均是历史写作状态。
+
 ## 1.10.0 RWV6持续输出与轮廓（当前）
 
 APK code49，Android构建命令/工具链保持。自备精确原始HMI/KZB/TOC及1.2 receiver，安装requirements-native.txt（新增Pillow用于确定性生成原厂轮廓PNG），运行`python tools/build_contour_components.py --hmi ORIGINAL_HMI --kzb ORIGINAL_KZB --toc ORIGINAL_TOC --receiver RECEIVER_120 --output NEW_DIRECTORY`。输出三组件不是可刷ZIP；需要匹配APK/仪表App，MCU/OS/Boot不变。原始mask/字体/数据/警告资源不替换，不上传原件或私钥。[升级/测试](PRODUCT_1.10.0.md)。以下“当前”保留历史。

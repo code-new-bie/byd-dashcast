@@ -4,12 +4,15 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class ContentViewportTest {
-    @Test fun fullExcludesOpaqueInformationCoresAndFeathersFromTheSourceLayout() {
+    @Test fun fullCarrierIsNotMistakenForTheCurvedSafeRectangle() {
         val p = ContentViewport.full()
-        assertEquals(1408.0 / 368, p.sourceWidth.toDouble() / p.sourceHeight, 0.0)
-        assertEquals(1408.0 / 368, p.encodedWidth.toDouble() / p.encodedHeight, 0.0)
-        assertArrayEquals(floatArrayOf(256f/1920, 208f / 720, 1408f/1920, 368f / 720), p.normalized(), .00001f)
-        assertEquals(512, p.encodedTop+p.encodedHeight)
+        assertEquals(1792.0 / 432, p.sourceWidth.toDouble() / p.sourceHeight, 0.0)
+        assertEquals(1792.0 / 432, p.encodedWidth.toDouble() / p.encodedHeight, 0.0)
+        assertArrayEquals(floatArrayOf(64f/1920, 176f/720, 1792f/1920, 432f/720), p.normalized(), .00001f)
+        assertEquals(544, p.encodedTop+p.encodedHeight)
+        assertArrayEquals(intArrayOf(256, 144, 1408, 352), ContentViewport.fullSafeBounds())
+        assertTrue(p.encodedLeft < ContentViewport.fullSafeBounds()[0])
+        assertTrue(p.encodedWidth > ContentViewport.fullSafeBounds()[2])
     }
     @Test fun paddingPassHasBoundedCostAndNeverSamplesSharpContentOutsideInnerBounds() {
         assertEquals(512, ContentViewport.PADDING_WIDTH * ContentViewport.PADDING_HEIGHT)

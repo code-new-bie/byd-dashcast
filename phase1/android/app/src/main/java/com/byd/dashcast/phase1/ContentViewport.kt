@@ -1,8 +1,8 @@
 package com.byd.dashcast.phase1
 
-/** Physical content bounds, not the encoded canvas or the feathered outer window.
- * Geometry is paired with RWV6 instrument firmware. Native source UI uses the
- * inner aspect before resampling. Only low-frequency color fills native feathers.
+/** Rectangular video carrier, not the curved aperture or its conservative UI box.
+ * RWV7 extends sharp video beyond the safe box; the native matte, not this
+ * rectangle, forms the visible curved trapezoid. Source pixels are not warped.
  * @author Codex
  * @date 2026/10/23
  */
@@ -25,7 +25,9 @@ internal data class ContentViewport(
         (720 - encodedTop - encodedHeight) / 720f, encodedWidth / 1920f, encodedHeight / 720f)
 
     companion object {
-        @JvmStatic fun full(): ContentViewport = ContentViewport(1408, 368, 256, 144, 1408, 368)
+        @JvmStatic fun full(): ContentViewport = ContentViewport(1792, 432, 64, 112, 1792, 432)
+        /** Fully clear conservative box inside the curved full-mode aperture. */
+        @JvmStatic fun fullSafeBounds(): IntArray = intArrayOf(256, 144, 1408, 352)
         @JvmStatic fun center(): ContentViewport = ContentViewport(1200, 640, 60, 40, 1800, 640)
 
         const val PADDING_WIDTH = 32

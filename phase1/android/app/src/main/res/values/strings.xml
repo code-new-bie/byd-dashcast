@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Dashcast 仪表导航</string>
-    <string name="screen_title">Dashcast 1.10.0 高级工程工具</string>
+    <string name="screen_title">Dashcast 1.11.0 高级工程工具</string>
     <string name="mirror_accessibility_label">Dashcast 投屏应用图标路由</string>
     <string name="mirror_accessibility_description">仅在普通应用投屏期间监听该应用的窗口切换，将原图标引导到同实例操作画面。不读取页面内容、文字或密码；其他应用正常使用。未开启时使用宿主定向检查，可能有更明显闪现。</string>
     <string name="control_initial_status">待连接 ADB；原厂导航中继版本、USB 枚举与视频需分别验证。</string>
