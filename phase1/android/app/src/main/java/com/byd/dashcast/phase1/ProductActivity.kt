@@ -72,7 +72,7 @@ class ProductActivity : Activity() {
         val tabs = row()
         listOf("投屏首页", "应用中心", "投屏设置", "连接诊断").forEachIndexed { index, label ->
             tabs.addView(button(label, index == page) { page = index; build() },
-                LinearLayout.LayoutParams(0, dp(58), 1f).apply { marginEnd = dp(10) })
+                LinearLayout.LayoutParams(0, dp(72), 1f).apply { marginEnd = if (index == 3) 0 else dp(12) })
         }
         root.addView(tabs)
         val scroll = ScrollView(this).apply { isFillViewport = true }
@@ -109,14 +109,14 @@ class ProductActivity : Activity() {
         primary = button("开始应用投屏", true) { selected?.let { start(it) } ?: run { page = 1; build() } }
         actions.addView(primary, LinearLayout.LayoutParams(0, dp(72), 1f).apply { marginEnd = dp(12) })
         actions.addView(button("停止投屏") { control.stop(); updateStatus() }, LinearLayout.LayoutParams(0, dp(72), 1f))
-        body.addView(actions)
+        body.addView(actions, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
         body.addView(button("打开当前操作画面") { MirrorBridge.open(this) })
         val roles = row()
         roles.addView(button("连接仪表模式") { control.switchRole(InstrumentUsbCommand.NCM); updateStatus() },
             LinearLayout.LayoutParams(0, dp(64), 1f).apply { marginEnd = dp(12) })
         roles.addView(button("恢复 U 盘模式") { control.switchRole(InstrumentUsbCommand.HOST); updateStatus() },
             LinearLayout.LayoutParams(0, dp(64), 1f))
-        body.addView(roles)
+        body.addView(roles, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8); bottomMargin = dp(12) })
         body.addView(text("切换模式无需手动拔线：应用先停止投屏并释放连接。驾驶中仅使用导航，不观看娱乐视频；勿在行车中操作应用选择或设置。", 16))
     }
 
@@ -146,10 +146,10 @@ class ProductActivity : Activity() {
                 info.addView(text(app.label, 22, true))
                 info.addView(text(if (app.navigation) "导航应用 · 推荐类别" else "其他应用 · 副屏兼容性由应用决定", 14))
                 info.addView(text(app.capability.summary, 14))
-                item.addView(info, LinearLayout.LayoutParams(0, -2, 1f))
+                item.addView(info, LinearLayout.LayoutParams(0, -2, 1f).apply { marginEnd = dp(16) })
                 item.addView(button(if (app.component in favorites) "已收藏" else "收藏") {
                     settings.toggleFavorite(app.component); show(search.text.toString())
-                }, LinearLayout.LayoutParams(dp(100), dp(60)))
+                }, LinearLayout.LayoutParams(dp(100), dp(64)).apply { marginEnd = dp(12) })
                 item.addView(button(if (!app.capability.allowed) "原因" else if (settings.target == app.component) "已选择" else "选择", true) {
                     if (!app.capability.allowed) {
                         control.recordAppCapability(app)
@@ -160,7 +160,7 @@ class ProductActivity : Activity() {
                         if (settings.target != app.component) { control.changingTarget() }
                         settings.target = app.component; page = 0; build()
                     }
-                }, LinearLayout.LayoutParams(dp(100), dp(60)))
+                }, LinearLayout.LayoutParams(dp(100), dp(64)))
                 container.addView(item)
                 list.addView(container, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) })
             }
@@ -177,9 +177,9 @@ class ProductActivity : Activity() {
         card {
             addView(text("画面与外观", 26, true))
             addView(toggle("导航仪表布局：顶部状态、中央地图、底部数据", settings.underlay) { settings.underlay = it })
-            addView(text("开启：全幅1536×384有效内容区；关闭：768×432外窗、720×384有效内框。四边渐变不算可读空间。沿用配套RWV5仪表；原生信息和告警保留。", 16))
-            addView(toggle("中心裁剪填充画面", settings.crop) { settings.crop = it })
-            addView(text("仪表始终使用固定副屏和为异形屏预留的内容区。原图标不会切换采集源或改变仪表比例；主题和布局设置在下次开始生效。应用自身的副屏适配效果仍取决于应用。", 16))
+            addView(text("开启：全幅1408×368有效内容区；关闭：768×432外窗、720×384有效内框。沿原厂异形轮廓融合，渐变不算可读空间。需配套RWV6仪表 App；原生信息和告警保留。", 16))
+            addView(toggle("仪表中心裁剪填充（可能裁掉边缘提示）", settings.crop) { settings.crop = it })
+            addView(text("普通应用保持车机主屏的逻辑分辨率、比例和密度，操作镜像显示完整原界面；仪表单独按有效区等比适配。裁剪开启时只裁仪表画面，不改变主屏应用比例；关闭可保留完整应用画面。设置在下次开始生效。", 16))
             addView(toggle("日间浅色界面", settings.light) { settings.light = it; build() })
             addView(text("上面的开关只改变 APK 界面。仪表融合底色自动跟随原厂深浅模式；地图配色仍由导航应用自己的昼夜设置决定。", 16))
         }
@@ -188,7 +188,7 @@ class ProductActivity : Activity() {
             addView(text("普通应用：原图标进入当前同实例镜像；触摸和返回操作同步到仪表。回主页或切其他应用不停止投屏。停止后任务保留回车机，原图标恢复原应用。", 17))
             addView(text("建议开启下方无障碍图标路由，只订阅当前投屏应用的窗口事件，不读取页面内容。不开启时宿主定向检查兜底，可能有更长闪现。输入法、多屏兼容性需以车机实际表现为准。", 17))
             addView(button("设置原图标路由（无障碍）") {
-                startActivity(Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                SafeSettingsNavigator.open(this@ProductActivity)
             })
         }
         card {
@@ -230,7 +230,7 @@ class ProductActivity : Activity() {
 
     private fun firstRun() {
         AlertDialog.Builder(this).setTitle("首次连接 Dashcast")
-            .setMessage("1. 仪表沿用配套 RWV5 App（1.8.0 仪表包），不改 MCU 和参考 OS。\n2. USB 数据线可保持连接切模式。\n3. 允许 ADB 调试及 USB 访问；设置中建议开启图标路由无障碍服务。\n\n普通应用投屏后点原图标进入同实例操作画面；定制地图仍开原生主界面。停止保留业务任务并恢复原厂仪表背景。驾驶时不要操作设置或观看视频；原生信息异常立即停止。本版本不宣称道路安全认证。")
+            .setMessage("1. 本版需升级配套 RWV6 仪表 App；不改 MCU 和参考 OS。\n2. USB 数据线可保持连接切模式。\n3. 允许 ADB 调试及 USB 访问；系统有入口时可开启无障碍图标路由，无入口不影响宿主路由。\n\n普通应用投屏后点原图标进入同实例操作画面；定制地图仍开原生主界面。停止保留业务任务并恢复原厂仪表背景。驾驶时不要操作设置或观看视频；原生信息异常立即停止。本版本不宣称道路安全认证。")
             .setPositiveButton("已安装配套仪表包，开始设置") { _, _ -> settings.setupComplete = true; control.connect(); updateStatus() }
             .setNegativeButton("稍后", null).show()
     }
@@ -277,6 +277,9 @@ class ProductActivity : Activity() {
     }
     private fun button(label: String, filled: Boolean = false, action: () -> Unit) = Button(this).apply {
         text = label; textSize = 18f; isAllCaps = false; minHeight = dp(56)
+        // Replacing Material's inset background also removes its visual spacing. Margins
+        // belong outside the drawable; padding only enlarges the joined touch surface.
+        layoutParams = LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8); bottomMargin = dp(8) }
         setTextColor(if (filled) Color.WHITE else textColor)
         background = shape(if (filled) accent else if (light) Color.parseColor("#DEE8F7") else Color.parseColor("#263953"))
         setPadding(dp(18), dp(10), dp(18), dp(10))

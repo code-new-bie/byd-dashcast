@@ -32,6 +32,8 @@ final class RemoteDisplaySession implements RemoteCaptureSession {
     private String component;
     private boolean closed;
     private boolean frameAvailable;
+    private boolean everAvailable;
+    private long sourceEpoch = System.nanoTime();
     private final CaptureSourceFence frameFence = new CaptureSourceFence();
 
     RemoteDisplaySession(Surface surface, ProjectionTarget target) throws Exception {
@@ -118,6 +120,9 @@ final class RemoteDisplaySession implements RemoteCaptureSession {
         return frameAvailable && frameFence.accept(ptsMicros, key, System.nanoTime());
     }
 
+    public boolean renderAllowed() { return frameAvailable; }
+    public long renderSourceEpochNanos() { return sourceEpoch; }
+
     private void checkTask() throws Exception {
         if (closed) { throw new IOException("APP_INDEPENDENT_CAPTURE_CLOSED"); }
         if (!polls.due(System.nanoTime())) { return; }
@@ -126,7 +131,12 @@ final class RemoteDisplaySession implements RemoteCaptureSession {
             throw new IOException("APP_INDEPENDENT_TASK_LOST; original tasks left untouched");
         }
         boolean available = current.top.startsWith(component.substring(0, component.indexOf('/')) + "/");
-        if (available && !frameAvailable) { frameFence.changed(System.nanoTime()); }
+        if (available && !frameAvailable) {
+            long now = System.nanoTime();
+            frameFence.changed(now);
+            if (everAvailable) { sourceEpoch = now; }
+            everAvailable = true;
+        }
         if (!available && frameAvailable) {
             System.err.println("SHELL_CAPTURE_APP_TOP_WAIT task=" + current.id
                     + " display=" + current.display + " user=" + current.user

@@ -11,12 +11,12 @@ internal class MirrorStartupPolicy(private val packageName: String, private val 
     private var since = 0L
     fun observe(tasks: List<AppTaskPolicy.Task>, now: Long): AppTaskPolicy.Task? {
         val candidates = tasks.filter { it.id >= 0 && it.id !in before && it.user == user &&
-            it.display == display && it.root.substringBefore('/') == packageName &&
+            (it.display == display || it.display == 0) && it.root.substringBefore('/') == packageName &&
             it.top.substringBefore('/') == packageName }
         if (candidates.size != 1) { last = null; return null }
         val task = candidates.single()
         if (tasks.count { it.id == task.id } != 1) { last = null; return null }
-        val identity = task.id to task.root
+        val identity = task.id to (task.root + "@" + task.display)
         if (last != identity) { last = identity; since = now; return null }
         return if (now >= since && now - since >= 200_000_000L) task else null
     }

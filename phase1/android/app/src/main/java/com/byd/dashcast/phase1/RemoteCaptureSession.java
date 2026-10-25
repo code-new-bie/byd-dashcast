@@ -6,4 +6,6 @@ import android.media.MediaCodec;
 interface RemoteCaptureSession extends AutoCloseable {
     void update(MediaCodec codec) throws Exception;
     boolean acceptFrame(long ptsMicros, boolean key) throws Exception;
+    default boolean renderAllowed() { return true; }
+    default long renderSourceEpochNanos() { return 0L; }
 }

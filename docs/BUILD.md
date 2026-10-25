@@ -1,5 +1,9 @@
 # 构建与复现
 
+## 1.10.0 RWV6持续输出与轮廓（当前）
+
+APK code49，Android构建命令/工具链保持。自备精确原始HMI/KZB/TOC及1.2 receiver，安装requirements-native.txt（新增Pillow用于确定性生成原厂轮廓PNG），运行`python tools/build_contour_components.py --hmi ORIGINAL_HMI --kzb ORIGINAL_KZB --toc ORIGINAL_TOC --receiver RECEIVER_120 --output NEW_DIRECTORY`。输出三组件不是可刷ZIP；需要匹配APK/仪表App，MCU/OS/Boot不变。原始mask/字体/数据/警告资源不替换，不上传原件或私钥。[升级/测试](PRODUCT_1.10.0.md)。以下“当前”保留历史。
+
 ## 1.9.0 同实例双端和原图标路由（当前）
 
 APK code48；新增Kotlin镜像、定向输入、原图标路由和原生入口表，JDK21/SDK35/AGP9.3内置Kotlin工具链及构建命令保持。仪表沿用1.8.0/RWV5完整包原字节，不新增固件补丁；已匹配者只覆盖APK、保留数据。独立构建使用操作者自己的签名，不能为获得旧签名公开私钥。[交互及边界](MIRROR_PROJECTION.md)。以下“当前”为历史版本写作状态。

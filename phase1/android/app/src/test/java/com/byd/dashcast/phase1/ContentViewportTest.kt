@@ -6,10 +6,10 @@ import org.junit.Test
 class ContentViewportTest {
     @Test fun fullExcludesOpaqueInformationCoresAndFeathersFromTheSourceLayout() {
         val p = ContentViewport.full()
-        assertEquals(4.0, p.sourceWidth.toDouble() / p.sourceHeight, 0.0)
-        assertEquals(4.0, p.encodedWidth.toDouble() / p.encodedHeight, 0.0)
-        assertArrayEquals(floatArrayOf(.1f, 192f / 720, .8f, 384f / 720), p.normalized(), .00001f)
-        assertEquals(528, p.encodedTop+p.encodedHeight)
+        assertEquals(1408.0 / 368, p.sourceWidth.toDouble() / p.sourceHeight, 0.0)
+        assertEquals(1408.0 / 368, p.encodedWidth.toDouble() / p.encodedHeight, 0.0)
+        assertArrayEquals(floatArrayOf(256f/1920, 208f / 720, 1408f/1920, 368f / 720), p.normalized(), .00001f)
+        assertEquals(512, p.encodedTop+p.encodedHeight)
     }
     @Test fun paddingPassHasBoundedCostAndNeverSamplesSharpContentOutsideInnerBounds() {
         assertEquals(512, ContentViewport.PADDING_WIDTH * ContentViewport.PADDING_HEIGHT)

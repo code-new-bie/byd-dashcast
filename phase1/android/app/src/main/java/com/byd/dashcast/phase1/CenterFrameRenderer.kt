@@ -22,7 +22,8 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 internal class CenterFrameRenderer @JvmOverloads constructor(
     output: Surface,
-    private val viewport: ContentViewport? = null
+    private val viewport: ContentViewport? = null,
+    crop: Boolean = false
 ) : AutoCloseable {
     private var display = EGL14.EGL_NO_DISPLAY
     private var context = EGL14.EGL_NO_CONTEXT
@@ -40,18 +41,25 @@ internal class CenterFrameRenderer @JvmOverloads constructor(
     private var paddingUv = -1
     private var paddingImage = -1
     private var paddingTransform = -1
+    private var paddingSourceBounds = -1
     private var paddingLocation = -1
     private var positionLocation = -1
     private var uvLocation = -1
     private var imageLocation = -1
     private var transformLocation = -1
     private var contentLocation = -1
-    private val contentBounds = viewport?.normalized() ?: floatArrayOf(0f, 0f, 1f, 1f)
+    private var sourceBoundsLocation = -1
+    private val mapping = SourceRenderMapping.create(viewport, crop)
+    private val submissions = FrameSubmissionClock()
+    private var sourceUpdates = 0L
+    private var submittedFrames = 0L
+    private var repeatedDraws = 0L
     private var source: SurfaceTexture? = null
     private var input: Surface? = null
     private var callbacks: HandlerThread? = null
     private val pending = AtomicBoolean()
     private var lastTimestamp = -1L
+    private var validProducerBuffer = false
     private val matrix = FloatArray(16)
     private val vertices = ByteBuffer.allocateDirect(16 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer().apply {
         put(floatArrayOf(-1f, -1f, 0f, 0f, 1f, -1f, 1f, 0f, -1f, 1f, 0f, 1f, 1f, 1f, 1f, 1f))
@@ -99,13 +107,15 @@ internal class CenterFrameRenderer @JvmOverloads constructor(
         imageLocation = GLES20.glGetUniformLocation(program, "image")
         transformLocation = GLES20.glGetUniformLocation(program, "transform")
         contentLocation = GLES20.glGetUniformLocation(program, "content")
+        sourceBoundsLocation = GLES20.glGetUniformLocation(program, "sourceBounds")
         paddingLocation = GLES20.glGetUniformLocation(program, "padding")
         paddingPosition = GLES20.glGetAttribLocation(paddingProgram, "position")
         paddingUv = GLES20.glGetAttribLocation(paddingProgram, "uv")
         paddingImage = GLES20.glGetUniformLocation(paddingProgram, "image")
         paddingTransform = GLES20.glGetUniformLocation(paddingProgram, "transform")
-        if (listOf(positionLocation, uvLocation, imageLocation, transformLocation, contentLocation, paddingLocation,
-                paddingPosition, paddingUv, paddingImage, paddingTransform).any { it < 0 }) {
+        paddingSourceBounds = GLES20.glGetUniformLocation(paddingProgram, "sourceBounds")
+        if (listOf(positionLocation, uvLocation, imageLocation, transformLocation, contentLocation, sourceBoundsLocation, paddingLocation,
+                paddingPosition, paddingUv, paddingImage, paddingTransform, paddingSourceBounds).any { it < 0 }) {
             throw IOException("CENTER_GL_SHADER_INTERFACE_MISSING")
         }
         GLES20.glGenTextures(1, names, 0)
@@ -138,12 +148,15 @@ internal class CenterFrameRenderer @JvmOverloads constructor(
         }
         checkGl("initialize")
         System.err.println("SHELL_CAPTURE_CONTENT_RENDERER viewport=$viewport encoded=1920x720; " +
-            "layout uses effective inner aspect, lowpass_padding=32x16x64 no_glyph_extrusion=true; legacy center=${viewport == null}")
+            "separate_source_aspect=true lowpass_padding=32x16x64 no_glyph_extrusion=true; legacy center=${viewport == null}")
     }
 
     fun inputSurface(): Surface = input ?: throw IllegalStateException("CENTER_RENDERER_CLOSED")
 
     fun renderedMirrorLease(): Long = if (mirrorDirty) -1L else mirror?.lease ?: -1L
+
+    fun outputPollTimeoutUs(): Long = if (!validProducerBuffer) 10_000L else
+        minOf(10_000L, maxOf(1L, submissions.delayNanos(System.nanoTime()) / 1000))
 
     /** Called only on the encoder/GL thread. A failed optional consumer never tears down the encoder. */
     fun setMirrorSink(next: MirrorSinkMailbox.Sink) {
@@ -162,16 +175,24 @@ internal class CenterFrameRenderer @JvmOverloads constructor(
     }
 
     @Throws(IOException::class)
-    fun renderIfAvailable() {
-        if (!pending.getAndSet(false)) {
-            if (mirrorDirty && lastTimestamp >= 0) { drawMirror() }
+    @JvmOverloads fun renderIfAvailable(allowed: Boolean = true, minimumSourceTimestampNanos: Long = 0) {
+        if (!allowed) { return }
+        val fresh = pending.getAndSet(false)
+        val owned = source ?: throw IOException("CENTER_RENDERER_CLOSED")
+        if (fresh) {
+            owned.updateTexImage()
+            owned.getTransformMatrix(matrix)
+            val actual = owned.timestamp
+            validProducerBuffer = FrameSubmissionClock.validProducer(actual, lastTimestamp, System.nanoTime())
+            if (validProducerBuffer) { lastTimestamp = actual }
+            sourceUpdates++
+        }
+        val timestamp = System.nanoTime()
+        val sourceReady = validProducerBuffer && FrameSubmissionClock.sourceReady(lastTimestamp, minimumSourceTimestampNanos)
+        if (!submissions.due(timestamp, sourceReady)) {
+            if (mirrorDirty && sourceReady) { drawMirror() }
             return
         }
-        val owned = source ?: throw IOException("CENTER_RENDERER_CLOSED")
-        owned.updateTexImage()
-        owned.getTransformMatrix(matrix)
-        val timestamp = owned.timestamp
-        if (timestamp <= lastTimestamp) { return }
         // A tiny low-pass pass removes legible high-frequency UI from the padding.
         // Do not sample paddingTexture while it is attached to the draw framebuffer.
         GLES20.glActiveTexture(GLES20.GL_TEXTURE1)
@@ -184,6 +205,7 @@ internal class CenterFrameRenderer @JvmOverloads constructor(
         GLES20.glUseProgram(paddingProgram)
         GLES20.glUniform1i(paddingImage, 0)
         GLES20.glUniformMatrix4fv(paddingTransform, 1, false, matrix, 0)
+        GLES20.glUniform4fv(paddingSourceBounds, 1, mapping.source, 0)
         drawQuad(paddingPosition, paddingUv)
         checkGl("padding")
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0)
@@ -195,12 +217,15 @@ internal class CenterFrameRenderer @JvmOverloads constructor(
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
         GLES20.glUniform1i(imageLocation, 0)
         GLES20.glUniformMatrix4fv(transformLocation, 1, false, matrix, 0)
-        GLES20.glUniform4fv(contentLocation, 1, contentBounds, 0)
+        GLES20.glUniform4fv(contentLocation, 1, mapping.content, 0)
+        GLES20.glUniform4fv(sourceBoundsLocation, 1, mapping.source, 0)
         drawQuad(positionLocation, uvLocation)
         checkGl("draw")
         requireEgl(EGLExt.eglPresentationTimeANDROID(display, window, timestamp), "timestamp")
         requireEgl(EGL14.eglSwapBuffers(display, window), "swap")
-        lastTimestamp = timestamp
+        submissions.submitted(timestamp)
+        submittedFrames++
+        if (!fresh) { repeatedDraws++ }
         drawMirror()
     }
 
@@ -221,6 +246,7 @@ internal class CenterFrameRenderer @JvmOverloads constructor(
             GLES20.glUniform1i(imageLocation, 0)
             GLES20.glUniformMatrix4fv(transformLocation, 1, false, matrix, 0)
             GLES20.glUniform4fv(contentLocation, 1, floatArrayOf(0f, 0f, 1f, 1f), 0)
+            GLES20.glUniform4fv(sourceBoundsLocation, 1, floatArrayOf(0f, 0f, 1f, 1f), 0)
             drawQuad(positionLocation, uvLocation)
             checkGl("mirror-draw")
             requireEgl(EGL14.eglSwapBuffers(display, mirrorWindow), "mirror-swap")
@@ -254,6 +280,8 @@ internal class CenterFrameRenderer @JvmOverloads constructor(
     }
 
     override fun close() {
+        System.err.println("SHELL_GL_SUBMISSIONS source_updates=$sourceUpdates submitted=$submittedFrames repeated_draws=$repeatedDraws " +
+            "presentation=actual_monotonic_submit_time encoded_pts_retimed=false source_motion_fps_not_claimed=true")
         var failure: Exception? = null
         fun release(action: () -> Unit) {
             try { action() } catch (error: Exception) {

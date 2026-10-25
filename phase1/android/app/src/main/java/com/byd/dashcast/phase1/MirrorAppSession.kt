@@ -10,8 +10,9 @@ import java.io.IOException
  * @author Codex
  * @date 2026/10/25
  */
-internal class MirrorAppSession(surface: Surface, entry: SingleAppEntry.Entry, width: Int, height: Int,
-    ticket: String, private val renderer: CenterFrameRenderer) : RemoteCaptureSession {
+internal class MirrorAppSession @JvmOverloads constructor(surface: Surface, entry: SingleAppEntry.Entry, width: Int, height: Int,
+    ticket: String, private val renderer: CenterFrameRenderer,
+    density: Int = ProjectionDisplayProfile.densityDpi(width, height)) : RemoteCaptureSession {
     private val context = RemoteDisplaySession.shellContext()
     private val access = DuplexTaskAccess()
     private val exact = AndroidTaskAccess()
@@ -27,6 +28,8 @@ internal class MirrorAppSession(surface: Surface, entry: SingleAppEntry.Entry, w
     private var closed = false
     private var available = false
     private var wasAvailable = false
+    private var everAvailable = false
+    private var sourceEpoch = System.nanoTime()
     private var missingSince = 0L
     private var lastRoute = 0L
     private val polls = TaskPollSchedule()
@@ -36,7 +39,7 @@ internal class MirrorAppSession(surface: Surface, entry: SingleAppEntry.Entry, w
         try {
             // PUBLIC | PRESENTATION | OWN_CONTENT_ONLY | SUPPORTS_TOUCH. No AUTO_MIRROR or DESTROY.
             display = RemoteDisplaySession.createVirtualDisplay(context, surface, width, height,
-                ProjectionDisplayProfile.densityDpi(width, height), 1 or 2 or 8 or 64)
+                density, 1 or 2 or 8 or 64)
             displayId = display?.display?.displayId ?: -1
             if (displayId <= 0) { throw IOException("MIRROR_DISPLAY_MISSING") }
             val owner = MirrorTaskPolicy(entry.packageName, user, displayId, before.map { it.id }.toSet())
@@ -57,7 +60,17 @@ internal class MirrorAppSession(surface: Surface, entry: SingleAppEntry.Entry, w
             while (System.nanoTime() < deadline) {
                 val observed = access.tasks()
                 task = if (owner.taskId >= 0) owner.find(observed) else startup.observe(observed, System.nanoTime())
-                    ?.also { owner.adopt(it) }
+                    ?.also {
+                        // A forwarding launcher may finish and create its business task on display 0.
+                        // Only a new unique, settled same-user/package successor can be adopted here.
+                        owner.adopt(it)
+                        if (it.display == 0) {
+                            originalStack = it.stack
+                            access.host(it, displayId, entry.packageName, user)
+                            System.err.println("SHELL_MIRROR_COLD_FORWARD_HOSTED task=${it.id} user=$user; exact_new_task=true")
+                        }
+                    }
+                if (task?.display == 0) { task = owner.find(access.tasks()) }
                 if (task != null && task.display == displayId) { break }
                 Thread.sleep(40)
             }
@@ -105,7 +118,8 @@ internal class MirrorAppSession(surface: Surface, entry: SingleAppEntry.Entry, w
                 it.top.substringBefore('/') == owner.packageName }
             if (task != null && task.display == 0) {
                 access.host(task, displayId, owner.packageName, user)
-                fence.changed(System.nanoTime())
+                sourceEpoch = System.nanoTime()
+                fence.changed(sourceEpoch)
                 tasks = access.tasks()
                 task = owner.find(tasks)
             }
@@ -128,7 +142,12 @@ internal class MirrorAppSession(surface: Surface, entry: SingleAppEntry.Entry, w
                 if (missingSince == 0L) { missingSince = now }
                 if (now - missingSince > 1_000_000_000L) { throw IOException("MIRROR_APP_FINISHED") }
             } else { missingSince = 0L }
-            if (available && !wasAvailable) { fence.changed(System.nanoTime()) }
+            if (available && !wasAvailable) {
+                val changed = System.nanoTime()
+                fence.changed(changed)
+                if (everAvailable) { sourceEpoch = changed }
+                everAvailable = true
+            }
             wasAvailable = available
         }
     }
@@ -139,6 +158,9 @@ internal class MirrorAppSession(surface: Surface, entry: SingleAppEntry.Entry, w
             codec.setParameters(Bundle().apply { putInt(MediaCodec.PARAMETER_KEY_REQUEST_SYNC_FRAME, 0) })
         }
     }
+
+    override fun renderAllowed(): Boolean = available
+    override fun renderSourceEpochNanos(): Long = sourceEpoch
 
     override fun acceptFrame(ptsMicros: Long, key: Boolean): Boolean = available &&
         fence.accept(ptsMicros, key, System.nanoTime())

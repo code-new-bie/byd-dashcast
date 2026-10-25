@@ -69,7 +69,7 @@ internal object MirrorBridge {
         val width = intent.getIntExtra("width", 0)
         val height = intent.getIntExtra("height", 0)
         val display = intent.getIntExtra("display", -1)
-        if (width !in 1..1920 || height !in 1..720 || display <= 0) { return }
+        if (!BusinessDisplayProfile.valid(width, height, 160) || display <= 0) { return }
         enqueue {
             if (session !== owner || owner.endpoint != null) { return@enqueue }
             val death = IBinder.DeathRecipient { end(owner.ticket) }

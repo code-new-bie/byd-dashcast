@@ -76,7 +76,9 @@ public final class ShellScreenCapture {
         }
     }
 
-    private static MediaFormat format() {
+    private static MediaFormat format() { return format(true); }
+
+    private static MediaFormat format(boolean codecRepeat) {
         MediaFormat format = MediaFormat.createVideoFormat("video/avc", NoAuthVideoProtocol.WIDTH,
                 NoAuthVideoProtocol.HEIGHT);
         format.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
@@ -87,7 +89,7 @@ public final class ShellScreenCapture {
         format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1);
         format.setInteger(MediaFormat.KEY_PROFILE, MediaCodecInfo.CodecProfileLevel.AVCProfileBaseline);
         format.setInteger(MediaFormat.KEY_LEVEL, MediaCodecInfo.CodecProfileLevel.AVCLevel4);
-        format.setLong(MediaFormat.KEY_REPEAT_PREVIOUS_FRAME_AFTER, REPEAT_PREVIOUS_FRAME_AFTER_US);
+        if (codecRepeat) { format.setLong(MediaFormat.KEY_REPEAT_PREVIOUS_FRAME_AFTER, REPEAT_PREVIOUS_FRAME_AFTER_US); }
         return format;
     }
 
@@ -117,16 +119,25 @@ public final class ShellScreenCapture {
         boolean started = false;
         Exception failure = null;
         try {
-            codec.configure(format(), null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
+            codec.configure(format(!options.contentViewport() && !options.centerWindow()), null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
             surface = codec.createInputSurface();
             codec.start();
             started = true;
             Surface captureSurface = surface;
             int logicalWidth = NoAuthVideoProtocol.WIDTH;
             int logicalHeight = NoAuthVideoProtocol.HEIGHT;
+            ProjectionEntryRouter.Selection selection = target.isRemote() && mirrorTicket != null
+                    ? ProjectionEntryRouter.resolve(RemoteDisplaySession.shellContext(), target,
+                        line -> System.err.println("SHELL_CAPTURE_" + line)) : null;
+            BusinessDisplayProfile business = selection != null && selection.getNative() == null
+                    ? BusinessDisplayProfile.read(RemoteDisplaySession.shellContext()) : null;
             if (options.contentViewport()) {
                 ContentViewport viewport = options.centerWindow() ? ContentViewport.center() : ContentViewport.full();
-                center = new CenterFrameRenderer(surface, viewport);
+                if (business != null) {
+                    viewport = new ContentViewport(business.getWidth(), business.getHeight(), viewport.getEncodedLeft(),
+                            viewport.getEncodedTop(), viewport.getEncodedWidth(), viewport.getEncodedHeight());
+                }
+                center = new CenterFrameRenderer(surface, viewport, options.mode() == CaptureOptions.Mode.CROP);
                 captureSurface = center.inputSurface();
                 logicalWidth = viewport.getSourceWidth();
                 logicalHeight = viewport.getSourceHeight();
@@ -137,12 +148,11 @@ public final class ShellScreenCapture {
             }
             if (target.isRemote()) {
                 if (mirrorTicket != null) {
-                    ProjectionEntryRouter.Selection entry = ProjectionEntryRouter.resolve(
-                            RemoteDisplaySession.shellContext(), target, line -> System.err.println("SHELL_CAPTURE_" + line));
+                    ProjectionEntryRouter.Selection entry = selection;
                     if (entry.getNative() == null) {
                         if (center == null) { throw new IOException("MIRROR_CONTENT_RENDERER_REQUIRED"); }
                         remote = new MirrorAppSession(captureSurface, entry.getEntry(), logicalWidth, logicalHeight,
-                                mirrorTicket, center);
+                                mirrorTicket, center, business.getDensity());
                     } else {
                         remote = new RemoteDisplaySession(captureSurface, target, logicalWidth, logicalHeight,
                                 options, entry.getNative());
@@ -232,8 +242,9 @@ public final class ShellScreenCapture {
                 eos = true;
                 drainUntil = System.nanoTime() + 2_000_000_000L;
             }
-            if (!eos && center != null) { center.renderIfAvailable(); }
             if (!eos && remote != null) { remote.update(codec); }
+            if (!eos && center != null) { center.renderIfAvailable(remote == null || remote.renderAllowed(),
+                    remote == null ? 0L : remote.renderSourceEpochNanos()); }
             // Source handoff may deliberately discard encoder output until a fresh IDR.
             // Keep the existing same-stream lease alive without forwarding that stale data.
             if (control != null && System.nanoTime() - lastIdle >= 250_000_000L) {
@@ -241,7 +252,7 @@ public final class ShellScreenCapture {
                 stdout.flush();
                 lastIdle = System.nanoTime();
             }
-            int index = codec.dequeueOutputBuffer(info, 10_000);
+            int index = codec.dequeueOutputBuffer(info, center == null || eos ? 10_000 : center.outputPollTimeoutUs());
             if (index == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
                 MediaFormat output = codec.getOutputFormat();
                 verifyOutputFormat(output);

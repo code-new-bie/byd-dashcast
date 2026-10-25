@@ -94,7 +94,7 @@ class MirrorProjectionPolicyTest {
     }
     @Test fun startupRejectsForeignAmbiguousDuplicateOrExistingCandidates() {
         val startup = MirrorStartupPolicy("example.app", 0, 7, setOf(1))
-        for (snapshot in listOf(listOf(task(1)), listOf(task(display = 0)), listOf(task(user = 10)),
+        for (snapshot in listOf(listOf(task(1)), listOf(task(display = 8)), listOf(task(user = 10)),
                 listOf(task(top = "")), listOf(task(), task()), listOf(task(), task(3)),
                 listOf(task(root = "other.app/.Main")))) {
             assertNull(startup.observe(snapshot, 0))
