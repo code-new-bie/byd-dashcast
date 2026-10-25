@@ -90,8 +90,8 @@ class ProductActivity : Activity() {
 
     private fun home() {
         card {
-            addView(text("独立应用画面，留在仪表", 30, true))
-            addView(text("使用应用独立副屏入口或新任务；主屏原任务、尺寸和原图标保持，账号数据仍属于同一应用。", 18))
+            addView(text("同一个应用，两端同状态", 30, true))
+            addView(text("普通应用由副屏托管；原图标进入本应用的可操作镜像，切走不停止仪表。原车定制地图保留原生双入口。", 18))
             addView(status)
             addView(connection)
             addView(detail)
@@ -106,10 +106,11 @@ class ProductActivity : Activity() {
             addView(button("更换应用") { page = 1; build() })
         }
         val actions = row()
-        primary = button("开始导航投屏", true) { selected?.let { start(it) } ?: run { page = 1; build() } }
+        primary = button("开始应用投屏", true) { selected?.let { start(it) } ?: run { page = 1; build() } }
         actions.addView(primary, LinearLayout.LayoutParams(0, dp(72), 1f).apply { marginEnd = dp(12) })
         actions.addView(button("停止投屏") { control.stop(); updateStatus() }, LinearLayout.LayoutParams(0, dp(72), 1f))
         body.addView(actions)
+        body.addView(button("打开当前操作画面") { MirrorBridge.open(this) })
         val roles = row()
         roles.addView(button("连接仪表模式") { control.switchRole(InstrumentUsbCommand.NCM); updateStatus() },
             LinearLayout.LayoutParams(0, dp(64), 1f).apply { marginEnd = dp(12) })
@@ -121,7 +122,7 @@ class ProductActivity : Activity() {
 
     private fun applications() {
         body.addView(text("选择独立投屏应用", 26, true))
-        body.addView(text("先显示已安装入口的检查结果；具备入口条件不等于已通过实车。无独立入口的单任务应用不强开，不搬走主屏任务。", 16))
+        body.addView(text("不限制应用类别；普通应用采用同实例托管与主屏镜像，也支持单任务入口。受保护视频、安全窗口及应用自身的多屏限制仍由系统决定。", 16))
         body.addView(button("刷新应用能力") { apps = ProductAppCatalog.load(this); build() })
         val search = EditText(this).apply {
             hint = "搜索应用名称或包名"
@@ -176,11 +177,19 @@ class ProductActivity : Activity() {
         card {
             addView(text("画面与外观", 26, true))
             addView(toggle("导航仪表布局：顶部状态、中央地图、底部数据", settings.underlay) { settings.underlay = it })
-            addView(text("开启：全屏1728×432有效内容区；关闭：768×432外窗、720×384有效内框。四边渐变不算可读空间。需同时升级配套1.4.0仪表App，下次开始生效；原生信息和告警保留。", 16))
+            addView(text("开启：全幅1536×384有效内容区；关闭：768×432外窗、720×384有效内框。四边渐变不算可读空间。沿用配套RWV5仪表；原生信息和告警保留。", 16))
             addView(toggle("中心裁剪填充画面", settings.crop) { settings.crop = it })
             addView(text("仪表始终使用固定副屏和为异形屏预留的内容区。原图标不会切换采集源或改变仪表比例；主题和布局设置在下次开始生效。应用自身的副屏适配效果仍取决于应用。", 16))
             addView(toggle("日间浅色界面", settings.light) { settings.light = it; build() })
             addView(text("上面的开关只改变 APK 界面。仪表融合底色自动跟随原厂深浅模式；地图配色仍由导航应用自己的昼夜设置决定。", 16))
+        }
+        card {
+            addView(text("原图标与双端操作", 23, true))
+            addView(text("普通应用：原图标进入当前同实例镜像；触摸和返回操作同步到仪表。回主页或切其他应用不停止投屏。停止后任务保留回车机，原图标恢复原应用。", 17))
+            addView(text("建议开启下方无障碍图标路由，只订阅当前投屏应用的窗口事件，不读取页面内容。不开启时宿主定向检查兜底，可能有更长闪现。输入法、多屏兼容性需以车机实际表现为准。", 17))
+            addView(button("设置原图标路由（无障碍）") {
+                startActivity(Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS))
+            })
         }
         card {
             addView(text("使用与边界", 23, true))
@@ -214,14 +223,14 @@ class ProductActivity : Activity() {
         val begin = { control.start(app.target()); updateStatus() }
         if (app.navigation) { begin() } else {
             AlertDialog.Builder(this).setTitle("投屏其他应用")
-                .setMessage("驾驶中仅使用导航；不要观看娱乐视频或分心操作。此应用的多实例兼容性未确认；不能独立运行时会停止，不会搬移原任务或镜像主屏。")
+                .setMessage("驾驶中仅使用导航；不要观看娱乐视频或分心操作。投屏期间此应用由副屏托管，主屏原图标进入同实例操作画面。停止将任务保留回车机，不复制账号或强停应用。")
                 .setPositiveButton("开始") { _, _ -> begin() }.setNegativeButton("取消", null).show()
         }
     }
 
     private fun firstRun() {
         AlertDialog.Builder(this).setTitle("首次连接 Dashcast")
-            .setMessage("1. 仪表使用配套 RWV5 App（1.8.0 仪表包），保留原 MCU 和参考 OS。\n2. 仪表与车机连接 USB 数据线，可保持连接切模式。\n3. 首次开始时允许 ADB 调试和 USB 访问。\n\n全屏或大中心窗可在设置中选择，停止恢复原厂主题。应用需有独立入口或多实例能力，真正单任务应用不能强行复制。驾驶时不要操作设置或观看视频；若任何原生信息异常，立即停止投屏。本版本不宣称道路安全认证。")
+            .setMessage("1. 仪表沿用配套 RWV5 App（1.8.0 仪表包），不改 MCU 和参考 OS。\n2. USB 数据线可保持连接切模式。\n3. 允许 ADB 调试及 USB 访问；设置中建议开启图标路由无障碍服务。\n\n普通应用投屏后点原图标进入同实例操作画面；定制地图仍开原生主界面。停止保留业务任务并恢复原厂仪表背景。驾驶时不要操作设置或观看视频；原生信息异常立即停止。本版本不宣称道路安全认证。")
             .setPositiveButton("已安装配套仪表包，开始设置") { _, _ -> settings.setupComplete = true; control.connect(); updateStatus() }
             .setNegativeButton("稍后", null).show()
     }
@@ -248,7 +257,7 @@ class ProductActivity : Activity() {
             state == ProjectionSessionController.State.QUARANTINED || state == ProjectionSessionController.State.DISCONNECTED ||
             state == ProjectionSessionController.State.RECOVERY_REQUIRED)) {
             ProductErrors.explain(java.io.IOException(ProjectionService.status()))
-        } else { control.message }
+        } else { control.message + if (MirrorBridge.current() != null) "\n" + MirrorBridge.message else "" }
         primary?.isEnabled = !control.busy && !ProjectionService.blocksOperations() &&
             ProductAppCatalog.select(apps, settings.target)?.capability?.allowed == true
     }

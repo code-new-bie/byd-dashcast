@@ -17,7 +17,7 @@ import java.util.Set;
 /** Owns only a newly created application task and its direct-output virtual display.
  * Never adopts, moves, resizes, relaunches or captures an existing primary-screen task.
  */
-final class RemoteDisplaySession implements AutoCloseable {
+final class RemoteDisplaySession implements RemoteCaptureSession {
     // PUBLIC | PRESENTATION | OWN_CONTENT_ONLY | DESTROY_CONTENT_ON_REMOVAL. No AUTO_MIRROR.
     // Failed cleanup must never migrate this display's remaining activities onto the primary display.
     private static final int FLAGS = 1 | 2 | 8 | 256;
@@ -31,6 +31,8 @@ final class RemoteDisplaySession implements AutoCloseable {
     private int displayId = -1;
     private String component;
     private boolean closed;
+    private boolean frameAvailable;
+    private final CaptureSourceFence frameFence = new CaptureSourceFence();
 
     RemoteDisplaySession(Surface surface, ProjectionTarget target) throws Exception {
         this(surface, target, NoAuthVideoProtocol.WIDTH, NoAuthVideoProtocol.HEIGHT);
@@ -42,14 +44,20 @@ final class RemoteDisplaySession implements AutoCloseable {
 
     RemoteDisplaySession(Surface surface, ProjectionTarget target, int width, int height,
             CaptureOptions options) throws Exception {
+        this(surface, target, width, height, options, null);
+    }
+
+    RemoteDisplaySession(Surface surface, ProjectionTarget target, int width, int height,
+            CaptureOptions options, ProjectionEntryRouter.NativeEntry profile) throws Exception {
         if (surface == null || target == null || !target.isRemote()) {
             throw new IllegalArgumentException("Independent application display required");
         }
         int densityDpi = ProjectionDisplayProfile.densityDpi(width, height);
         try {
             Context context = shellContext();
-            IndependentAppPlan.Plan plan = IndependentProjectionEntry.resolve(context, target,
-                    line -> System.err.println("SHELL_CAPTURE_" + line));
+            IndependentAppPlan.Plan plan = profile == null ? IndependentProjectionEntry.resolve(context, target,
+                    line -> System.err.println("SHELL_CAPTURE_" + line))
+                    : new IndependentAppPlan.Plan(profile.getComponent(), true, profile.getComponent());
             component = plan.getTaskRoot();
             access = new AndroidTaskAccess();
             user = access.currentUser();
@@ -69,7 +77,13 @@ final class RemoteDisplaySession implements AutoCloseable {
                     + " size=" + width + "x" + height + " density=" + densityDpi
                     + " direct_surface=true own_content_only=true");
             policy = new IndependentTaskPolicy(existing, component, user, displayId);
-            launch(plan.arguments(displayId, user));
+            List<String> arguments = new java.util.ArrayList<>(plan.arguments(displayId, user));
+            if (profile != null) {
+                for (java.util.Map.Entry<String, Integer> extra : profile.getExtras().entrySet()) {
+                    arguments.add("--ei"); arguments.add(extra.getKey()); arguments.add(extra.getValue().toString());
+                }
+            }
+            launch(arguments);
             long deadline = System.nanoTime() + 10_000_000_000L;
             do {
                 owned = policy.discover(access.projectionTasks());
@@ -90,24 +104,44 @@ final class RemoteDisplaySession implements AutoCloseable {
         }
     }
 
-    void update(MediaCodec codec) throws Exception { checkTask(); }
-
-    boolean acceptFrame(long ptsMicros, boolean key) throws Exception {
+    public void update(MediaCodec codec) throws Exception {
         checkTask();
-        return true; // One fixed display/surface/geometry for the whole session; no source switching.
+        if (frameAvailable && frameFence.needsSync(System.nanoTime())) {
+            android.os.Bundle request = new android.os.Bundle();
+            request.putInt(MediaCodec.PARAMETER_KEY_REQUEST_SYNC_FRAME, 0);
+            codec.setParameters(request);
+        }
+    }
+
+    public boolean acceptFrame(long ptsMicros, boolean key) throws Exception {
+        checkTask();
+        return frameAvailable && frameFence.accept(ptsMicros, key, System.nanoTime());
     }
 
     private void checkTask() throws Exception {
         if (closed) { throw new IOException("APP_INDEPENDENT_CAPTURE_CLOSED"); }
         if (!polls.due(System.nanoTime())) { return; }
-        AppTaskPolicy.Task current = policy.find(access.projectionTasks());
+        AppTaskPolicy.Task current = policy.findOwned(access.projectionTasks());
         if (current == null || current.id != owned.id) {
             throw new IOException("APP_INDEPENDENT_TASK_LOST; original tasks left untouched");
         }
+        boolean available = current.top.startsWith(component.substring(0, component.indexOf('/')) + "/");
+        if (available && !frameAvailable) { frameFence.changed(System.nanoTime()); }
+        if (!available && frameAvailable) {
+            System.err.println("SHELL_CAPTURE_APP_TOP_WAIT task=" + current.id
+                    + " display=" + current.display + " user=" + current.user
+                    + " root=" + component);
+        }
+        frameAvailable = available;
     }
 
-    private static VirtualDisplay createVirtualDisplay(Context context, Surface surface,
+    static VirtualDisplay createVirtualDisplay(Context context, Surface surface,
             int width, int height, int densityDpi) throws Exception {
+        return createVirtualDisplay(context, surface, width, height, densityDpi, FLAGS);
+    }
+
+    static VirtualDisplay createVirtualDisplay(Context context, Surface surface,
+            int width, int height, int densityDpi, int flags) throws Exception {
         Class<?> type = Class.forName("android.hardware.display.DisplayManagerGlobal");
         Object manager = type.getMethod("getInstance").invoke(null);
         Method create = type.getMethod("createVirtualDisplay", Context.class,
@@ -115,12 +149,12 @@ final class RemoteDisplaySession implements AutoCloseable {
                 int.class, int.class, int.class, Surface.class, int.class,
                 VirtualDisplay.Callback.class, Handler.class, String.class);
         Object result = create.invoke(manager, context, null, "dashcast-independent-" + System.nanoTime(),
-                width, height, densityDpi, surface, FLAGS, null, null, null);
+                width, height, densityDpi, surface, flags, null, null, null);
         if (!(result instanceof VirtualDisplay)) { throw new IOException("APP_INDEPENDENT_DISPLAY_CREATE_FAILED"); }
         return (VirtualDisplay) result;
     }
 
-    private static void launch(List<String> arguments) throws Exception {
+    static void launch(List<String> arguments) throws Exception {
         java.lang.Process child = new ProcessBuilder(arguments).redirectErrorStream(true).start();
         String result = BoundedProcessOutput.read(child, 10_000L).trim().replace('\n', ' ').replace('\r', ' ');
         // Do not retain arbitrary application/logcat output or Intent data.
@@ -131,7 +165,7 @@ final class RemoteDisplaySession implements AutoCloseable {
         System.err.println("SHELL_CAPTURE_REMOTE_AM exit=0 independent=true");
     }
 
-    private static Context shellContext() throws Exception {
+    static Context shellContext() throws Exception {
         Class<?> activityThreadClass = Class.forName("android.app.ActivityThread");
         Object activityThread = activityThreadClass.getMethod("currentActivityThread").invoke(null);
         if (activityThread == null) {

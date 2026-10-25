@@ -27,7 +27,7 @@ internal object ProductAppCatalog {
             val component = ComponentName(info.packageName, info.name).flattenToString()
             val target = ProjectionTarget.remoteComponent(component, null)
             ProductApp(component, item.loadLabel(manager).toString().take(128), navigation(component),
-                IndependentProjectionEntry.assess(context, target))
+                ProjectionEntryRouter.assess(context, target))
         }.distinctBy { it.component }.sortedWith(compareBy<ProductApp>(
             { if (it.capability.allowed) 0 else 1 },
             { if (it.component.startsWith("com.autonavi.amapautoclone/")) 0 else if (it.navigation) 1 else 2 },

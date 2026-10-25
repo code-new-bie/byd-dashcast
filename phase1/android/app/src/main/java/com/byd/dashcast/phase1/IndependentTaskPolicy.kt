@@ -36,11 +36,27 @@ internal class IndependentTaskPolicy(
         return found
     }
 
+    /** Reads only the bound ID without requiring a captureable top; never adopts an unbound task. */
+    @Throws(IOException::class)
+    fun findOwned(tasks: List<AppTaskPolicy.Task>): AppTaskPolicy.Task? {
+        val boundId = ownedId ?: return null
+        return cleanupCurrent(tasks, boundId)
+    }
+
     /** Unbound startup failures may reclaim exact new tasks on our exclusive display only. */
     @Throws(IOException::class)
     fun cleanupCandidates(tasks: List<AppTaskPolicy.Task>): List<AppTaskPolicy.Task> {
-        if (ownedId != null) { return listOfNotNull(current(tasks)) }
-        return tasks.filter { isNewMatching(it) && it.display == display }.onEach { verify(it) }
+        if (ownedId != null) { return listOfNotNull(findOwned(tasks)) }
+        return tasks.filter { isNewMatching(it) && it.display == display }
+            .mapNotNull { cleanupCurrent(tasks, it.id) }
+    }
+
+    /** Rechecks one exact ID for cleanup; never discovers a replacement for a missing task. */
+    @Throws(IOException::class)
+    fun cleanupCurrent(tasks: List<AppTaskPolicy.Task>, id: Int): AppTaskPolicy.Task? {
+        val matches = tasks.filter { it.id == id }
+        if (matches.size > 1) { throw IOException("APP_INDEPENDENT_TASK_AMBIGUOUS") }
+        return matches.singleOrNull()?.also { verifyOwnership(it) }
     }
 
     private fun current(tasks: List<AppTaskPolicy.Task>): AppTaskPolicy.Task? {
@@ -54,6 +70,15 @@ internal class IndependentTaskPolicy(
         if (task.id < 0 || task.id in existing || task.user != user || task.root != component || task.display != display ||
             task.top.substringBefore('/') != component.substringBefore('/')) {
             throw IOException("APP_INDEPENDENT_TASK_CHANGED; never capture display zero")
+        }
+    }
+
+    /** Top activity affects capture availability, not ownership of an exact new task. */
+    @Throws(IOException::class)
+    fun verifyOwnership(task: AppTaskPolicy.Task) {
+        if (task.id < 0 || task.id in existing || task.user != user ||
+            task.root != component || task.display != display) {
+            throw IOException("APP_INDEPENDENT_TASK_CHANGED; cleanup ownership unconfirmed")
         }
     }
 

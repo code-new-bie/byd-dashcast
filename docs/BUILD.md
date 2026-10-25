@@ -1,6 +1,10 @@
 # 构建与复现
 
-## 1.8.0 RWV5持续维护和双端软边（当前）
+## 1.9.0 同实例双端和原图标路由（当前）
+
+APK code48；新增Kotlin镜像、定向输入、原图标路由和原生入口表，JDK21/SDK35/AGP9.3内置Kotlin工具链及构建命令保持。仪表沿用1.8.0/RWV5完整包原字节，不新增固件补丁；已匹配者只覆盖APK、保留数据。独立构建使用操作者自己的签名，不能为获得旧签名公开私钥。[交互及边界](MIRROR_PROJECTION.md)。以下“当前”为历史版本写作状态。
+
+## 1.8.0 RWV5持续维护和双端软边（当时）
 
 APK code47，构建命令不变。自备精确原始HMI/KZB/TOC及1.2 receiver，运行`python tools/build_soft_edge_components.py --hmi ORIGINAL_HMI --kzb ORIGINAL_KZB --toc ORIGINAL_TOC --receiver RECEIVER_120 --output NEW_DIRECTORY`。三个组件必须成套，输出不是可刷ZIP；不改原MCU/参考OS。需要更新APK和仪表App，不能用1.7.2/RWV4假装新版渐变生效。[范围/操作](PRODUCT_1.8.0.md)。以下“当前”为各历史版本状态。
 

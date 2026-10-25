@@ -7,14 +7,15 @@ import java.io.IOException
  * @date 2026/10/22
  */
 internal object AppTaskPolicy {
-    data class Task(
+    data class Task @JvmOverloads constructor(
         @JvmField val id: Int,
         @JvmField val stack: Int,
         @JvmField val display: Int,
         @JvmField val user: Int,
         @JvmField val root: String,
         @JvmField val top: String,
-        @JvmField val visible: Boolean
+        @JvmField val visible: Boolean,
+        @JvmField val launcher: Boolean = false
     )
 
     @JvmStatic

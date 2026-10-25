@@ -27,6 +27,10 @@ internal class CenterFrameRenderer @JvmOverloads constructor(
     private var display = EGL14.EGL_NO_DISPLAY
     private var context = EGL14.EGL_NO_CONTEXT
     private var window = EGL14.EGL_NO_SURFACE
+    private var config: EGLConfig? = null
+    private var mirrorWindow = EGL14.EGL_NO_SURFACE
+    private var mirror: MirrorSinkMailbox.Sink? = null
+    private var mirrorDirty = false
     private var texture = 0
     private var program = 0
     private var paddingTexture = 0
@@ -77,6 +81,7 @@ internal class CenterFrameRenderer @JvmOverloads constructor(
         context = EGL14.eglCreateContext(display, configs[0], EGL14.EGL_NO_CONTEXT,
             intArrayOf(EGL14.EGL_CONTEXT_CLIENT_VERSION, 2, EGL14.EGL_NONE), 0)
         requireEgl(context != EGL14.EGL_NO_CONTEXT, "context")
+        config = configs[0]
         window = EGL14.eglCreateWindowSurface(display, configs[0], output, intArrayOf(EGL14.EGL_NONE), 0)
         requireEgl(window != EGL14.EGL_NO_SURFACE && EGL14.eglMakeCurrent(display, window, window, context), "surface")
         val names = IntArray(1)
@@ -138,9 +143,30 @@ internal class CenterFrameRenderer @JvmOverloads constructor(
 
     fun inputSurface(): Surface = input ?: throw IllegalStateException("CENTER_RENDERER_CLOSED")
 
+    fun renderedMirrorLease(): Long = if (mirrorDirty) -1L else mirror?.lease ?: -1L
+
+    /** Called only on the encoder/GL thread. A failed optional consumer never tears down the encoder. */
+    fun setMirrorSink(next: MirrorSinkMailbox.Sink) {
+        removeMirror()
+        if (next.surface == null) { return }
+        try {
+            mirror = next
+            if (!next.surface.isValid) { throw IOException("MIRROR_SURFACE_INVALID") }
+            mirrorWindow = EGL14.eglCreateWindowSurface(display, config, next.surface, intArrayOf(EGL14.EGL_NONE), 0)
+            requireEgl(mirrorWindow != EGL14.EGL_NO_SURFACE, "mirror-surface")
+            mirrorDirty = true
+        } catch (error: Exception) {
+            System.err.println("SHELL_MIRROR_OPTIONAL_SURFACE_REJECTED type=${error.javaClass.simpleName}")
+            removeMirror()
+        }
+    }
+
     @Throws(IOException::class)
     fun renderIfAvailable() {
-        if (!pending.getAndSet(false)) { return }
+        if (!pending.getAndSet(false)) {
+            if (mirrorDirty && lastTimestamp >= 0) { drawMirror() }
+            return
+        }
         val owned = source ?: throw IOException("CENTER_RENDERER_CLOSED")
         owned.updateTexImage()
         owned.getTransformMatrix(matrix)
@@ -175,6 +201,46 @@ internal class CenterFrameRenderer @JvmOverloads constructor(
         requireEgl(EGLExt.eglPresentationTimeANDROID(display, window, timestamp), "timestamp")
         requireEgl(EGL14.eglSwapBuffers(display, window), "swap")
         lastTimestamp = timestamp
+        drawMirror()
+    }
+
+    private fun drawMirror() {
+        val sink = mirror ?: return
+        try {
+            requireEgl(EGL14.eglMakeCurrent(display, mirrorWindow, mirrorWindow, context), "mirror-current")
+            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0)
+            GLES20.glViewport(0, 0, sink.width, sink.height)
+            GLES20.glClearColor(0f, 0f, 0f, 1f)
+            GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
+            val bounds = MirrorGeometry.fit(viewport?.sourceWidth ?: INPUT_WIDTH,
+                viewport?.sourceHeight ?: INPUT_HEIGHT, sink.width, sink.height)
+            GLES20.glViewport(bounds.left.toInt(), bounds.top.toInt(), bounds.width.toInt(), bounds.height.toInt())
+            GLES20.glUseProgram(program)
+            GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
+            GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, texture)
+            GLES20.glUniform1i(imageLocation, 0)
+            GLES20.glUniformMatrix4fv(transformLocation, 1, false, matrix, 0)
+            GLES20.glUniform4fv(contentLocation, 1, floatArrayOf(0f, 0f, 1f, 1f), 0)
+            drawQuad(positionLocation, uvLocation)
+            checkGl("mirror-draw")
+            requireEgl(EGL14.eglSwapBuffers(display, mirrorWindow), "mirror-swap")
+            mirrorDirty = false
+        } catch (error: Exception) {
+            System.err.println("SHELL_MIRROR_OPTIONAL_SURFACE_DETACHED type=${error.javaClass.simpleName}")
+            removeMirror()
+        } finally {
+            requireEgl(EGL14.eglMakeCurrent(display, window, window, context), "encoder-resume")
+        }
+    }
+
+    private fun removeMirror() {
+        if (mirrorWindow != EGL14.EGL_NO_SURFACE) {
+            EGL14.eglDestroySurface(display, mirrorWindow)
+            mirrorWindow = EGL14.EGL_NO_SURFACE
+        }
+        mirror?.surface?.release()
+        mirror = null
+        mirrorDirty = false
     }
 
     private fun drawQuad(position: Int, uv: Int) {
@@ -194,6 +260,7 @@ internal class CenterFrameRenderer @JvmOverloads constructor(
                 if (failure == null) { failure = error } else { failure!!.addSuppressed(error) }
             }
         }
+        release { removeMirror() }
         release { source?.setOnFrameAvailableListener(null) }
         release { input?.release() }; input = null
         release { source?.release() }; source = null

@@ -39,6 +39,8 @@ public final class ShellScreenCapture {
         // Binary DCS1/AVC uses FileDescriptor.out directly and must never share that PrintStream.
         ShellCaptureOutput.isolateFrameworkDiagnostics();
         try {
+            String mirrorTicket = DuplexTicket.read(args);
+            args = DuplexTicket.without(args);
             CaptureOptions options = CaptureOptions.fromShellArguments(args);
             ProjectionTarget target = ProjectionTarget.fromShellArguments(args);
             boolean live = args.length >= 2 && "live".equals(args[1]);
@@ -60,10 +62,10 @@ public final class ShellScreenCapture {
             if (live) {
                 try (CaptureStopControl control = new CaptureStopControl(System.in)) {
                     control.start();
-                    capture(seconds, control, options, target);
+                    capture(seconds, control, options, target, mirrorTicket);
                 }
             } else {
-                capture(seconds, null, options, target);
+                capture(seconds, null, options, target, null);
             }
         } catch (Exception error) {
             System.err.println("SHELL_CAPTURE_FAILED " + error);
@@ -106,12 +108,12 @@ public final class ShellScreenCapture {
     }
 
     private static void capture(int seconds, CaptureStopControl control, CaptureOptions options,
-            ProjectionTarget target) throws Exception {
+            ProjectionTarget target, String mirrorTicket) throws Exception {
         MediaCodec codec = encoder();
         Surface surface = null;
         AutoCloseable display = null;
         CenterFrameRenderer center = null;
-        RemoteDisplaySession remote = null;
+        RemoteCaptureSession remote = null;
         boolean started = false;
         Exception failure = null;
         try {
@@ -134,7 +136,20 @@ public final class ShellScreenCapture {
                 logicalWidth = 1280;
             }
             if (target.isRemote()) {
-                remote = new RemoteDisplaySession(captureSurface, target, logicalWidth, logicalHeight, options);
+                if (mirrorTicket != null) {
+                    ProjectionEntryRouter.Selection entry = ProjectionEntryRouter.resolve(
+                            RemoteDisplaySession.shellContext(), target, line -> System.err.println("SHELL_CAPTURE_" + line));
+                    if (entry.getNative() == null) {
+                        if (center == null) { throw new IOException("MIRROR_CONTENT_RENDERER_REQUIRED"); }
+                        remote = new MirrorAppSession(captureSurface, entry.getEntry(), logicalWidth, logicalHeight,
+                                mirrorTicket, center);
+                    } else {
+                        remote = new RemoteDisplaySession(captureSurface, target, logicalWidth, logicalHeight,
+                                options, entry.getNative());
+                    }
+                } else {
+                    remote = new RemoteDisplaySession(captureSurface, target, logicalWidth, logicalHeight, options);
+                }
                 display = remote;
             } else {
                 display = new Mirror(captureSurface, options, logicalWidth, logicalHeight);
@@ -197,7 +212,7 @@ public final class ShellScreenCapture {
     }
 
     private static void stream(MediaCodec codec, int seconds, CaptureStopControl control,
-            CenterFrameRenderer center, RemoteDisplaySession remote) throws Exception {
+            CenterFrameRenderer center, RemoteCaptureSession remote) throws Exception {
         long began = System.nanoTime();
         long drainUntil = 0;
         boolean unlimited = control != null && ContinuousSessionPolicy.unlimited(seconds);

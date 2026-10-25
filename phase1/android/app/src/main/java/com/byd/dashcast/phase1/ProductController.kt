@@ -89,7 +89,7 @@ internal class ProductController private constructor(context: Context) {
     private fun prepareStart(request: StartRequest) {
         if (request.generation != startGeneration.get()) { return }
         log("PRODUCT_START_REQUEST target=${request.target} generation=${request.generation}")
-        IndependentProjectionEntry.resolve(app, request.target, java.util.function.Consumer { log(it) })
+        ProjectionEntryRouter.resolve(app, request.target, java.util.function.Consumer { log(it) })
         if (!recoverIfNecessary(request)) { return }
         // A terminal worker state is published before Android destroys its
         // finishing Service. Do not enqueue START into that old instance.

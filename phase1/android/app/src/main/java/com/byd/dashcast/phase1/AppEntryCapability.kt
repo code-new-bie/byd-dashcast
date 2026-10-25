@@ -9,7 +9,7 @@ internal data class AppEntryCapability(val allowed: Boolean, val nativeSecondary
     val summary: String get() = when {
         !allowed -> "暂不具备独立投屏条件 · ${explanation(reason)}"
         nativeSecondary -> "具备专用副屏入口 · 画面及导航同步以设备结果为准"
-        else -> "具备多实例入口条件 · 启动后继续检查任务归属"
+        else -> "同实例双端显示 · 原图标进入可操作镜像页"
     }
 
     companion object {

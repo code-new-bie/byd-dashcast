@@ -25,6 +25,12 @@ final class AdbScreenVideoSource {
     private final Consumer<String> log;
     private boolean exitConfirmed;
     private boolean captureResourcesReleased;
+    private String mirrorTicket;
+
+    void setMirrorTicket(String ticket) {
+        if (!DuplexTicket.valid(ticket)) { throw new IllegalArgumentException("Invalid mirror session"); }
+        mirrorTicket = ticket;
+    }
 
     AdbScreenVideoSource(AdbShellClient client, VideoPatternProbe.Observer observer, Consumer<String> log) {
         this(Objects.requireNonNull(client)::executeShellV2Controlled, observer, log);
@@ -80,6 +86,7 @@ final class AdbScreenVideoSource {
         CaptureOptions selectedOptions = options == null
                 ? CaptureOptions.of(CaptureOptions.Mode.STRETCH) : options;
         String command = ShellCaptureCommand.continuous(installedApk, seconds, selectedOptions, selectedTarget);
+        if (mirrorTicket != null) { command += " " + DuplexTicket.argument(mirrorTicket); }
         log.accept("CAPTURE_SELECTION=" + selectedOptions
                 + "; immutable for this session; instrument rectangle unchanged");
         log.accept("PROJECTION_TARGET=" + selectedTarget + "; virtual display is owned by the ADB shell helper");
