@@ -199,7 +199,7 @@ class ProductActivity : Activity() {
         card {
             addView(text("画面与外观", 26, true))
             addView(toggle("导航仪表布局：顶部状态、中央地图、底部数据", settings.underlay) { settings.underlay = it })
-            addView(text("开启：圆角曲边全幅，1792×448视频承载区、1408×352保守安全区；关闭：768×432外窗、720×384有效内框。四角随曲边淡出，下沿贴合续航背景。需配套RWV8仪表 App；普通车模/静态路面让位，真实告警保留。", 16))
+            addView(text("开启：清晰视频铺满原内圈弧形范围，仅轮廓边缘羽化；1632×440承载画面，安全参考框不裁切视频，两侧装饰圈隐藏。关闭：768×432外窗、720×384有效内框。需配套RWVA仪表 App；普通车模/静态路面让位，真实告警保留。", 16))
             addView(toggle("仪表中心裁剪填充（可能裁掉边缘提示）", settings.crop) { settings.crop = it })
             addView(text("普通应用保持车机主屏的逻辑分辨率、比例和密度，操作镜像显示完整原界面；仪表单独按有效区等比适配。裁剪开启时只裁仪表画面，不改变主屏应用比例；关闭可保留完整应用画面。设置在下次开始生效。", 16))
             addView(toggle("日间浅色界面", settings.light) { settings.light = it; build() })
@@ -252,7 +252,7 @@ class ProductActivity : Activity() {
 
     private fun firstRun() {
         AlertDialog.Builder(this).setTitle("首次连接 Dashcast")
-            .setMessage("1. 本版需升级配套 RWV8 仪表 App；不改 MCU 和参考 OS。\n2. USB 数据线可保持连接切模式。\n3. 允许 ADB 调试及 USB 访问；系统有入口时可开启无障碍图标路由，无入口不影响宿主路由。\n\n普通应用投屏后点原图标进入同实例操作画面；定制地图仍开原生主界面。停止保留业务任务并恢复原厂仪表背景。驾驶时不要操作设置或观看视频；原生信息异常立即停止。本版本不宣称道路安全认证。")
+            .setMessage("1. 本版需升级配套 RWVA 仪表 App；不改 MCU 和参考 OS。\n2. USB 数据线可保持连接切模式。\n3. 允许 ADB 调试及 USB 访问；系统有入口时可开启无障碍图标路由，无入口不影响宿主路由。\n\n普通应用投屏后点原图标进入同实例操作画面；定制地图仍开原生主界面。停止保留业务任务并恢复原厂仪表背景。驾驶时不要操作设置或观看视频；原生信息异常立即停止。本版本不宣称道路安全认证。")
             .setPositiveButton("已安装配套仪表包，开始设置") { _, _ -> settings.setupComplete = true; control.connect(); updateStatus() }
             .setNegativeButton("稍后", null).show()
     }

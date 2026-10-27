@@ -1,8 +1,8 @@
 package com.byd.dashcast.phase1
 
-/** Rectangular video carrier, not the curved aperture or its conservative UI box.
- * RWV8 extends sharp video beyond the safe box; the native matte, not this
- * rectangle, forms the visible curved trapezoid. Source pixels are not warped.
+/** Sharp source covers the WHOLE native inner-rim opening, including its sides.
+ * RWVA uses padding only beyond the rim; safe UI bounds never clip the source.
+ * The carrier rectangle and native 1920x720 transport are separate sizes.
  * @author Codex
  * @date 2026/10/23
  */
@@ -25,9 +25,9 @@ internal data class ContentViewport(
         (720 - encodedTop - encodedHeight) / 720f, encodedWidth / 1920f, encodedHeight / 720f)
 
     companion object {
-        @JvmStatic fun full(): ContentViewport = ContentViewport(1792, 448, 64, 112, 1792, 448)
+        @JvmStatic fun full(): ContentViewport = ContentViewport(1632, 440, 144, 120, 1632, 440)
         /** Fully clear conservative box inside the curved full-mode aperture. */
-        @JvmStatic fun fullSafeBounds(): IntArray = intArrayOf(256, 152, 1408, 352)
+        @JvmStatic fun fullSafeBounds(): IntArray = intArrayOf(320, 176, 1280, 336)
         @JvmStatic fun center(): ContentViewport = ContentViewport(1200, 640, 60, 40, 1800, 640)
 
         const val PADDING_WIDTH = 32

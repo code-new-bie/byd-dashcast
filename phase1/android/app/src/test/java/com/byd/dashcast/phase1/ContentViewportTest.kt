@@ -4,14 +4,14 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class ContentViewportTest {
-    @Test fun fullCarrierIsNotMistakenForTheCurvedSafeRectangle() {
+    @Test fun fullSharpPictureCoversTheOpeningWithoutClippingToTheSafeBox() {
         val p = ContentViewport.full()
-        assertEquals(1792.0 / 448, p.sourceWidth.toDouble() / p.sourceHeight, 0.0)
-        assertEquals(1792.0 / 448, p.encodedWidth.toDouble() / p.encodedHeight, 0.0)
-        assertArrayEquals(floatArrayOf(64f/1920, 160f/720, 1792f/1920, 448f/720), p.normalized(), .00001f)
+        assertEquals(1632.0 / 440, p.sourceWidth.toDouble() / p.sourceHeight, 0.0)
+        assertEquals(p.sourceWidth.toDouble()/p.sourceHeight, p.encodedWidth.toDouble()/p.encodedHeight, 0.0)
+        assertArrayEquals(floatArrayOf(144f/1920, 160f/720, 1632f/1920, 440f/720), p.normalized(), .00001f)
         assertEquals(560, p.encodedTop+p.encodedHeight)
-        assertArrayEquals(intArrayOf(256, 152, 1408, 352), ContentViewport.fullSafeBounds())
         assertTrue(p.encodedLeft < ContentViewport.fullSafeBounds()[0])
+        assertTrue(p.encodedTop < ContentViewport.fullSafeBounds()[1])
         assertTrue(p.encodedWidth > ContentViewport.fullSafeBounds()[2])
     }
     @Test fun paddingPassHasBoundedCostAndNeverSamplesSharpContentOutsideInnerBounds() {

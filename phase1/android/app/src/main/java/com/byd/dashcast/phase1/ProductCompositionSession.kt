@@ -181,7 +181,7 @@ internal class ProductCompositionSession @JvmOverloads constructor(
         InstrumentCompositionTrial.exchangePacket(channel, operation, request(operation, nonce, centerWindow))
 
     companion object {
-        const val CAPABILITY = 0x52575638 // RWV8: explicit registered-prefab propagation and rounded aperture
+        const val CAPABILITY = 0x5257563a // RWVA: sharp inner rim, distinct from the UI-safe guide
         const val NAVIGATION_READY = 0x4e4c4300
         const val NAVIGATION_ACTIVE = 0x4e4c4301
         const val NAVIGATION_PENDING = 0x4e4c4302

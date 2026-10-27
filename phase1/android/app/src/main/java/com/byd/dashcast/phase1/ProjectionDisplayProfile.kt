@@ -5,7 +5,7 @@ internal object ProjectionDisplayProfile {
     @JvmStatic
     fun densityDpi(width: Int, height: Int): Int = when (width to height) {
         1200 to 640 -> 240 // .6 physical resampling: 16sp becomes 14.4px, not 9.6px.
-        1792 to 448 -> 160 // RWV8 rounded aperture, distinct from the conservative safe box.
+        1632 to 440 -> 160 // RWVA sharp carrier covers the entire native inner rim.
         1408 to 368 -> 160 // Frozen RWV6 diagnostics only.
         1536 to 384 -> 160 // RWV5 effective content is 1:1, excluding wider native feathers.
         1728 to 384 -> 160 // Frozen RWV4 diagnostics only.

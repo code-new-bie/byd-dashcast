@@ -35,11 +35,11 @@ class CurvedSceneCliTest(unittest.TestCase):
         self.assertIn("digest(original)!=SCENE_SHA", source)
         self.assertNotIn("write_bytes", source)
 
-    def test_carrier_and_safe_bounds_are_distinct(self):
+    def test_current_sharp_source_covers_the_curved_aperture(self):
         source = next((ROOT / "phase1/android/app/src/main").rglob("ContentViewport.kt")).read_text(encoding="utf-8")
-        self.assertIn("1792", source)
-        self.assertIn("448", source)
-        self.assertIn("intArrayOf(256, 152, 1408, 352)", source)
+        self.assertIn("ContentViewport(1632, 440, 144, 120, 1632, 440)", source)
+        self.assertIn("intArrayOf(320, 176, 1280, 336)", source)
+        self.assertIn("texture2D(padding", source)
 
 
 if __name__ == "__main__":
