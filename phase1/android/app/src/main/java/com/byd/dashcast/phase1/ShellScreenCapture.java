@@ -34,10 +34,19 @@ public final class ShellScreenCapture {
     private ShellScreenCapture() {
     }
 
+    private static final class CleanupProof {
+        private boolean captureClosed = true;
+        private boolean controlClosed = true;
+
+        private boolean complete() { return captureClosed && controlClosed; }
+    }
+
     public static void main(String[] args) {
         // Context/LoadedApk initialization on the OEM ROM can print hot-fix diagnostics to System.out.
         // Binary DCS1/AVC uses FileDescriptor.out directly and must never share that PrintStream.
         ShellCaptureOutput.isolateFrameworkDiagnostics();
+        boolean captureMayOwnResources = false;
+        CleanupProof proof = new CleanupProof();
         try {
             String mirrorTicket = DuplexTicket.read(args);
             args = DuplexTicket.without(args);
@@ -54,23 +63,45 @@ public final class ShellScreenCapture {
             if (!live && (seconds < 1 || seconds > 10)) {
                 throw new IOException("SHELL_CAPTURE_DURATION_LIMIT");
             }
+            // Every check above is pure preflight. From this point onward owned
+            // framework/control/capture resources must be released by their owner.
+            captureMayOwnResources = true;
             if ((target.isRemote() || target.isNamed()) && Looper.myLooper() == null) {
                 // app_process invokes this main directly; ActivityThread and framework Handlers need a Looper.
                 Looper.prepareMainLooper();
                 System.err.println("SHELL_CAPTURE_REMOTE_LOOPER_READY");
             }
             if (live) {
-                try (CaptureStopControl control = new CaptureStopControl(System.in)) {
+                proof.controlClosed = false;
+                CaptureStopControl control = new CaptureStopControl(System.in);
+                Exception captureFailure = null;
+                try {
                     control.start();
-                    capture(seconds, control, options, target, mirrorTicket);
+                    capture(seconds, control, options, target, mirrorTicket, proof);
+                } catch (Exception error) {
+                    captureFailure = error;
+                    throw error;
+                } finally {
+                    try {
+                        control.close();
+                        proof.controlClosed = true;
+                    } catch (Exception cleanup) {
+                        if (captureFailure != null) { captureFailure.addSuppressed(cleanup); }
+                        else { throw cleanup; }
+                    }
                 }
             } else {
-                capture(seconds, null, options, target, null);
+                capture(seconds, null, options, target, null, proof);
             }
+            if (proof.complete()) { System.err.println("SHELL_CAPTURE_RESOURCES_RELEASED"); }
         } catch (Exception error) {
             System.err.println("SHELL_CAPTURE_FAILED " + error);
             for (Throwable suppressed : error.getSuppressed()) {
                 System.err.println("SHELL_CAPTURE_CLEANUP_FAILED " + suppressed);
+            }
+            if (!captureMayOwnResources || proof.complete()) {
+                System.err.println("SHELL_CAPTURE_RESOURCES_RELEASED phase="
+                        + (captureMayOwnResources ? "owned_closed" : "preflight created=false"));
             }
             System.exit(1);
         }
@@ -110,8 +141,9 @@ public final class ShellScreenCapture {
     }
 
     private static void capture(int seconds, CaptureStopControl control, CaptureOptions options,
-            ProjectionTarget target, String mirrorTicket) throws Exception {
-        MediaCodec codec = encoder();
+            ProjectionTarget target, String mirrorTicket, CleanupProof proof) throws Exception {
+        proof.captureClosed = false;
+        MediaCodec codec = null;
         Surface surface = null;
         AutoCloseable display = null;
         CenterFrameRenderer center = null;
@@ -119,6 +151,9 @@ public final class ShellScreenCapture {
         boolean started = false;
         Exception failure = null;
         try {
+            // Encoder discovery/creation may itself fail. It belongs inside the
+            // same cleanup scope, rather than stranding a no-resource failure.
+            codec = encoder();
             codec.configure(format(!options.contentViewport() && !options.centerWindow()), null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
             surface = codec.createInputSurface();
             codec.start();
@@ -130,12 +165,22 @@ public final class ShellScreenCapture {
                     ? ProjectionEntryRouter.resolve(RemoteDisplaySession.shellContext(), target,
                         line -> System.err.println("SHELL_CAPTURE_" + line)) : null;
             BusinessDisplayProfile business = selection != null && selection.getNative() == null && mirrorTicket != null
-                    ? BusinessDisplayProfile.read(RemoteDisplaySession.shellContext()) : null;
+                ? BusinessDisplayProfile.read(RemoteDisplaySession.shellContext()) : null;
             if (options.contentViewport()) {
                 ContentViewport viewport = options.centerWindow() ? ContentViewport.center() : ContentViewport.full();
                 if (business != null) {
-                    viewport = new ContentViewport(business.getWidth(), business.getHeight(), viewport.getEncodedLeft(),
-                            viewport.getEncodedTop(), viewport.getEncodedWidth(), viewport.getEncodedHeight());
+                    // The hosted business display now carries the instrument carrier's own
+                    // aspect; only its density is inherited from the primary screen. A
+                    // primary-sized portrait source can never fill the ultra-wide carrier.
+                    int sourceWidth = viewport.getSourceWidth();
+                    int sourceHeight = viewport.getSourceHeight();
+                    if (!options.centerWindow()) {
+                        sourceWidth = ContentViewport.FULL_MIRROR_SOURCE_WIDTH;
+                        sourceHeight = ContentViewport.FULL_MIRROR_SOURCE_HEIGHT;
+                    }
+                    viewport = new ContentViewport(sourceWidth, sourceHeight,
+                            viewport.getEncodedLeft(), viewport.getEncodedTop(),
+                            viewport.getEncodedWidth(), viewport.getEncodedHeight());
                 }
                 center = new CenterFrameRenderer(surface, viewport, options.mode() == CaptureOptions.Mode.CROP);
                 captureSurface = center.inputSurface();
@@ -184,14 +229,14 @@ public final class ShellScreenCapture {
                 cleanup = collect(cleanup, error);
             }
             try {
-                if (started) {
+                if (started && codec != null) {
                     codec.stop();
                 }
             } catch (RuntimeException error) {
                 cleanup = collect(cleanup, error);
             }
             try {
-                codec.release();
+                if (codec != null) { codec.release(); }
             } catch (RuntimeException error) {
                 cleanup = collect(cleanup, error);
             }
@@ -209,7 +254,9 @@ public final class ShellScreenCapture {
                     throw cleanup;
                 }
             } else if (failure == null || failure.getSuppressed().length == 0) {
-                System.err.println("SHELL_CAPTURE_RESOURCES_RELEASED");
+                // The main owner emits the proof only AFTER stdin/control closes.
+                // A later control-close failure must never leave an earlier proof.
+                proof.captureClosed = true;
             }
         }
     }

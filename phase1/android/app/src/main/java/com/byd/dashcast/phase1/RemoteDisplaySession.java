@@ -82,6 +82,7 @@ final class RemoteDisplaySession implements RemoteCaptureSession {
             displayId = info.getDisplayId();
             System.err.println("SHELL_CAPTURE_REMOTE_DISPLAY_CREATED id=" + displayId
                     + " size=" + width + "x" + height + " density=" + densityDpi
+                    + " name=" + (profile != null ? NamedDisplayContract.NAME : "dashcast-independent")
                     + " direct_surface=true own_content_only=true");
             policy = new IndependentTaskPolicy(existing, component, user, displayId);
             List<String> arguments = new java.util.ArrayList<>(plan.arguments(displayId, user));

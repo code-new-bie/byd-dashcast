@@ -115,20 +115,39 @@ class ProductActivity : Activity() {
         actions.addView(button("停止投屏") { control.stop(); updateStatus() }, LinearLayout.LayoutParams(0, dp(72), 1f))
         body.addView(actions, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
         body.addView(button("打开当前操作画面") { MirrorBridge.open(this) })
-        roleSwitch = Switch(this).apply {
-            text = "仪表 USB 模式  "
-            textOn = "投屏 NCM"; textOff = "U盘 Host"; showText = true
-            textSize = 21f; minHeight = dp(72); setTextColor(textColor)
-            isChecked = control.ncmObserved()
-            setOnCheckedChangeListener { _, checked ->
-                if (!reflectingRole) {
-                    control.switchRole(if (checked) InstrumentUsbCommand.NCM else InstrumentUsbCommand.HOST)
-                    updateStatus()
+        card {
+            addView(text("仪表 USB 模式", 20, true))
+            val switchRow = row()
+            switchRow.addView(text("投屏 NCM / U盘 Host，切换无需拔线；结果以仪表提示为准", 16),
+                LinearLayout.LayoutParams(0, -2, 1f).apply { marginEnd = dp(12) })
+            roleSwitch = Switch(this@ProductActivity).apply {
+                showText = false
+                isChecked = control.ncmObserved()
+                thumbDrawable = android.graphics.drawable.GradientDrawable().apply {
+                    shape = android.graphics.drawable.GradientDrawable.OVAL
+                    setColor(Color.WHITE); setSize(dp(26), dp(26))
+                }
+                trackDrawable = android.graphics.drawable.GradientDrawable().apply {
+                    cornerRadius = dp(14).toFloat(); setSize(dp(56), dp(28))
+                    setColor(trackColor(control.ncmObserved()))
+                }
+                switchMinWidth = dp(56)
+                minWidth = dp(72)
+                minHeight = dp(48)
+                splitTrack = false
+                contentDescription = "仪表 USB 模式，打开为 NCM，关闭请求 U盘 Host"
+                setPadding(dp(8), dp(10), dp(8), dp(10))
+                setOnCheckedChangeListener { _, checked ->
+                    if (!reflectingRole) {
+                        trackDrawable?.setTint(trackColor(checked))
+                        control.switchRole(if (checked) InstrumentUsbCommand.NCM else InstrumentUsbCommand.HOST)
+                        updateStatus()
+                    }
                 }
             }
+            switchRow.addView(roleSwitch, LinearLayout.LayoutParams(-2, -2))
+            addView(switchRow)
         }
-        body.addView(roleSwitch, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8); bottomMargin = dp(12) })
-        body.addView(text("开关反映已发现的 NCM 连接；未发现 USB 不代表 Host 已成功，切换结果以仪表提示为准。", 16))
         body.addView(button("仪表地图 · 开 / 关") { control.toggleMap(); updateStatus() })
         body.addView(button("按屏幕名接入") {
             AlertDialog.Builder(this).setTitle("接入应用自带的投屏页面")
@@ -199,9 +218,9 @@ class ProductActivity : Activity() {
         card {
             addView(text("画面与外观", 26, true))
             addView(toggle("导航仪表布局：顶部状态、中央地图、底部数据", settings.underlay) { settings.underlay = it })
-            addView(text("开启：清晰视频铺满原内圈弧形范围，仅轮廓边缘羽化；1632×440承载画面，安全参考框不裁切视频，两侧装饰圈隐藏。关闭：768×432外窗、720×384有效内框。需配套RWVA仪表 App；普通车模/静态路面让位，真实告警保留。", 16))
+            addView(text("开启：清晰视频铺满原内圈弧形范围，左右羽化12像素；弧线不变，边缘使用原厂常规深色渐变／浅色背景，跟随仪表深浅模式。承载区1632×440（普通应用以同比例3264×880超采样渲染），安全参考框不裁切视频，两侧装饰圈隐藏。关闭：768×432外窗、720×384有效内框。需配套RWVB仪表 App；普通2D车模与静态路面让位，真实告警保留。", 16))
             addView(toggle("仪表中心裁剪填充（可能裁掉边缘提示）", settings.crop) { settings.crop = it })
-            addView(text("普通应用保持车机主屏的逻辑分辨率、比例和密度，操作镜像显示完整原界面；仪表单独按有效区等比适配。裁剪开启时只裁仪表画面，不改变主屏应用比例；关闭可保留完整应用画面。设置在下次开始生效。", 16))
+            addView(text("普通应用按仪表承载区比例托管（密度沿用主屏），视频铺满设计显示区域；操作镜像完整显示应用画面（超宽内容上下留边）。裁剪开关在比例一致时无实际裁切；关闭可保留完整应用画面。设置在下次开始生效。", 16))
             addView(toggle("日间浅色界面", settings.light) { settings.light = it; build() })
             addView(text("上面的开关只改变 APK 界面。仪表融合底色自动跟随原厂深浅模式；地图配色仍由导航应用自己的昼夜设置决定。", 16))
         }
@@ -252,7 +271,7 @@ class ProductActivity : Activity() {
 
     private fun firstRun() {
         AlertDialog.Builder(this).setTitle("首次连接 Dashcast")
-            .setMessage("1. 本版需升级配套 RWVA 仪表 App；不改 MCU 和参考 OS。\n2. USB 数据线可保持连接切模式。\n3. 允许 ADB 调试及 USB 访问；系统有入口时可开启无障碍图标路由，无入口不影响宿主路由。\n\n普通应用投屏后点原图标进入同实例操作画面；定制地图仍开原生主界面。停止保留业务任务并恢复原厂仪表背景。驾驶时不要操作设置或观看视频；原生信息异常立即停止。本版本不宣称道路安全认证。")
+            .setMessage("1. 本版需升级配套 RWVB 仪表 App；不改 MCU 和参考 OS。\n2. USB 数据线可保持连接切模式。\n3. 允许 ADB 调试及 USB 访问；系统有入口时可开启无障碍图标路由，无入口不影响宿主路由。\n\n普通应用投屏后点原图标进入同实例操作画面；定制地图仍开原生主界面。停止保留业务任务并恢复原厂仪表背景。驾驶时不要操作设置或观看视频；原生信息异常立即停止。本版本不宣称道路安全认证。")
             .setPositiveButton("已安装配套仪表包，开始设置") { _, _ -> settings.setupComplete = true; control.connect(); updateStatus() }
             .setNegativeButton("稍后", null).show()
     }
@@ -284,10 +303,16 @@ class ProductActivity : Activity() {
             ProductAppCatalog.select(apps, settings.target)?.capability?.allowed == true
         reflectingRole = true
         try {
-            roleSwitch?.isChecked = control.ncmObserved()
+            // Keep a pending user's choice stable while role switching is in progress.
+            // Only an observed NCM device confirms the on state after completion.
+            if (!control.busy) { roleSwitch?.isChecked = control.ncmObserved() }
+            roleSwitch?.trackDrawable?.setTint(trackColor(roleSwitch?.isChecked == true))
             roleSwitch?.isEnabled = !control.busy && !ProjectionService.blocksOperations()
         } finally { reflectingRole = false }
     }
+
+    private fun trackColor(on: Boolean): Int =
+        if (on) accent else Color.parseColor(if (light) "#C6D2E4" else "#2C3E57")
 
     private fun card(content: LinearLayout.() -> Unit) {
         val view = column().apply {

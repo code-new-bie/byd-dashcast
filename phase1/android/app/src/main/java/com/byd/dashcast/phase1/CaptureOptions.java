@@ -147,7 +147,17 @@ final class CaptureOptions {
         if (!"live".equals(args[1])) {
             throw new IllegalArgumentException("Geometry options require the controlled live stream");
         }
-        int geometryStart = args.length > 2 && "remote".equals(args[2]) ? 4 : 2;
+        // Source selectors have different arities: remote consumes a component,
+        // named consumes only its keyword. Geometry starts AFTER that selector.
+        int geometryStart = 2;
+        if (args.length > 2 && "remote".equals(args[2])) {
+            if (args.length < 4) {
+                throw new IllegalArgumentException("Remote display component is required");
+            }
+            geometryStart = 4;
+        } else if (args.length > 2 && "named".equals(args[2])) {
+            geometryStart = 3;
+        }
         if (args.length == geometryStart) {
             return of(Mode.STRETCH);
         }

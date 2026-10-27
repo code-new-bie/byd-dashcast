@@ -64,20 +64,23 @@ final class ProjectionTarget {
         if (args == null || args.length < 1) {
             throw new IllegalArgumentException("Missing shell capture arguments");
         }
-        if (args.length > 1 && "named".equals(args[1]) || args.length > 2 && "named".equals(args[2])) {
+        if (args.length > 2 && "live".equals(args[1]) && "named".equals(args[2])) {
             return namedDisplay();
         }
         if (args.length > 1 && "remote".equals(args[1])) {
-            if (args.length < 3) {
+            if (args.length != 3) {
                 throw new IllegalArgumentException("Remote display component is required");
             }
             return remoteComponent(args[2], null);
         }
-        if (args.length > 2 && "remote".equals(args[2])) {
+        if (args.length > 2 && "live".equals(args[1]) && "remote".equals(args[2])) {
             if (args.length < 4) {
                 throw new IllegalArgumentException("Remote display component is required");
             }
             return remoteComponent(args[3], null);
+        }
+        if (args.length > 1 && !"live".equals(args[1])) {
+            throw new IllegalArgumentException("Unknown shell capture source prefix");
         }
         return primary();
     }

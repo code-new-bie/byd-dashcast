@@ -23,7 +23,7 @@ class Product1120Test {
     @Test fun namedTargetCannotAccidentallySelectPrimaryAndNamesNeverCollideSilently() {
         val target = ProjectionTarget.namedDisplay()
         assertEquals(target, ProjectionTarget.parse(target.token()))
-        assertEquals(target, ProjectionTarget.fromShellArguments(arrayOf("0","fit","named")))
+        assertEquals(target, ProjectionTarget.fromShellArguments(arrayOf("0","live","named","viewport-center-fit")))
         assertNotEquals(ProjectionTarget.primary(), target)
         assertFalse(target.isRemote)
         assertEquals("named", target.shellArguments())
@@ -58,5 +58,30 @@ class Product1120Test {
         assertEquals(1920f,box.width,0f);assertEquals(936f,box.height,0f)
         val video = SourceRenderMapping.create(ContentViewport(1920,936,64,112,1792,448),false)
         assertNotNull(video)
+    }
+    @Test fun fullModeMirrorBusinessFillsCarrierAndMirrorKeepsCompleteSource() {
+        // Real-vehicle feedback: a primary-sized portrait business source left the
+        // full-mode video as a narrow strip. The mirror-hosted business display now
+        // carries the carrier aspect itself.
+        assertEquals(1632f / 440f,
+            ContentViewport.FULL_MIRROR_SOURCE_WIDTH.toFloat() / ContentViewport.FULL_MIRROR_SOURCE_HEIGHT, 1e-4f)
+        assertTrue(BusinessDisplayProfile.valid(ContentViewport.FULL_MIRROR_SOURCE_WIDTH,
+            ContentViewport.FULL_MIRROR_SOURCE_HEIGHT, 480))
+        val viewport = ContentViewport(ContentViewport.FULL_MIRROR_SOURCE_WIDTH,
+            ContentViewport.FULL_MIRROR_SOURCE_HEIGHT, 144, 120, 1632, 440)
+        val fit = SourceRenderMapping.create(viewport, false).content
+        val crop = SourceRenderMapping.create(viewport, true).source
+        assertEquals(144f / 1920f, fit[0], 1e-6f)
+        assertEquals((720 - 120 - 440) / 720f, fit[1], 1e-6f)
+        assertEquals(1632f / 1920f, fit[2], 1e-6f)
+        assertEquals(440f / 720f, fit[3], 1e-6f)
+        // Identical aspect: FIT performs no letterboxing and CROP clips nothing.
+        assertEquals(1f, crop[2], 1e-6f);assertEquals(1f, crop[3], 1e-6f)
+        // A portrait mirror page letterboxes the complete wide source; the carrier
+        // never shrinks back to a primary-shaped strip when the preview attaches.
+        val mirror = MirrorGeometry.fit(ContentViewport.FULL_MIRROR_SOURCE_WIDTH,
+            ContentViewport.FULL_MIRROR_SOURCE_HEIGHT, 1080, 1920)
+        assertEquals(1080f, mirror.width, 0.5f)
+        assertEquals(1080f * 440f / 1632f, mirror.height, 0.5f)
     }
 }

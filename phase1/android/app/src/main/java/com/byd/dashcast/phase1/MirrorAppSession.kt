@@ -108,23 +108,16 @@ internal class MirrorAppSession @JvmOverloads constructor(surface: Surface, entr
         check(!closed)
         val endpoint = host ?: throw IOException("MIRROR_HOST_MISSING")
         endpoint.requireOwner()
-        endpoint.sinks.take()?.let {
+        endpoint.sinks.take()?.let { sink ->
             var handedOff = false
             try {
-              if (it.surface != null && BusinessDisplayProfile.valid(it.width, it.height, sourceDensity) &&
-                (it.width != sourceWidth || it.height != sourceHeight)) {
-                renderer.resizeBusinessSource(it.width, it.height)
-                checkNotNull(display).resize(it.width, it.height, sourceDensity)
-                sourceWidth = it.width
-                sourceHeight = it.height
-                sourceEpoch = System.nanoTime()
-                fence.changed(sourceEpoch)
-                endpoint.geometry(sourceWidth, sourceHeight)
-                System.err.println("SHELL_MIRROR_REFLOWED source=${sourceWidth}x$sourceHeight; transport_unchanged=true")
-              }
-              handedOff = true
-              renderer.setMirrorSink(it)
-            } finally { if (!handedOff) { it.surface?.release() } }
+                // The optional preview consumer only attaches a render surface. It must
+                // never reflow the business display: the mirror page fits the complete
+                // carrier-aspect source (letterboxed), instead of the carrier shrinking
+                // back to a portrait primary-sized strip.
+                renderer.setMirrorSink(sink)
+                handedOff = true
+            } finally { if (!handedOff) { sink.surface?.release() } }
         }
         endpoint.rendered(renderer.renderedMirrorLease())
         val now = System.nanoTime()

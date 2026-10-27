@@ -33,6 +33,10 @@ class ContourCliTest(unittest.TestCase):
         base=ROOT/'phase1/android/app/src/main/java/com/byd/dashcast/phase1'
         self.assertIn('DCV1_NON_MONOTONIC_OR_GAPPED_PTS',(base/'NoAuthVideoClient.java').read_text('utf-8'))
         self.assertIn('getMetrics(metrics)',(base/'BusinessDisplayProfile.kt').read_text('utf-8'))
-        self.assertIn('resizeBusinessSource',(base/'MirrorAppSession.kt').read_text('utf-8'))
+        # An optional control consumer must not resize the carrier-owned source.
+        mirror=(base/'MirrorAppSession.kt').read_text('utf-8')
+        self.assertNotIn('resizeBusinessSource',mirror)
+        self.assertNotIn('display?.resize',mirror)
+        self.assertIn('renderer.setMirrorSink(sink)',mirror)
         self.assertIn('minimumSourceTimestampNanos',(base/'CenterFrameRenderer.kt').read_text('utf-8'))
         self.assertIn('SafeSettingsNavigator.open',(base/'ProductActivity.kt').read_text('utf-8'))

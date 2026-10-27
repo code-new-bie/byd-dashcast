@@ -33,7 +33,8 @@ class ProjectionDisplayProfileTest {
     }
 
     @Test fun nativeGeometryCapabilityIsDifferentFromFrozenRwv3() {
-        assertEquals(0x5257563a, ProductCompositionSession.CAPABILITY)
+        assertEquals(0x5257563b, ProductCompositionSession.CAPABILITY)
+        assertNotEquals(0x5257563a, ProductCompositionSession.CAPABILITY)
         assertNotEquals(0x52575639, ProductCompositionSession.CAPABILITY)
         assertNotEquals(0x52575638, ProductCompositionSession.CAPABILITY)
         assertNotEquals(0x52575637, ProductCompositionSession.CAPABILITY)

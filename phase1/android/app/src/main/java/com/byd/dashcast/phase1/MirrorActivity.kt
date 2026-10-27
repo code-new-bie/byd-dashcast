@@ -12,7 +12,6 @@ import android.view.MotionEvent
 import android.view.Surface
 import android.view.TextureView
 import android.view.View
-import android.widget.Button
 import android.widget.FrameLayout
 
 /** Optional main-display consumer of the SAME hosted app. Home/Recents remain Android's own behavior.
@@ -49,14 +48,23 @@ class MirrorActivity : Activity(), TextureView.SurfaceTextureListener {
             setOnTouchListener { _, event -> forward(event); true }
         }
         root.addView(texture, FrameLayout.LayoutParams(-1, -1))
-        root.addView(Button(this).apply {
-            text = "投屏控制"
-            alpha = 0.65f
+        // Light watermark instead of a button: the page belongs to the hosted app's
+        // own interface; the control hint stays readable but visually recessive.
+        root.addView(android.widget.TextView(this).apply {
+            text = "Dashcast 投屏中 · 点击退出"
+            textSize = 13f
+            setTextColor(Color.argb(0x99, 0xFF, 0xFF, 0xFF))
+            setShadowLayer(2f, 0f, 1f, Color.argb(0x99, 0, 0, 0))
+            setPadding(dp(12), dp(8), dp(12), dp(8))
             contentDescription = "离开操作画面，仪表继续投屏"
             setOnClickListener { finish() }
-        }, FrameLayout.LayoutParams(-2, -2, android.view.Gravity.TOP or android.view.Gravity.END))
+        }, FrameLayout.LayoutParams(-2, -2, android.view.Gravity.TOP or android.view.Gravity.END).apply {
+            topMargin = dp(18); marginEnd = dp(18)
+        })
         setContentView(root)
     }
+
+    private fun dp(value: Int): Int = (resources.displayMetrics.density * value).toInt()
 
     override fun onResume() {
         super.onResume()

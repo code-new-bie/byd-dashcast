@@ -1,8 +1,8 @@
 # Dashcast 仪表导航
 
-BYD Android 车机 → QNX 仪表的 USB 应用投屏。当前源码 **1.12.2 / code53 / RWVA**：清晰视频覆盖整个内圈开口，仅轮廓渐变，两侧装饰圈继续隐藏；1632×440源与1920×720传输分开，安全参考框不裁视频。承接1.12实际2D模式传播、普通车模/路面让位、主屏可用区重排、地图/USB开关及按名接入。
+BYD Android 车机 → QNX 仪表的 USB 应用投屏。当前源码 **1.12.3 / code54 / RWVB**：内圈曲线不变，左右渐变由24收窄到12像素；边缘使用原厂常规深浅背景资产，两侧装饰圈继续隐藏。审查纠正普通车模/道路的实际目标，承接地图/USB开关、按名接入和被动操作镜像。
 
-[1.12.2 使用及边界](docs/PRODUCT_1.12.2.md) · [1.12.0 功能](docs/PRODUCT_1.12.0.md) · [同实例结构](docs/MIRROR_PROJECTION.md)。本次需升级 APK 和 RWVA 仪表 App，不能只装 APK；MCU/匹配参考 OS 不变。1.12.1候选因内部矩形模糊问题撤回。没有将模拟器结果当作目标车机或所有应用实车通过。
+[1.12.3 使用及边界](docs/PRODUCT_1.12.3.md) · [1.12.0 功能](docs/PRODUCT_1.12.0.md) · [同实例结构](docs/MIRROR_PROJECTION.md)。本次需升级 APK 和 RWVB 仪表 App，不能只装 APK；MCU/匹配参考 OS 不变。1.12.1候选因内部矩形模糊问题撤回。普通应用的超宽主屏镜像仍可能留边，不称原始主屏比例要求已全部完成；没有将模拟器结果当作目标车机实测。
 
 - 首页一键开始/停止；普通应用任务位于自有VirtualDisplay，同帧GL分发到编码器和可挂卸主屏镜像，不采集其他主屏应用。停止精确归还业务任务，不强停/清数据。
 - 应用搜索、收藏、默认选择；普通单任务入口也走托管，不限制应用类别。原图标在投屏期间进入镜像；切走不主动停止仪表。原车定制导航按可配置表保留独立Meter入口，不接管其主屏图标。
@@ -37,7 +37,7 @@ Windows 用 gradlew.bat。首次依赖需要网络；准备完缓存才能 --off
 
 Kotlin 产品界面、状态协调、应用目录、配置、角色工作流和持续合成控制位于 phase1/android；已打通的 Java 编码/DCV1/NCM/shell ABI 保留。phase1/qnx 提供脚本、精确 ARM/Thumb 适配源及便携控制器；analysis 与 tools 提供哈希固定组件生成和公开内容检查。
 
-本版需配套RWVA仪表App，组件生成器提供HMI/主KZB/3dscreen KZB/receiver；MCU、参考OS/MLO/IFS/Boot及USB角色不改。公开源码不含固件原件、APK、SDK、密钥、ADB身份或原始实车日志；配套另行分发。tools/build_sharp_inner_components.py可复现组件，输出不是可刷FULL，[使用细节](docs/PRODUCT_1.12.2.md)。
+本版需配套RWVB仪表App，组件生成器提供HMI/主KZB/3dscreen KZB/receiver；MCU、参考OS/MLO/IFS/Boot及USB角色不改。公开源码不含固件原件、APK、SDK、密钥、ADB身份或原始实车日志；配套另行分发。tools/build_edge_rim_components.py可复现组件，输出不是可刷FULL，[使用细节](docs/PRODUCT_1.12.3.md)。
 
 [使用](docs/USAGE.md) · [发布边界](docs/PUBLISHING.md) · [安全](SECURITY.md) · [依赖来源](THIRD_PARTY_NOTICES.md) · [许可证待选](LICENSE_STATUS.md) · [贡献](CONTRIBUTING.md)
 

@@ -17,7 +17,7 @@ from curved_scene_layout import (build_curved_kzb, build_plain_scene, CurvedScen
     FRAME_TOP as OLD_TOP, FRAME_BOTTOM as OLD_BOTTOM, contour, smooth)
 from contour_layout import FULL_RULES, POWER_DIGITS, POWER_UNIT
 from compact_info_layout import DIGITS, UNIT, MILEAGE, TRANSFORM
-from integrated_layout import ADAS_MANAGER, SMALL_MANAGER, adas_rules, CENTER_INNER, CENTER_OUTER, CENTER_SOURCE
+from integrated_layout import ADAS_MANAGER, SMALL_MANAGER, adas_rules, PANEL, CENTER_INNER, CENTER_OUTER, CENTER_SOURCE
 from display_fusion import PROPERTY, MANAGER, encode_manager
 from navigation_layout import dictionary, repack, digest, srt, words
 from ref2_noauth_native import Patch
@@ -80,21 +80,27 @@ def build_product_kzb(original,toc):
     # Keep all lane-signal / target / takeover states; omit only the ego picture.
     adas=[(p,k,v) for p,k,v in adas_rules() if p!='LaneDeparture/Car']
     adas.append(('LaneDeparture/Car','Node.Opacity',F(0)))
+    # Real-vehicle feedback: the OEM 2D updater rewrites leaf opacity every data
+    # tick, so leaf-level hiding loses the race. Full mode hides the whole panel
+    # subtree via the parent's visibility (Di+ hideOnProjection semantics); the
+    # empty idle state still restores everything on exit.
+    adas_full=[(PANEL,'Node.Visible',words(0))]
     small=[('.', 'Node2D.RenderTransformation',srt(1450,156)),
         ('ADAS_SmallBG','Node.Opacity',F(0)),('LaneDistance/CarSmall','Node.Opacity',F(0))]
-    for path,_,_ in adas+small:
+    for path,_,_ in adas+adas_full+small:
         if path not in strings:strings.append(path)
     native=KzbDirectory(original).read('/State Managers/01_ThemeLightMode_EffectOnRoot')
     group=encode_manager(strings,props,PROPERTY,[('DCIdle',0,[]),('DCFull',1,small),('DCCenter',2,small)])
     changes={'/$strings':dictionary(strings),
         MANAGER:encode_manager(strings,props,PROPERTY,[('DCIdle',0,[]),('DCFull',1,full),('DCCenter',2,center)]),
-        ADAS_MANAGER:encode_manager(strings,props,PROPERTY,[('DCIdle',0,[]),('DCFull',1,adas),('DCCenter',2,adas)]),
+        ADAS_MANAGER:encode_manager(strings,props,PROPERTY,[('DCIdle',0,[]),('DCFull',1,adas_full),('DCCenter',2,adas)]),
         SMALL_MANAGER:native[:12]+words(2)+native[16:]+group[16:]}
     changes.update(product_frames(original))
     output=repack(d,changes,{})
     return output,dict(input_sha256=digest(original),output_sha256=digest(output),prior=prior,
         changed_resources=list(changes),full_video_bounds=FULL_INNER,full_safe=FULL_SAFE,
         board_top=BOARD_TOP,corner_radius=62,ego_2d_image_hidden=True,
+        full_mode_panel_hidden_via_parent_visibility=True,
         original_alert_states_unchanged=True,real_kanzi_executed=False)
 
 
