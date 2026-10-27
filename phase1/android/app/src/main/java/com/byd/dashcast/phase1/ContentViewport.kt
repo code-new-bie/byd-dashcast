@@ -1,7 +1,7 @@
 package com.byd.dashcast.phase1
 
 /** Sharp source covers the WHOLE native inner-rim opening, including its sides.
- * RWVB uses padding only beyond the rim; safe UI bounds never clip the source.
+ * RWVC uses padding only beyond the rim; safe UI bounds never clip the source.
  * The carrier rectangle and native 1920x720 transport are separate sizes.
  * @author Codex
  * @date 2026/10/23

@@ -195,13 +195,13 @@ public final class MainActivity extends Activity {
         root.addView(scopeView, new LinearLayout.LayoutParams(-1, -2));
 
         addControlSection(root);
-        root.addView(createButton("背景功能验证：抑制5秒并自动恢复（非全屏）",
-                view -> startBackgroundPoc()));
+        TextView backgroundNote = new TextView(this);
+        backgroundNote.setText("本版保留原生背景；旧版5秒整层抑制试验不再适用。请从投屏主页检查大小窗、深浅与停止恢复。");
+        backgroundNote.setPadding(0, dp(8), 0, dp(8));
+        root.addView(backgroundNote);
         captureSettingsView = new CaptureSettingsView(this, this::appendLog);
         root.addView(captureSettingsView.view());
         addProjectionTargetControls(root);
-        root.addView(createButton("全屏实车合成：视频在原生信息下方（5秒自动恢复）",
-                view -> startCompositionTrial()));
         continuousSecondsField = createField(root, "持续投屏时长 1..1800 秒（先600秒，再1800秒）", "600");
         root.addView(createButton("开始持续投屏（可切到导航，最多30分钟）", view -> startContinuousProjection()));
         continuousStatusView = new TextView(this);

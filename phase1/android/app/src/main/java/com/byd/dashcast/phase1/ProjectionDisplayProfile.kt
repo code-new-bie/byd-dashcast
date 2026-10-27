@@ -5,7 +5,7 @@ internal object ProjectionDisplayProfile {
     @JvmStatic
     fun densityDpi(width: Int, height: Int): Int = when (width to height) {
         1200 to 640 -> 240 // .6 physical resampling: 16sp becomes 14.4px, not 9.6px.
-        1632 to 440 -> 160 // RWVB retains the sharp carrier and inner-rim curve.
+        1632 to 440 -> 160 // RWVC retains the sharp carrier and inner-rim curve.
         1408 to 368 -> 160 // Frozen RWV6 diagnostics only.
         1536 to 384 -> 160 // RWV5 effective content is 1:1, excluding wider native feathers.
         1728 to 384 -> 160 // Frozen RWV4 diagnostics only.

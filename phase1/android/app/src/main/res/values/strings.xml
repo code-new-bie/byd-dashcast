@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Dashcast 仪表导航</string>
-    <string name="screen_title">Dashcast 1.12.3 高级工程工具</string>
+    <string name="screen_title">Dashcast 1.12.4 高级工程工具</string>
     <string name="mirror_accessibility_label">Dashcast 投屏应用图标路由</string>
     <string name="mirror_accessibility_description">监听当前投屏应用窗口以路由原图标，并只读取定制地图两个仪表按钮的控件ID；不读取文字或密码。不自动启用此权限。地图没有按钮时使用Dashcast首页“仪表地图”。</string>
     <string name="control_initial_status">待连接 ADB；原厂导航中继版本、USB 枚举与视频需分别验证。</string>
