@@ -38,8 +38,8 @@ class CurvedSceneCliTest(unittest.TestCase):
     def test_carrier_and_safe_bounds_are_distinct(self):
         source = next((ROOT / "phase1/android/app/src/main").rglob("ContentViewport.kt")).read_text(encoding="utf-8")
         self.assertIn("1792", source)
-        self.assertIn("432", source)
-        self.assertIn("intArrayOf(256, 144, 1408, 352)", source)
+        self.assertIn("448", source)
+        self.assertIn("intArrayOf(256, 152, 1408, 352)", source)
 
 
 if __name__ == "__main__":

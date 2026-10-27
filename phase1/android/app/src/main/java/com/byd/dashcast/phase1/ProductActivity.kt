@@ -19,6 +19,7 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import android.widget.Switch
 
 /** Product launcher, implemented in Kotlin. Engineering tools are an explicit diagnostics-only route.
  * @author Codex
@@ -32,6 +33,8 @@ class ProductActivity : Activity() {
     private lateinit var connection: TextView
     private lateinit var detail: TextView
     private var primary: Button? = null
+    private var roleSwitch: Switch? = null
+    private var reflectingRole = false
     private var apps: List<ProductApp> = emptyList()
     private var page = 0
     private val main = Handler(Looper.getMainLooper())
@@ -64,6 +67,7 @@ class ProductActivity : Activity() {
         window.navigationBarColor = canvasColor
         window.decorView.systemUiVisibility = if (light) View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR else 0
         primary = null
+        roleSwitch = null
         val root = column().apply { setPadding(dp(24), dp(12), dp(24), dp(12)); setBackgroundColor(canvasColor) }
         val header = row()
         header.addView(text("Dashcast", 30, true), LinearLayout.LayoutParams(0, dp(58), 1f))
@@ -111,12 +115,30 @@ class ProductActivity : Activity() {
         actions.addView(button("停止投屏") { control.stop(); updateStatus() }, LinearLayout.LayoutParams(0, dp(72), 1f))
         body.addView(actions, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) })
         body.addView(button("打开当前操作画面") { MirrorBridge.open(this) })
-        val roles = row()
-        roles.addView(button("连接仪表模式") { control.switchRole(InstrumentUsbCommand.NCM); updateStatus() },
-            LinearLayout.LayoutParams(0, dp(64), 1f).apply { marginEnd = dp(12) })
-        roles.addView(button("恢复 U 盘模式") { control.switchRole(InstrumentUsbCommand.HOST); updateStatus() },
-            LinearLayout.LayoutParams(0, dp(64), 1f))
-        body.addView(roles, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8); bottomMargin = dp(12) })
+        roleSwitch = Switch(this).apply {
+            text = "仪表 USB 模式  "
+            textOn = "投屏 NCM"; textOff = "U盘 Host"; showText = true
+            textSize = 21f; minHeight = dp(72); setTextColor(textColor)
+            isChecked = control.ncmObserved()
+            setOnCheckedChangeListener { _, checked ->
+                if (!reflectingRole) {
+                    control.switchRole(if (checked) InstrumentUsbCommand.NCM else InstrumentUsbCommand.HOST)
+                    updateStatus()
+                }
+            }
+        }
+        body.addView(roleSwitch, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8); bottomMargin = dp(12) })
+        body.addView(text("开关反映已发现的 NCM 连接；未发现 USB 不代表 Host 已成功，切换结果以仪表提示为准。", 16))
+        body.addView(button("仪表地图 · 开 / 关") { control.toggleMap(); updateStatus() })
+        body.addView(button("按屏幕名接入") {
+            AlertDialog.Builder(this).setTitle("接入应用自带的投屏页面")
+                .setMessage("开始后，在应用的投屏设置填写屏幕名：${NamedDisplayContract.NAME}。此屏幕仅在本轮会话存在；只接入一个应用，换应用前先停止。原地图的隐藏按钮不会因此出现。")
+                .setPositiveButton("开始接入") { _, _ -> control.namedDisplay(); updateStatus() }
+                .setNeutralButton("复制屏幕名") { _, _ ->
+                    (getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager)
+                        .setPrimaryClip(android.content.ClipData.newPlainText("仪表屏幕名", NamedDisplayContract.NAME))
+                }.setNegativeButton("取消", null).show()
+        })
         body.addView(text("切换模式无需手动拔线：应用先停止投屏并释放连接。驾驶中仅使用导航，不观看娱乐视频；勿在行车中操作应用选择或设置。", 16))
     }
 
@@ -177,7 +199,7 @@ class ProductActivity : Activity() {
         card {
             addView(text("画面与外观", 26, true))
             addView(toggle("导航仪表布局：顶部状态、中央地图、底部数据", settings.underlay) { settings.underlay = it })
-            addView(text("开启：曲边梯形全幅，1792×432视频承载区、1408×352保守安全区；关闭：768×432外窗、720×384有效内框。四角随曲边淡出，不拉伸画面。需配套RWV7仪表 App；普通车模/静态路面让位，真实告警保留。", 16))
+            addView(text("开启：圆角曲边全幅，1792×448视频承载区、1408×352保守安全区；关闭：768×432外窗、720×384有效内框。四角随曲边淡出，下沿贴合续航背景。需配套RWV8仪表 App；普通车模/静态路面让位，真实告警保留。", 16))
             addView(toggle("仪表中心裁剪填充（可能裁掉边缘提示）", settings.crop) { settings.crop = it })
             addView(text("普通应用保持车机主屏的逻辑分辨率、比例和密度，操作镜像显示完整原界面；仪表单独按有效区等比适配。裁剪开启时只裁仪表画面，不改变主屏应用比例；关闭可保留完整应用画面。设置在下次开始生效。", 16))
             addView(toggle("日间浅色界面", settings.light) { settings.light = it; build() })
@@ -186,7 +208,7 @@ class ProductActivity : Activity() {
         card {
             addView(text("原图标与双端操作", 23, true))
             addView(text("普通应用：原图标进入当前同实例镜像；触摸和返回操作同步到仪表。回主页或切其他应用不停止投屏。停止后任务保留回车机，原图标恢复原应用。", 17))
-            addView(text("建议开启下方无障碍图标路由，只订阅当前投屏应用的窗口事件，不读取页面内容。不开启时宿主定向检查兜底，可能有更长闪现。输入法、多屏兼容性需以车机实际表现为准。", 17))
+            addView(text("无障碍只处理当前投屏应用的窗口事件，以及定制地图两个仪表按钮的控件ID。不读取文字、密码。目标车地图无此按钮时，使用首页“仪表地图”。不开启时原图标仍有宿主定向检查兜底。", 17))
             addView(button("设置原图标路由（无障碍）") {
                 SafeSettingsNavigator.open(this@ProductActivity)
             })
@@ -230,7 +252,7 @@ class ProductActivity : Activity() {
 
     private fun firstRun() {
         AlertDialog.Builder(this).setTitle("首次连接 Dashcast")
-            .setMessage("1. 本版需升级配套 RWV7 仪表 App；不改 MCU 和参考 OS。\n2. USB 数据线可保持连接切模式。\n3. 允许 ADB 调试及 USB 访问；系统有入口时可开启无障碍图标路由，无入口不影响宿主路由。\n\n普通应用投屏后点原图标进入同实例操作画面；定制地图仍开原生主界面。停止保留业务任务并恢复原厂仪表背景。驾驶时不要操作设置或观看视频；原生信息异常立即停止。本版本不宣称道路安全认证。")
+            .setMessage("1. 本版需升级配套 RWV8 仪表 App；不改 MCU 和参考 OS。\n2. USB 数据线可保持连接切模式。\n3. 允许 ADB 调试及 USB 访问；系统有入口时可开启无障碍图标路由，无入口不影响宿主路由。\n\n普通应用投屏后点原图标进入同实例操作画面；定制地图仍开原生主界面。停止保留业务任务并恢复原厂仪表背景。驾驶时不要操作设置或观看视频；原生信息异常立即停止。本版本不宣称道路安全认证。")
             .setPositiveButton("已安装配套仪表包，开始设置") { _, _ -> settings.setupComplete = true; control.connect(); updateStatus() }
             .setNegativeButton("稍后", null).show()
     }
@@ -260,6 +282,11 @@ class ProductActivity : Activity() {
         } else { control.message + if (MirrorBridge.current() != null) "\n" + MirrorBridge.message else "" }
         primary?.isEnabled = !control.busy && !ProjectionService.blocksOperations() &&
             ProductAppCatalog.select(apps, settings.target)?.capability?.allowed == true
+        reflectingRole = true
+        try {
+            roleSwitch?.isChecked = control.ncmObserved()
+            roleSwitch?.isEnabled = !control.busy && !ProjectionService.blocksOperations()
+        } finally { reflectingRole = false }
     }
 
     private fun card(content: LinearLayout.() -> Unit) {

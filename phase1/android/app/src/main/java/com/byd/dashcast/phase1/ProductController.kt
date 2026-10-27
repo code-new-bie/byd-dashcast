@@ -29,6 +29,7 @@ internal class ProductController private constructor(context: Context) {
     private val history = ProjectionJournal()
     private val main = Handler(Looper.getMainLooper())
     private val startGeneration = AtomicLong()
+    @Volatile private var requestedTarget: ProjectionTarget? = null
     private val worker = ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, ArrayBlockingQueue(1),
         { job -> Thread(job, "dashcast-product").apply { isDaemon = true } }, ThreadPoolExecutor.AbortPolicy())
     @Volatile var message: String = "选择导航应用，点击开始即可连接仪表"
@@ -83,7 +84,39 @@ internal class ProductController private constructor(context: Context) {
         if (ProjectionService.active()) { message = "已有投屏会话，请先停止再切换应用"; return }
         if (busy) { message = "当前操作尚未完成，请稍候"; return }
         val request = StartRequest(target, settings.options(), settings.underlay, startGeneration.incrementAndGet())
+        requestedTarget = target
         operation("正在连接仪表并准备投屏") { prepareStart(request) }
+    }
+
+    fun toggleMap() {
+        if (busy) { message = "当前操作尚未完成，请稍候"; return }
+        val maps = ProductAppCatalog.load(app).filter { it.navigation && it.capability.allowed }
+        val map = maps.firstOrNull { it.component.startsWith("com.byd.automap/") }
+            ?: maps.firstOrNull { it.component.startsWith("com.autonavi.amapauto/") }
+            ?: maps.firstOrNull()
+        if (map == null) { message = "未找到可用地图，请在应用中心选择"; return }
+        val next = map.target()
+        if (ProjectionService.active() && requestedTarget == next) { stop(); return }
+        replace(next)
+    }
+
+    fun namedDisplay() = replace(ProjectionTarget.namedDisplay())
+
+    private fun replace(target: ProjectionTarget) {
+        if (!settings.setupComplete) { message = "请先完成首次连接设置"; return }
+        if (busy) { message = "当前操作尚未完成，请稍候"; return }
+        stop()
+        val request = StartRequest(target, settings.options(), settings.underlay, startGeneration.incrementAndGet())
+        requestedTarget = target
+        operation("正在结束上轮投屏并准备新画面") {
+            val deadline = System.nanoTime() + 15_000_000_000L
+            while (!ProjectionService.readyForNewService()) {
+                if (request.generation != startGeneration.get()) { return@operation }
+                if (System.nanoTime() >= deadline) { throw IOException("SERVICE_FINISHING") }
+                Thread.sleep(50)
+            }
+            prepareStart(request)
+        }
     }
 
     private fun prepareStart(request: StartRequest) {
@@ -182,6 +215,9 @@ internal class ProductController private constructor(context: Context) {
             else -> "仪表 USB 已连接 · 待授权"
         }
     } catch (error: RuntimeException) { "USB 状态不可用：${error.javaClass.simpleName}" }
+
+    fun ncmObserved(): Boolean = try { observe().let { it.allNcm == 1 && it.targetNcm == 1 } }
+        catch (error: RuntimeException) { false }
 
     fun diagnosticText(): String = "Dashcast ${BuildConfig.VERSION_NAME}\nADB=${adbReady}\n${usbSummary()}\n" +
         ProjectionService.status() + "\n\n" + history.coordinatorSnapshot() + "\n" + ProjectionService.journal() +

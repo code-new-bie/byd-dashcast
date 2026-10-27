@@ -6,11 +6,11 @@ import org.junit.Test
 class ContentViewportTest {
     @Test fun fullCarrierIsNotMistakenForTheCurvedSafeRectangle() {
         val p = ContentViewport.full()
-        assertEquals(1792.0 / 432, p.sourceWidth.toDouble() / p.sourceHeight, 0.0)
-        assertEquals(1792.0 / 432, p.encodedWidth.toDouble() / p.encodedHeight, 0.0)
-        assertArrayEquals(floatArrayOf(64f/1920, 176f/720, 1792f/1920, 432f/720), p.normalized(), .00001f)
-        assertEquals(544, p.encodedTop+p.encodedHeight)
-        assertArrayEquals(intArrayOf(256, 144, 1408, 352), ContentViewport.fullSafeBounds())
+        assertEquals(1792.0 / 448, p.sourceWidth.toDouble() / p.sourceHeight, 0.0)
+        assertEquals(1792.0 / 448, p.encodedWidth.toDouble() / p.encodedHeight, 0.0)
+        assertArrayEquals(floatArrayOf(64f/1920, 160f/720, 1792f/1920, 448f/720), p.normalized(), .00001f)
+        assertEquals(560, p.encodedTop+p.encodedHeight)
+        assertArrayEquals(intArrayOf(256, 152, 1408, 352), ContentViewport.fullSafeBounds())
         assertTrue(p.encodedLeft < ContentViewport.fullSafeBounds()[0])
         assertTrue(p.encodedWidth > ContentViewport.fullSafeBounds()[2])
     }

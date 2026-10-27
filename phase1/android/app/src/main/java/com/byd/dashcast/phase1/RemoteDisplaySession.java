@@ -69,7 +69,12 @@ final class RemoteDisplaySession implements RemoteCaptureSession {
                     throw new IOException("APP_NATIVE_SECONDARY_ALREADY_IN_USE; existing task left untouched");
                 }
             }
-            display = createVirtualDisplay(context, surface, width, height, densityDpi);
+            if (profile != null) {
+                NamedDisplayContract.requireAvailable(context);
+                display = createVirtualDisplay(context, surface, width, height, densityDpi, FLAGS, NamedDisplayContract.NAME);
+            } else {
+                display = createVirtualDisplay(context, surface, width, height, densityDpi);
+            }
             Display info = display.getDisplay();
             if (info == null || info.getDisplayId() <= 0) {
                 throw new IOException("APP_INDEPENDENT_DISPLAY_MISSING");
@@ -152,13 +157,19 @@ final class RemoteDisplaySession implements RemoteCaptureSession {
 
     static VirtualDisplay createVirtualDisplay(Context context, Surface surface,
             int width, int height, int densityDpi, int flags) throws Exception {
+        return createVirtualDisplay(context, surface, width, height, densityDpi, flags,
+                "dashcast-independent-" + System.nanoTime());
+    }
+
+    static VirtualDisplay createVirtualDisplay(Context context, Surface surface,
+            int width, int height, int densityDpi, int flags, String name) throws Exception {
         Class<?> type = Class.forName("android.hardware.display.DisplayManagerGlobal");
         Object manager = type.getMethod("getInstance").invoke(null);
         Method create = type.getMethod("createVirtualDisplay", Context.class,
                 Class.forName("android.media.projection.MediaProjection"), String.class,
                 int.class, int.class, int.class, Surface.class, int.class,
                 VirtualDisplay.Callback.class, Handler.class, String.class);
-        Object result = create.invoke(manager, context, null, "dashcast-independent-" + System.nanoTime(),
+        Object result = create.invoke(manager, context, null, name,
                 width, height, densityDpi, surface, flags, null, null, null);
         if (!(result instanceof VirtualDisplay)) { throw new IOException("APP_INDEPENDENT_DISPLAY_CREATE_FAILED"); }
         return (VirtualDisplay) result;

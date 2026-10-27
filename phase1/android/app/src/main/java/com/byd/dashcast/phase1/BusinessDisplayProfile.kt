@@ -21,7 +21,7 @@ internal data class BusinessDisplayProfile(val width: Int, val height: Int, val 
                 .getDisplay(Display.DEFAULT_DISPLAY) ?: error("MIRROR_PRIMARY_DISPLAY_MISSING")
             val metrics = DisplayMetrics()
             @Suppress("DEPRECATION")
-            display.getRealMetrics(metrics)
+            display.getMetrics(metrics)
             return BusinessDisplayProfile(metrics.widthPixels, metrics.heightPixels, metrics.densityDpi)
         }
     }

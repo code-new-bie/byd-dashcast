@@ -34,6 +34,9 @@ internal class MirrorAppSession @JvmOverloads constructor(surface: Surface, entr
     private var lastRoute = 0L
     private val polls = TaskPollSchedule()
     private val fence = CaptureSourceFence()
+    private var sourceWidth = width
+    private var sourceHeight = height
+    private val sourceDensity = density
 
     init {
         try {
@@ -105,7 +108,24 @@ internal class MirrorAppSession @JvmOverloads constructor(surface: Surface, entr
         check(!closed)
         val endpoint = host ?: throw IOException("MIRROR_HOST_MISSING")
         endpoint.requireOwner()
-        endpoint.sinks.take()?.let { renderer.setMirrorSink(it) }
+        endpoint.sinks.take()?.let {
+            var handedOff = false
+            try {
+              if (it.surface != null && BusinessDisplayProfile.valid(it.width, it.height, sourceDensity) &&
+                (it.width != sourceWidth || it.height != sourceHeight)) {
+                renderer.resizeBusinessSource(it.width, it.height)
+                checkNotNull(display).resize(it.width, it.height, sourceDensity)
+                sourceWidth = it.width
+                sourceHeight = it.height
+                sourceEpoch = System.nanoTime()
+                fence.changed(sourceEpoch)
+                endpoint.geometry(sourceWidth, sourceHeight)
+                System.err.println("SHELL_MIRROR_REFLOWED source=${sourceWidth}x$sourceHeight; transport_unchanged=true")
+              }
+              handedOff = true
+              renderer.setMirrorSink(it)
+            } finally { if (!handedOff) { it.surface?.release() } }
+        }
         endpoint.rendered(renderer.renderedMirrorLease())
         val now = System.nanoTime()
         val routeHint = endpoint.takeRoute()

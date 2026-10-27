@@ -22,8 +22,8 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 internal class CenterFrameRenderer @JvmOverloads constructor(
     output: Surface,
-    private val viewport: ContentViewport? = null,
-    crop: Boolean = false
+    private var viewport: ContentViewport? = null,
+    private val crop: Boolean = false
 ) : AutoCloseable {
     private var display = EGL14.EGL_NO_DISPLAY
     private var context = EGL14.EGL_NO_CONTEXT
@@ -49,7 +49,7 @@ internal class CenterFrameRenderer @JvmOverloads constructor(
     private var transformLocation = -1
     private var contentLocation = -1
     private var sourceBoundsLocation = -1
-    private val mapping = SourceRenderMapping.create(viewport, crop)
+    private var mapping = SourceRenderMapping.create(viewport, crop)
     private val submissions = FrameSubmissionClock()
     private var sourceUpdates = 0L
     private var submittedFrames = 0L
@@ -152,6 +152,17 @@ internal class CenterFrameRenderer @JvmOverloads constructor(
     }
 
     fun inputSurface(): Surface = input ?: throw IllegalStateException("CENTER_RENDERER_CLOSED")
+
+    /** GL-thread only. Reflow the owned business display, never stretch the main mirror. */
+    fun resizeBusinessSource(width: Int, height: Int) {
+        require(BusinessDisplayProfile.valid(width, height, 160))
+        val current = viewport ?: error("MIRROR_VIEWPORT_REQUIRED")
+        viewport = current.copy(sourceWidth = width, sourceHeight = height)
+        mapping = SourceRenderMapping.create(viewport, crop)
+        source?.setDefaultBufferSize(width, height)
+        validProducerBuffer = false
+        mirrorDirty = true
+    }
 
     fun renderedMirrorLease(): Long = if (mirrorDirty) -1L else mirror?.lease ?: -1L
 

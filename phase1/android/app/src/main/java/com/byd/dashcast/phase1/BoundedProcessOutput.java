@@ -23,13 +23,18 @@ final class BoundedProcessOutput {
     }
 
     static String read(java.lang.Process process, long timeoutMillis) throws IOException {
+        return read(process, timeoutMillis, MAX_OUTPUT_BYTES, false);
+    }
+
+    static String read(java.lang.Process process, long timeoutMillis, int maxBytes, boolean strict) throws IOException {
+        if (maxBytes < 1 || maxBytes > 262144) { throw new IllegalArgumentException("Owned output limit"); }
         ThreadPoolExecutor executor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
                 new ArrayBlockingQueue<>(1), task -> {
                     Thread thread = new Thread(task, "dashcast-owned-am-output");
                     thread.setDaemon(true);
                     return thread;
                 });
-        Future<String> output = executor.submit(() -> drain(process.getInputStream()));
+        Future<String> output = executor.submit(() -> drain(process.getInputStream(), maxBytes, strict));
         IOException failure = null;
         try {
             if (!process.waitFor(timeoutMillis, TimeUnit.MILLISECONDS)) {
@@ -60,15 +65,18 @@ final class BoundedProcessOutput {
         }
     }
 
-    private static String drain(InputStream input) throws IOException {
+    private static String drain(InputStream input, int maxBytes, boolean strict) throws IOException {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         byte[] buffer = new byte[1024];
         int length;
+        boolean overflow = false;
         while ((length = input.read(buffer)) != -1) {
-            if (output.size() < MAX_OUTPUT_BYTES) {
-                output.write(buffer, 0, Math.min(length, MAX_OUTPUT_BYTES - output.size()));
+            if (length > maxBytes - output.size()) { overflow = true; }
+            if (output.size() < maxBytes) {
+                output.write(buffer, 0, Math.min(length, maxBytes - output.size()));
             }
         }
+        if (strict && overflow) { throw new IOException("OWNED_OUTPUT_LIMIT"); }
         return output.toString(java.nio.charset.StandardCharsets.UTF_8.name());
     }
 

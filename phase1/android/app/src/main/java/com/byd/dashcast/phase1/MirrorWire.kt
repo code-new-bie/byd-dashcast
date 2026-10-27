@@ -15,5 +15,6 @@ internal object MirrorWire {
     const val ROUTE = 6
     const val SHOW = 1
     const val CLOSED = 2
+    const val GEOMETRY = 3
     const val MAX_PARCEL = 32768
 }

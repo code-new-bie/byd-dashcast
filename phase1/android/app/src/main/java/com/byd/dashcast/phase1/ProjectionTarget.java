@@ -11,11 +11,20 @@ final class ProjectionTarget {
 
     private final String component;
     private final String label;
+    private final boolean named;
 
     private ProjectionTarget(String component, String label) {
+        this(component, label, false);
+    }
+
+    private ProjectionTarget(String component, String label, boolean named) {
         this.component = component;
         this.label = label;
+        this.named = named;
     }
+
+    static ProjectionTarget namedDisplay() { return new ProjectionTarget(null, "按屏幕名接入", true); }
+    boolean isNamed() { return named; }
 
     static ProjectionTarget primary() {
         return new ProjectionTarget(null, "车机主屏（现有链路）");
@@ -40,6 +49,7 @@ final class ProjectionTarget {
     }
 
     static ProjectionTarget parse(String token) {
+        if ("named".equals(token)) { return namedDisplay(); }
         if (PRIMARY_TOKEN.equals(token)) {
             return primary();
         }
@@ -53,6 +63,9 @@ final class ProjectionTarget {
     static ProjectionTarget fromShellArguments(String[] args) {
         if (args == null || args.length < 1) {
             throw new IllegalArgumentException("Missing shell capture arguments");
+        }
+        if (args.length > 1 && "named".equals(args[1]) || args.length > 2 && "named".equals(args[2])) {
+            return namedDisplay();
         }
         if (args.length > 1 && "remote".equals(args[1])) {
             if (args.length < 3) {
@@ -85,11 +98,12 @@ final class ProjectionTarget {
     }
 
     String token() {
-        return isRemote() ? REMOTE_PREFIX + component : PRIMARY_TOKEN;
+        return named ? "named" : isRemote() ? REMOTE_PREFIX + component : PRIMARY_TOKEN;
     }
 
     /** Emits only fixed words and a previously allowlisted component. */
     String shellArguments() {
+        if (named) { return "named"; }
         if (!isRemote()) {
             return "";
         }
@@ -110,12 +124,12 @@ final class ProjectionTarget {
             return false;
         }
         ProjectionTarget that = (ProjectionTarget) other;
-        return Objects.equals(component, that.component);
+        return named == that.named && Objects.equals(component, that.component);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(component);
+        return Objects.hash(component, named);
     }
 
     private static void validateComponent(String componentName) {

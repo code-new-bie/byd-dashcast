@@ -54,7 +54,7 @@ public final class ShellScreenCapture {
             if (!live && (seconds < 1 || seconds > 10)) {
                 throw new IOException("SHELL_CAPTURE_DURATION_LIMIT");
             }
-            if (target.isRemote() && Looper.myLooper() == null) {
+            if ((target.isRemote() || target.isNamed()) && Looper.myLooper() == null) {
                 // app_process invokes this main directly; ActivityThread and framework Handlers need a Looper.
                 Looper.prepareMainLooper();
                 System.err.println("SHELL_CAPTURE_REMOTE_LOOPER_READY");
@@ -126,10 +126,10 @@ public final class ShellScreenCapture {
             Surface captureSurface = surface;
             int logicalWidth = NoAuthVideoProtocol.WIDTH;
             int logicalHeight = NoAuthVideoProtocol.HEIGHT;
-            ProjectionEntryRouter.Selection selection = target.isRemote() && mirrorTicket != null
+            ProjectionEntryRouter.Selection selection = target.isRemote()
                     ? ProjectionEntryRouter.resolve(RemoteDisplaySession.shellContext(), target,
                         line -> System.err.println("SHELL_CAPTURE_" + line)) : null;
-            BusinessDisplayProfile business = selection != null && selection.getNative() == null
+            BusinessDisplayProfile business = selection != null && selection.getNative() == null && mirrorTicket != null
                     ? BusinessDisplayProfile.read(RemoteDisplaySession.shellContext()) : null;
             if (options.contentViewport()) {
                 ContentViewport viewport = options.centerWindow() ? ContentViewport.center() : ContentViewport.full();
@@ -146,17 +146,18 @@ public final class ShellScreenCapture {
                 captureSurface = center.inputSurface();
                 logicalWidth = 1280;
             }
-            if (target.isRemote()) {
-                if (mirrorTicket != null) {
+            if (target.isNamed()) {
+                remote = new NamedDisplaySession(captureSurface, logicalWidth, logicalHeight);
+                display = remote;
+            } else if (target.isRemote()) {
+                if (selection != null && selection.getNative() != null) {
+                    remote = new RemoteDisplaySession(captureSurface, target, logicalWidth, logicalHeight,
+                            options, selection.getNative());
+                } else if (mirrorTicket != null) {
                     ProjectionEntryRouter.Selection entry = selection;
-                    if (entry.getNative() == null) {
-                        if (center == null) { throw new IOException("MIRROR_CONTENT_RENDERER_REQUIRED"); }
-                        remote = new MirrorAppSession(captureSurface, entry.getEntry(), logicalWidth, logicalHeight,
-                                mirrorTicket, center, business.getDensity());
-                    } else {
-                        remote = new RemoteDisplaySession(captureSurface, target, logicalWidth, logicalHeight,
-                                options, entry.getNative());
-                    }
+                    if (center == null) { throw new IOException("MIRROR_CONTENT_RENDERER_REQUIRED"); }
+                    remote = new MirrorAppSession(captureSurface, entry.getEntry(), logicalWidth, logicalHeight,
+                            mirrorTicket, center, business.getDensity());
                 } else {
                     remote = new RemoteDisplaySession(captureSurface, target, logicalWidth, logicalHeight, options);
                 }

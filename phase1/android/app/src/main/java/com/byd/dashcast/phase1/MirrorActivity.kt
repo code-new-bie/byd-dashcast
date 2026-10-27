@@ -99,16 +99,18 @@ class MirrorActivity : Activity(), TextureView.SurfaceTextureListener {
     private fun forward(event: MotionEvent) {
         val owner = MirrorBridge.current() ?: return
         if (!resumed || owner.ticket != ticket || owner.width <= 0 || texture.width <= 0 || texture.height <= 0) { return }
-        val geometry = MirrorGeometry.fit(owner.width, owner.height, texture.width, texture.height)
+        val sourceWidth = owner.width
+        val sourceHeight = owner.height
+        val geometry = MirrorGeometry.fit(sourceWidth, sourceHeight, texture.width, texture.height)
         if (event.actionMasked == MotionEvent.ACTION_DOWN) { gesture = geometry.contains(event.x, event.y) }
         if (!gesture) { return }
         val copy = MotionEvent.obtainNoHistory(event)
         val transform = Matrix().apply {
-            setValues(floatArrayOf(owner.width / geometry.width, 0f, -geometry.left * owner.width / geometry.width,
-                0f, owner.height / geometry.height, -geometry.top * owner.height / geometry.height, 0f, 0f, 1f))
+            setValues(floatArrayOf(sourceWidth / geometry.width, 0f, -geometry.left * sourceWidth / geometry.width,
+                0f, sourceHeight / geometry.height, -geometry.top * sourceHeight / geometry.height, 0f, 0f, 1f))
         }
         copy.transform(transform)
-        MirrorBridge.touch(lease, copy)
+        MirrorBridge.touch(lease, copy, sourceWidth, sourceHeight)
         if (event.actionMasked == MotionEvent.ACTION_UP || event.actionMasked == MotionEvent.ACTION_CANCEL) {
             gesture = false
         }

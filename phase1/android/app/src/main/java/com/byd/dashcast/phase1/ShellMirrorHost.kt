@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * @date 2026/10/25
  */
 internal class ShellMirrorHost(private val ticket: String, private val appUid: Int, private val displayId: Int,
-    private val width: Int, private val height: Int) : Binder(), AutoCloseable {
+    private var width: Int, private var height: Int) : Binder(), AutoCloseable {
     val sinks = MirrorSinkMailbox()
     private var callback: IBinder? = null
     private val closed = AtomicBoolean()
@@ -86,9 +86,12 @@ internal class ShellMirrorHost(private val ticket: String, private val appUid: I
             }
             MirrorWire.TOUCH -> {
                 val lease = data.readLong()
+                val w = data.readInt()
+                val h = data.readInt()
                 val event = MotionEvent.CREATOR.createFromParcel(data)
                 try {
-                    if (lease == inputLease && inputAttached && renderedLease == lease) { touch(event) }
+                    if (lease == inputLease && inputAttached && renderedLease == lease &&
+                        w == width && h == height) { touch(event) }
                 } finally { event.recycle() }
             }
             MirrorWire.BACK -> {
@@ -148,6 +151,14 @@ internal class ShellMirrorHost(private val ticket: String, private val appUid: I
     }
 
     fun takeRoute(): Boolean = route.getAndSet(false)
+    @Synchronized fun geometry(width: Int, height: Int) {
+        require(BusinessDisplayProfile.valid(width, height, 160))
+        cancelTouch()
+        this.width = width
+        this.height = height
+        renderedLease = -1L
+        notifyApp(MirrorWire.GEOMETRY)
+    }
     @Synchronized fun rendered(lease: Long) {
         if (renderedLease != lease) { cancelTouch() }
         renderedLease = lease
@@ -163,6 +174,7 @@ internal class ShellMirrorHost(private val ticket: String, private val appUid: I
         try {
             data.writeInterfaceToken(MirrorWire.CALLBACK)
             data.writeString(ticket)
+            if (action == MirrorWire.GEOMETRY) { data.writeInt(width); data.writeInt(height) }
             client.transact(action, data, null, IBinder.FLAG_ONEWAY)
         } catch (error: android.os.RemoteException) {
             ownerDied.set(true)

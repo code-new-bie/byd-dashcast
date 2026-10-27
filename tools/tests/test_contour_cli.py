@@ -32,6 +32,7 @@ class ContourCliTest(unittest.TestCase):
     def test_pts_guard_and_primary_source_profile_are_preserved(self):
         base=ROOT/'phase1/android/app/src/main/java/com/byd/dashcast/phase1'
         self.assertIn('DCV1_NON_MONOTONIC_OR_GAPPED_PTS',(base/'NoAuthVideoClient.java').read_text('utf-8'))
-        self.assertIn('getRealMetrics(metrics)',(base/'BusinessDisplayProfile.kt').read_text('utf-8'))
+        self.assertIn('getMetrics(metrics)',(base/'BusinessDisplayProfile.kt').read_text('utf-8'))
+        self.assertIn('resizeBusinessSource',(base/'MirrorAppSession.kt').read_text('utf-8'))
         self.assertIn('minimumSourceTimestampNanos',(base/'CenterFrameRenderer.kt').read_text('utf-8'))
         self.assertIn('SafeSettingsNavigator.open',(base/'ProductActivity.kt').read_text('utf-8'))

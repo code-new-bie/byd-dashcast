@@ -98,6 +98,15 @@ internal object MirrorBridge {
             when (code) {
                 MirrorWire.SHOW -> main.post { if (session === owner) { open(owner.context) } }
                 MirrorWire.CLOSED -> end(owner.ticket)
+                MirrorWire.GEOMETRY -> {
+                    val width = data.readInt()
+                    val height = data.readInt()
+                    if (!BusinessDisplayProfile.valid(width, height, 160)) {
+                        throw SecurityException("MIRROR_GEOMETRY_INVALID")
+                    }
+                    owner.width = width
+                    owner.height = height
+                }
                 else -> return false
             }
             return true
@@ -140,13 +149,14 @@ internal object MirrorBridge {
         } }
     }
 
-    fun touch(lease: Long, event: MotionEvent) {
+    fun touch(lease: Long, event: MotionEvent, sourceWidth: Int, sourceHeight: Int) {
         val owner = session
         if (owner?.endpoint == null) { event.recycle(); return }
         enqueue({ event.recycle() }) {
             try {
                 if (session === owner) { transact(owner, MirrorWire.TOUCH) {
-                    it.writeLong(lease); event.writeToParcel(it, 0)
+                    it.writeLong(lease); it.writeInt(sourceWidth); it.writeInt(sourceHeight)
+                    event.writeToParcel(it, 0)
                 } }
             } finally { event.recycle() }
         }
