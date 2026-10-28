@@ -1,15 +1,15 @@
-# Dashcast 仪表导航
+# Dashcast 仪表投屏
 
-BYD Android 车机 → QNX 仪表的 USB 应用投屏。当前源码 **1.12.6 / code57 / RWVE**：全屏上下各外扩8像素，左右各32保持；原弧段平移并相切连接，原生信息和续航底板仍在原位覆盖于视频上方。沿用原生背景透出、左右12/上下24渐变，小窗保持，两侧装饰圈继续隐藏。保留普通车模/道路目标修正、地图/USB开关、按名接入和被动操作镜像。
+BYD Android 车机 → QNX 仪表的 USB 应用投屏。当前应用 **1.13.0 / code58**：重新整理投屏、应用、设置、帮助四页，日常界面使用简明中文；常用操作集中，技术详情和开发工具折叠。
 
-[1.12.6 使用及边界](docs/PRODUCT_1.12.6.md) · [1.12.5 左右外扩](docs/PRODUCT_1.12.5.md) · [同实例结构](docs/MIRROR_PROJECTION.md)。本次需升级 APK 和 RWVE 仪表 App，不能只装 APK；MCU/匹配参考 OS 不变。1.12.3候选的背景替代不满足完整原背景要求。普通应用的超宽主屏镜像仍可能留边，不称原始主屏比例要求已全部完成；没有将离线结果当作本版目标车机实测。
+[1.13.0 设置与交互调整](docs/PRODUCT_1.13.0.md) · [当前使用说明](docs/USAGE.md) · [1.12.6 仪表范围与边界](docs/PRODUCT_1.12.6.md)。仪表逐字节沿用1.12.6/RWVE，已安装该仪表包者只需覆盖安装APK，保留原数据和ADB身份。全屏上下各8、左右各32像素外扩及原生背景/续航底板保持；本轮未改仪表或传输。普通应用宽源镜像留边、异形开口角落控件与真实3D场景仍有边界，不以UI优化宣称已修复。
 
 - 首页一键开始/停止；普通应用任务位于自有VirtualDisplay，同帧GL分发到编码器和可挂卸主屏镜像，不采集其他主屏应用。停止精确归还业务任务，不强停/清数据。
 - 应用搜索、收藏、默认选择；普通单任务入口也走托管，不限制应用类别。原图标在投屏期间进入镜像；切走不主动停止仪表。原车定制导航按可配置表保留独立Meter入口，不接管其主屏图标。
 - 顶部状态、中央地图、底部原生功率/车速/电量/续航；原生数据绑定不由 APK 重画。支持比例保持/中心裁剪、兼容小窗、日间/夜间主题。
 - 前台服务持续拥有同一条会话，直至停止、实际断开或异常；不定时重连，通知栏可停止。
 - 模式切换通过原厂导航文字中继；停止并确认清理、ALT0/接口释放后再切换，正常流程不要求手动拔线。重复 NCM 保留已有连接。
-- 诊断页提供 ADB 连接、一键日志导出到下载目录；历史工程工具不再作为默认页面。
+- 帮助页提供重新连接与一键日志导出到下载目录；技术详情和开发工具放在更多支持选项。
 - 视频不使用激活码、token 或设备绑定；正常 ADB 调试和 USB 访问许可保留。
 
 [1.7.2 清理恢复/配套升级](docs/PRODUCT_1.7.2.md) · [1.7.1 右下布局](docs/PRODUCT_1.7.1.md) · [构建](docs/BUILD.md) · [验证边界](docs/VALIDATION.md) · [架构](docs/ARCHITECTURE.md)
@@ -37,7 +37,7 @@ Windows 用 gradlew.bat。首次依赖需要网络；准备完缓存才能 --off
 
 Kotlin 产品界面、状态协调、应用目录、配置、角色工作流和持续合成控制位于 phase1/android；已打通的 Java 编码/DCV1/NCM/shell ABI 保留。phase1/qnx 提供脚本、精确 ARM/Thumb 适配源及便携控制器；analysis 与 tools 提供哈希固定组件生成和公开内容检查。
 
-本版需配套RWVB仪表App，组件生成器提供HMI/主KZB/3dscreen KZB/receiver；MCU、参考OS/MLO/IFS/Boot及USB角色不改。公开源码不含固件原件、APK、SDK、密钥、ADB身份或原始实车日志；配套另行分发。tools/build_edge_rim_components.py可复现组件，输出不是可刷FULL，[使用细节](docs/PRODUCT_1.12.3.md)。
+配套仪表沿用1.12.6/RWVE，MCU、参考OS/MLO/IFS/Boot及USB角色不改。公开源码不含固件原件、APK、SDK、密钥、ADB身份或原始实车日志；配套另行分发。tools/build_axes_rim_components.py可复现沿用的组件，输出不是可刷FULL，[仪表细节](docs/PRODUCT_1.12.6.md)。
 
 [使用](docs/USAGE.md) · [发布边界](docs/PUBLISHING.md) · [安全](SECURITY.md) · [依赖来源](THIRD_PARTY_NOTICES.md) · [许可证待选](LICENSE_STATUS.md) · [贡献](CONTRIBUTING.md)
 

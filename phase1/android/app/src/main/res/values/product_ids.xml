@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="product_tab_home" type="id" />
+    <item name="product_tab_apps" type="id" />
+    <item name="product_tab_settings" type="id" />
+    <item name="product_tab_help" type="id" />
+    <item name="product_scroll" type="id" />
+    <item name="product_status" type="id" />
+    <item name="product_feedback" type="id" />
+    <item name="product_primary" type="id" />
+    <item name="product_choose_app" type="id" />
+    <item name="product_open_app" type="id" />
+    <item name="product_mode_switch" type="id" />
+    <item name="product_app_search" type="id" />
+    <item name="product_picture_more" type="id" />
+    <item name="product_accessibility" type="id" />
+    <item name="product_export_logs" type="id" />
+</resources>

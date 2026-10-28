@@ -32,9 +32,11 @@ internal class ProductController private constructor(context: Context) {
     @Volatile private var requestedTarget: ProjectionTarget? = null
     private val worker = ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, ArrayBlockingQueue(1),
         { job -> Thread(job, "dashcast-product").apply { isDaemon = true } }, ThreadPoolExecutor.AbortPolicy())
-    @Volatile var message: String = "选择导航应用，点击开始即可连接仪表"
+    @Volatile var message: String = "选择应用后，点击“开始投屏”即可。"
         private set
     @Volatile var adbReady: Boolean = false
+        private set
+    @Volatile var operation: ProductOperation = ProductOperation.NONE
         private set
     private val usbPermission = UsbPermissionContinuation<StartRequest>()
     private data class StartRequest(val target: ProjectionTarget, val options: CaptureOptions, val underlay: Boolean, val generation: Long)
@@ -49,7 +51,7 @@ internal class ProductController private constructor(context: Context) {
                 val outcome = usbPermission.consume(device.deviceName, startGeneration.get(),
                     Usb.hasPermission(app, device))
                 if (outcome.result == UsbPermissionContinuation.Result.DENIED) {
-                    message = "USB 访问未获允许；可再次点开始授权，不需要视频授权"
+                    message = "尚未允许访问仪表 USB，可再次点击开始并选择允许。"
                     log("PRODUCT_USB_PERMISSION_DENIED")
                 } else if (outcome.result == UsbPermissionContinuation.Result.GRANTED) {
                     val next = outcome.request ?: return
@@ -58,18 +60,19 @@ internal class ProductController private constructor(context: Context) {
                     try {
                         worker.execute {
                             if (!occupied.compareAndSet(false, true)) {
-                                message = "USB 已授权；当前操作结束后可点开始"
+                                message = "已允许访问仪表，请等当前操作结束后再点开始。"
                                 return@execute
                             }
+                            operation = ProductOperation.START
                             try {
                                 if (next.generation == startGeneration.get()) { prepareStart(next) }
                             } catch (error: Exception) {
                                 message = ProductErrors.explain(error)
                                 log("PRODUCT_PERMISSION_RESUME_FAILED $error")
-                            } finally { occupied.set(false) }
+                            } finally { operation = ProductOperation.NONE; occupied.set(false) }
                         }
                     } catch (error: RejectedExecutionException) {
-                        message = "USB 已授权，请再次点开始"
+                        message = "已允许访问仪表，请再次点击开始。"
                         log("PRODUCT_PERMISSION_QUEUE_REJECTED $error")
                     }
                 }
@@ -77,7 +80,7 @@ internal class ProductController private constructor(context: Context) {
         }, IntentFilter(Usb.ACTION_PERM))
     }
 
-    fun connect() = operation("正在连接本机 ADB；如有调试弹窗请允许") { authenticate() }
+    fun connect() = operation("正在连接车机，如出现调试弹窗请选择允许。", ProductOperation.CONNECT) { authenticate() }
 
     fun start(target: ProjectionTarget) {
         if (!settings.setupComplete) { message = "请先完成首次连接设置"; return }
@@ -85,7 +88,7 @@ internal class ProductController private constructor(context: Context) {
         if (busy) { message = "当前操作尚未完成，请稍候"; return }
         val request = StartRequest(target, settings.options(), settings.underlay, startGeneration.incrementAndGet())
         requestedTarget = target
-        operation("正在连接仪表并准备投屏") { prepareStart(request) }
+        operation("正在连接仪表并准备画面。", ProductOperation.START) { prepareStart(request) }
     }
 
     fun toggleMap() {
@@ -94,7 +97,7 @@ internal class ProductController private constructor(context: Context) {
         val map = maps.firstOrNull { it.component.startsWith("com.byd.automap/") }
             ?: maps.firstOrNull { it.component.startsWith("com.autonavi.amapauto/") }
             ?: maps.firstOrNull()
-        if (map == null) { message = "未找到可用地图，请在应用中心选择"; return }
+        if (map == null) { message = "未找到可用地图，请到应用页选择。"; return }
         val next = map.target()
         if (ProjectionService.active() && requestedTarget == next) { stop(); return }
         replace(next)
@@ -108,7 +111,7 @@ internal class ProductController private constructor(context: Context) {
         stop()
         val request = StartRequest(target, settings.options(), settings.underlay, startGeneration.incrementAndGet())
         requestedTarget = target
-        operation("正在结束上轮投屏并准备新画面") {
+        operation("正在结束上次投屏并准备新画面。", ProductOperation.START) {
             val deadline = System.nanoTime() + 15_000_000_000L
             while (!ProjectionService.readyForNewService()) {
                 if (request.generation != startGeneration.get()) { return@operation }
@@ -141,7 +144,7 @@ internal class ProductController private constructor(context: Context) {
     private fun requestStartPermission(request: StartRequest, device: UsbDevice) {
         if (request.generation != startGeneration.get()) { return }
         usbPermission.begin(device.deviceName, request.generation, request)
-        message = "请允许访问仪表 USB；授权后会继续恢复并开始投屏"
+        message = "请在系统弹窗中允许访问仪表 USB，随后会继续投屏。"
         log("PRODUCT_USB_PERMISSION_WAIT generation=${request.generation}")
         Usb.requestPermission(app, device)
     }
@@ -151,13 +154,13 @@ internal class ProductController private constructor(context: Context) {
         usbPermission.clear()
         val wasActive = ProjectionService.active()
         ProjectionService.requestStop(app)
-        message = if (wasActive) "正在停止并恢复原生仪表背景" else "已取消待启动投屏；没有新的视频会话启动"
+        message = if (wasActive) "正在停止投屏并恢复仪表画面。" else "已取消启动，可以重新选择应用。"
         log("PRODUCT_USER_STOP")
     }
 
     fun changingTarget() {
         stop()
-        message = "已更换应用；原投屏清理完成后点击开始，不会叠加启动"
+        message = "已更换应用，原投屏结束后点击开始即可。"
         log("PRODUCT_TARGET_CHANGED old_session_stop_requested")
     }
 
@@ -170,14 +173,15 @@ internal class ProductController private constructor(context: Context) {
     fun switchRole(command: InstrumentUsbCommand) {
         if (!settings.setupComplete) { message = "请先完成首次连接设置"; return }
         if (command == InstrumentUsbCommand.HOST) { startGeneration.incrementAndGet(); usbPermission.clear() }
-        operation(if (command == InstrumentUsbCommand.HOST) "正在停止投屏、释放 USB 并恢复 U 盘模式" else "正在连接仪表模式") {
+        operation(if (command == InstrumentUsbCommand.HOST) "正在停止投屏并恢复 U盘使用。" else "正在连接仪表。",
+            ProductOperation.MODE) {
             if (command == InstrumentUsbCommand.NCM && !ProjectionService.active() &&
                 ProjectionService.state() == ProjectionSessionController.State.DISCONNECTED && observe().allNcm == 0) {
                 if (!adbReady) { authenticate() }
                 // Explicit user role request only; the original instrument guard remains authoritative.
                 // This does not clear pending peer recovery or start a media session.
                 relay().request(command)
-                message = "已提交一次连接模式请求；重新发现仪表后点开始，只读恢复确认通过才会投屏"
+                message = "已发送连接请求，请查看仪表提示；重新连接后可点击开始。"
                 log("PRODUCT_DETACHED_USER_NCM_REQUEST; recovery remains pending, no Host or media START")
                 return@operation
             }
@@ -185,16 +189,16 @@ internal class ProductController private constructor(context: Context) {
             if (!adbReady) { authenticate() }
             val result = transition(command)
             message = when (result) {
-                HotRoleTransition.Result.EXISTING_NCM -> "仪表已连接；重复请求不会重置当前投屏"
-                HotRoleTransition.Result.NCM_ENUMERATED -> "已发现仪表 NCM 连接，可以开始投屏"
-                HotRoleTransition.Result.HOST_DETACHED_NOT_ACKNOWLEDGED -> "USB 已逻辑断开；U 盘模式结果以仪表提示为准"
-                HotRoleTransition.Result.REQUEST_SENT_PEER_UNKNOWN -> "已发送一次切换请求，尚未确认结果；请查看仪表提示"
+                HotRoleTransition.Result.EXISTING_NCM -> "仪表已连接，可以开始投屏。"
+                HotRoleTransition.Result.NCM_ENUMERATED -> "仪表已连接，可以开始投屏。"
+                HotRoleTransition.Result.HOST_DETACHED_NOT_ACKNOWLEDGED -> "投屏连接已断开，U盘是否恢复请查看仪表提示。"
+                HotRoleTransition.Result.REQUEST_SENT_PEER_UNKNOWN -> "已发送切换请求，请查看仪表提示确认结果。"
             }
             log("PRODUCT_ROLE_RESULT=$result; physical Host acknowledgement not inferred")
         }
     }
 
-    fun exportLogs() = operation("正在导出日志到下载目录") {
+    fun exportLogs() = operation("正在导出日志到下载目录。", ProductOperation.EXPORT) {
         val file = DownloadLogExporter.fileName(System.currentTimeMillis())
         val entryDiagnostics = ProductAppCatalog.diagnostics(ProductAppCatalog.load(app))
         DownloadLogExporter.export(MediaStoreDownloadStore(app.contentResolver), file,
@@ -219,6 +223,20 @@ internal class ProductController private constructor(context: Context) {
     fun ncmObserved(): Boolean = try { observe().let { it.allNcm == 1 && it.targetNcm == 1 } }
         catch (error: RuntimeException) { false }
 
+    fun connectionState(): ProductConnection = try {
+        val seen = observe()
+        when {
+            seen.allNcm == 0 -> ProductConnection.ABSENT
+            seen.allNcm != 1 || seen.targetNcm != 1 -> ProductConnection.AMBIGUOUS
+            Usb.hasPermission(app, targetDevice()) -> ProductConnection.CONNECTED
+            else -> ProductConnection.PERMISSION
+        }
+    } catch (error: Exception) { ProductConnection.UNAVAILABLE }
+
+    fun activeSourceLabel(): String? = requestedTarget?.let {
+        if (it.isNamed) "应用内投屏" else it.displayLabel()
+    }
+
     fun diagnosticText(): String = "Dashcast ${BuildConfig.VERSION_NAME}\nADB=${adbReady}\n${usbSummary()}\n" +
         ProjectionService.status() + "\n\n" + history.coordinatorSnapshot() + "\n" + ProjectionService.journal() +
         "\n" + RecoveryIncidentStore.snapshot(app)
@@ -236,7 +254,7 @@ internal class ProductController private constructor(context: Context) {
             try {
                 requireClean()
                 ProjectionService.startProduct(app, request.options, request.target, request.underlay)
-                message = "正在创建独立应用画面；切换车机应用不会改为主屏镜像"
+                message = "正在准备应用画面，连接好后会显示在仪表上。"
                 log("PRODUCT_SESSION_REQUEST target=${request.target} underlay=${request.underlay}")
             } catch (error: Exception) {
                 message = ProductErrors.explain(error)
@@ -254,7 +272,7 @@ internal class ProductController private constructor(context: Context) {
         if (uid != "2000" && uid != "0") { throw IOException("ADB_IDENTITY_MISMATCH uid=$uid") }
         controller.verifyProfile()
         adbReady = true
-        message = "ADB 已连接；原厂导航发送接口已匹配"
+        message = "车机已连接，可以开始投屏。"
         log("PRODUCT_ADB_READY uid=$uid")
     }
 
@@ -394,8 +412,9 @@ internal class ProductController private constructor(context: Context) {
         catch (error: RuntimeException) { log("CLEANUP_DIAGNOSTIC_SAVE_FAILED $error") }
     }
 
-    private fun operation(status: String, action: () -> Unit) {
+    private fun operation(status: String, kind: ProductOperation, action: () -> Unit) {
         if (!occupied.compareAndSet(false, true)) { message = "当前操作尚未完成，请稍候；停止投屏仍可使用"; return }
+        operation = kind
         message = status
         try {
             worker.execute {
@@ -403,10 +422,11 @@ internal class ProductController private constructor(context: Context) {
                     if (error is InterruptedException) { Thread.currentThread().interrupt() }
                     message = ProductErrors.explain(error)
                     log("PRODUCT_OPERATION_FAILED ${error.javaClass.simpleName}: ${error.message}")
-                } finally { occupied.set(false) }
+                } finally { operation = ProductOperation.NONE; occupied.set(false) }
             }
         } catch (error: RejectedExecutionException) {
             occupied.set(false)
+            operation = ProductOperation.NONE
             message = "操作队列暂不可用，请稍后重试"
             log("PRODUCT_QUEUE_REJECTED $error")
         }
@@ -420,35 +440,5 @@ internal class ProductController private constructor(context: Context) {
             instance ?: ProductController(context).also { instance = it }
         }
         private fun target(device: UsbDevice) = device.vendorId == 0x1234 && device.productId == 0xfff1
-    }
-}
-
-internal object ProductErrors {
-    fun explain(error: Exception): String {
-        val text = error.message.orEmpty()
-        return when {
-            text.contains("APP_SINGLE_INSTANCE_UNSUPPORTED") -> "当前入口或同任务链含单实例页面，暂不能独立投屏；主屏原任务未移动，具体入口见日志"
-            text.contains("APP_NATIVE_SECONDARY_AFFINITY_NOT_INDEPENDENT") -> "应用副屏入口与主屏任务未分离；未移动主屏导航，详情见应用能力及导出日志"
-            text.contains("APP_NATIVE_SECONDARY_VERSION_UNAVAILABLE") -> "无法读取已安装导航版本；请刷新应用列表后导出日志"
-            text.contains("APP_NATIVE_SECONDARY_ENTRY_MISMATCH") -> "导航副屏入口与已知能力不符；未启动或改动原任务"
-            text.contains("APP_NATIVE_SECONDARY_MODE_UNSUPPORTED") -> "导航副屏入口的任务模式不支持独立画面"
-            text.contains("APP_NATIVE_SECONDARY_VERSION_UNVERIFIED") -> "此版本的独立仪表入口尚未验证，未操作原应用；请导出诊断信息"
-            text.contains("APP_NATIVE_SECONDARY_ALREADY_IN_USE") -> "应用自带的副屏界面已被使用，本次未接管或移动"
-            text.contains("APP_INDEPENDENT") || text.contains("APP_PRIMARY_MIRROR_DISABLED") -> "应用未能建立独立画面，已停止；不会镜像主屏或搬移原任务"
-            text.contains("AUTH", true) || text.contains("authentication", true) -> "ADB 尚未授权；请允许车机的 USB 调试弹窗后重试"
-            text.contains("MATCHING_FIRMWARE") -> "仪表固件与导航布局不匹配；请使用本次 ${BuildConfig.VERSION_NAME} 配套仪表包"
-            text.contains("NAVIGATION_LAYOUT_UNCONFIRMED") -> "原生导航布局未确认，已停止；请确认使用配套仪表包"
-            text.contains("PRODUCT_SOURCE_NOT_READY") -> "地图画面尚未准备好，已停止本次启动；原仪表背景未关闭，可稍候重试"
-            text.contains("PEER_RECOVERY_NATIVE_CLEANUP_FAULT") -> "仪表报告真实底层清理错误，保护未解除；需重启仪表恢复，未发送新的投屏或切模式命令"
-            text.contains("PEER_RECOVERY_INCOMPATIBLE") -> "仪表缺少受保护的恢复查询能力；请更新本次1.7.2配套仪表App，未叠加投屏"
-            text.contains("PEER_RECOVERY") -> "本地资源已释放；点击开始将只读确认仪表恢复后继续，无需重启或拔线。确认未通过不会叠加投屏"
-            text.contains("DETACHED_RECOVERY_RECONNECT_REQUIRED") -> "数据线已断开，本地资源已释放；重新接线后点击开始或连接模式即可检查恢复，无需重启"
-            text.contains("DETACHED_RECOVERY") -> "仪表正在恢复；本地操作已解锁，稍候重新接线并重试。恢复确认前不会叠加投屏或强切模式"
-            text.contains("CLEANUP_UNCONFIRMED") -> "上次清理未确认，已停止重试；请重启仪表和应用恢复"
-            text.contains("NCM_NOT_ENUMERATED") -> "暂未发现仪表连接；保持数据线连接并检查仪表模式提示"
-            text.contains("USB_PERMISSION") -> "请允许访问仪表 USB 后再操作"
-            text.contains("timeout", true) || text.contains("timed out", true) -> "连接或清理超时；未自动重复发送，请查看诊断详情"
-            else -> "操作未完成：${text.take(180).ifEmpty { error.javaClass.simpleName }}"
-        }
     }
 }

@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Dashcast 仪表导航</string>
-    <string name="screen_title">Dashcast 1.12.6 高级工程工具</string>
-    <string name="mirror_accessibility_label">Dashcast 投屏应用图标路由</string>
-    <string name="mirror_accessibility_description">监听当前投屏应用窗口以路由原图标，并只读取定制地图两个仪表按钮的控件ID；不读取文字或密码。不自动启用此权限。地图没有按钮时使用Dashcast首页“仪表地图”。</string>
+    <string name="app_name">Dashcast 仪表投屏</string>
+    <string name="screen_title">Dashcast 1.13.0 开发工具</string>
+    <string name="mirror_accessibility_label">Dashcast 应用快捷打开</string>
+    <string name="mirror_accessibility_description">投屏时从原应用图标打开操作画面，并响应地图自带的仪表投屏按钮。不读取输入的文字或密码；此权限由你自行开启。</string>
     <string name="control_initial_status">待连接 ADB；原厂导航中继版本、USB 枚举与视频需分别验证。</string>
     <string name="screen_scope">这是保留的高级工程回归工具，短时实验不等于日常投屏流程。日常导航、持续合成、带线切换请返回产品首页。实验会操作仪表背景，仅停稳或台架使用；无需视频授权，普通ADB和USB访问许可保持不变。</string>
     <string name="continuous_status">持续投屏：%1$s</string>
@@ -20,8 +20,8 @@
     <string name="capture_bench_acknowledgement">仅停稳/台架验证；我已知中央动态告警可能被覆盖，出现告警立即停止</string>
     <string name="export_session_logs">一键导出日志到下载目录（含持续会话）</string>
     <string name="stop_projection">停止投屏 / 当前验证（不会自动切 Host）</string>
-    <string name="projection_channel">仪表持续投屏</string>
-    <string name="projection_notification_title">仪表持续投屏运行中</string>
-    <string name="projection_notification_text">独立导航运行中；停止或恢复U盘模式可在应用内完成，无需拔线</string>
+    <string name="projection_channel">仪表投屏</string>
+    <string name="projection_notification_title">正在投屏到仪表</string>
+    <string name="projection_notification_text">打开应用可停止投屏或恢复U盘使用，无需拔线</string>
     <string name="projection_notification_stop">停止投屏</string>
 </resources>

@@ -44,14 +44,14 @@ class MirrorActivity : Activity(), TextureView.SurfaceTextureListener {
         texture = TextureView(this).apply {
             id = R.id.mirror_surface
             surfaceTextureListener = this@MirrorActivity
-            contentDescription = "投屏应用的同实例操作画面"
+            contentDescription = "正在投屏的应用操作画面"
             setOnTouchListener { _, event -> forward(event); true }
         }
         root.addView(texture, FrameLayout.LayoutParams(-1, -1))
         // Light watermark instead of a button: the page belongs to the hosted app's
         // own interface; the control hint stays readable but visually recessive.
         root.addView(android.widget.TextView(this).apply {
-            text = "Dashcast 投屏中 · 点击退出"
+            text = "返回车机 · 仪表继续投屏"
             textSize = 13f
             setTextColor(Color.argb(0x99, 0xFF, 0xFF, 0xFF))
             setShadowLayer(2f, 0f, 1f, Color.argb(0x99, 0, 0, 0))

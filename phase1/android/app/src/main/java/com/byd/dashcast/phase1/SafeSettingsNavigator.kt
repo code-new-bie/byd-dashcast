@@ -40,8 +40,8 @@ internal object SafeSettingsNavigator {
         LogHub.i("settings", "ACCESSIBILITY_SETTINGS_RESULT=$result; no_secure_setting_written=true")
         if (result != Result.ACCESSIBILITY) {
             Toast.makeText(activity, if (result == Result.GENERAL)
-                "系统未提供专用无障碍入口，已打开系统设置；不开启时仍由宿主进行图标路由" else
-                "此车机未开放可访问的无障碍设置；无需退出应用，宿主图标路由仍可使用", Toast.LENGTH_LONG).show()
+                "已打开系统设置，请查找“无障碍”。找不到此选项也可继续使用投屏。" else
+                "此车机未提供无障碍设置入口，可返回继续使用投屏。", Toast.LENGTH_LONG).show()
         }
     }
 }
