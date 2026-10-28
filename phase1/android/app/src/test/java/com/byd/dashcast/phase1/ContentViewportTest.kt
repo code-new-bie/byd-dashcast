@@ -6,10 +6,10 @@ import org.junit.Test
 class ContentViewportTest {
     @Test fun fullSharpPictureCoversTheOpeningWithoutClippingToTheSafeBox() {
         val p = ContentViewport.full()
-        assertEquals(1696.0 / 440, p.sourceWidth.toDouble() / p.sourceHeight, 0.0)
+        assertEquals(1696.0 / 456, p.sourceWidth.toDouble() / p.sourceHeight, 0.0)
         assertEquals(p.sourceWidth.toDouble()/p.sourceHeight, p.encodedWidth.toDouble()/p.encodedHeight, 0.0)
-        assertArrayEquals(floatArrayOf(112f/1920, 160f/720, 1696f/1920, 440f/720), p.normalized(), .00001f)
-        assertEquals(560, p.encodedTop+p.encodedHeight)
+        assertArrayEquals(floatArrayOf(112f/1920, 152f/720, 1696f/1920, 456f/720), p.normalized(), .00001f)
+        assertEquals(568, p.encodedTop+p.encodedHeight)
         assertTrue(p.encodedLeft < ContentViewport.fullSafeBounds()[0])
         assertTrue(p.encodedTop < ContentViewport.fullSafeBounds()[1])
         assertTrue(p.encodedWidth > ContentViewport.fullSafeBounds()[2])

@@ -39,12 +39,12 @@ class CurvedSceneCliTest(unittest.TestCase):
 
     def test_current_sharp_source_covers_the_curved_aperture(self):
         source = next((ROOT / "phase1/android/app/src/main").rglob("ContentViewport.kt")).read_text(encoding="utf-8")
-        spec = importlib.util.spec_from_file_location("expanded_geometry", ROOT / "analysis/expanded_rim_geometry.py")
+        spec = importlib.util.spec_from_file_location("axes_geometry", ROOT / "analysis/axes_rim_geometry.py")
         geometry = importlib.util.module_from_spec(spec)
         sys.path.insert(0, str(ROOT / "analysis"))
         try:
             spec.loader.exec_module(geometry)
-            self.assertTrue(geometry.validate_expanded_carrier())
+            self.assertTrue(geometry.validate_axes_carrier())
             x, y, width, height = geometry.FULL_INNER
             carrier = re.search(r'fun full\(\): ContentViewport = ContentViewport\(([^)]+)\)', source)
             self.assertIsNotNone(carrier)

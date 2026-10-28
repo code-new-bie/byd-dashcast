@@ -1,7 +1,7 @@
 package com.byd.dashcast.phase1
 
 /** Sharp source covers the WHOLE native inner-rim opening, including its sides.
- * RWVD widens both side curves by 32px; safe UI bounds never clip the source.
+ * RWVE keeps 32px side outset and adds 8px above/below; safe bounds do not clip.
  * The carrier rectangle and native 1920x720 transport are separate sizes.
  * @author Codex
  * @date 2026/10/23
@@ -25,12 +25,12 @@ internal data class ContentViewport(
         (720 - encodedTop - encodedHeight) / 720f, encodedWidth / 1920f, encodedHeight / 720f)
 
     companion object {
-        @JvmStatic fun full(): ContentViewport = ContentViewport(1696, 440, 112, 120, 1696, 440)
+        @JvmStatic fun full(): ContentViewport = ContentViewport(1696, 456, 112, 112, 1696, 456)
         /** Mirror-hosted apps render on a 2x supersample of the full carrier so generic
-         *  layouts get a usable wide canvas (~1131x293dp at 480dpi) and the instrument
+         *  layouts get a usable wide canvas (~1131x304dp at 480dpi) and the instrument
          *  downscale stays sharp. Exact carrier aspect: no letterboxing in either mode. */
         const val FULL_MIRROR_SOURCE_WIDTH = 3392
-        const val FULL_MIRROR_SOURCE_HEIGHT = 880
+        const val FULL_MIRROR_SOURCE_HEIGHT = 912
         /** Fully clear conservative box inside the curved full-mode aperture. */
         @JvmStatic fun fullSafeBounds(): IntArray = intArrayOf(320, 176, 1280, 336)
         @JvmStatic fun center(): ContentViewport = ContentViewport(1200, 640, 60, 40, 1800, 640)

@@ -63,18 +63,18 @@ class Product1120Test {
         // Real-vehicle feedback: a primary-sized portrait business source left the
         // full-mode video as a narrow strip. The mirror-hosted business display now
         // carries the carrier aspect itself.
-        assertEquals(1696f / 440f,
+        assertEquals(1696f / 456f,
             ContentViewport.FULL_MIRROR_SOURCE_WIDTH.toFloat() / ContentViewport.FULL_MIRROR_SOURCE_HEIGHT, 1e-4f)
         assertTrue(BusinessDisplayProfile.valid(ContentViewport.FULL_MIRROR_SOURCE_WIDTH,
             ContentViewport.FULL_MIRROR_SOURCE_HEIGHT, 480))
         val viewport = ContentViewport(ContentViewport.FULL_MIRROR_SOURCE_WIDTH,
-            ContentViewport.FULL_MIRROR_SOURCE_HEIGHT, 112, 120, 1696, 440)
+            ContentViewport.FULL_MIRROR_SOURCE_HEIGHT, 112, 112, 1696, 456)
         val fit = SourceRenderMapping.create(viewport, false).content
         val crop = SourceRenderMapping.create(viewport, true).source
         assertEquals(112f / 1920f, fit[0], 1e-6f)
-        assertEquals((720 - 120 - 440) / 720f, fit[1], 1e-6f)
+        assertEquals((720 - 112 - 456) / 720f, fit[1], 1e-6f)
         assertEquals(1696f / 1920f, fit[2], 1e-6f)
-        assertEquals(440f / 720f, fit[3], 1e-6f)
+        assertEquals(456f / 720f, fit[3], 1e-6f)
         // Identical aspect: FIT performs no letterboxing and CROP clips nothing.
         assertEquals(1f, crop[2], 1e-6f);assertEquals(1f, crop[3], 1e-6f)
         // A portrait mirror page letterboxes the complete wide source; the carrier
@@ -82,6 +82,6 @@ class Product1120Test {
         val mirror = MirrorGeometry.fit(ContentViewport.FULL_MIRROR_SOURCE_WIDTH,
             ContentViewport.FULL_MIRROR_SOURCE_HEIGHT, 1080, 1920)
         assertEquals(1080f, mirror.width, 0.5f)
-        assertEquals(1080f * 440f / 1696f, mirror.height, 0.5f)
+        assertEquals(1080f * 456f / 1696f, mirror.height, 0.5f)
     }
 }
