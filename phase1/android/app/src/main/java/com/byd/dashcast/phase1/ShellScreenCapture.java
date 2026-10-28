@@ -93,7 +93,12 @@ public final class ShellScreenCapture {
             } else {
                 capture(seconds, null, options, target, null, proof);
             }
-            if (proof.complete()) { System.err.println("SHELL_CAPTURE_RESOURCES_RELEASED"); }
+            if (!proof.complete()) { throw new IOException("SHELL_CAPTURE_CLEANUP_UNCONFIRMED"); }
+            System.err.println("SHELL_CAPTURE_RESOURCES_RELEASED");
+            System.err.flush();
+            // ActivityThread/Looper/Binder initialization can leave non-daemon framework
+            // threads after every owned resource is closed. Emit the real shell-v2 EXIT.
+            System.exit(0);
         } catch (Exception error) {
             System.err.println("SHELL_CAPTURE_FAILED " + error);
             for (Throwable suppressed : error.getSuppressed()) {
@@ -168,19 +173,15 @@ public final class ShellScreenCapture {
                 ? BusinessDisplayProfile.read(RemoteDisplaySession.shellContext()) : null;
             if (options.contentViewport()) {
                 ContentViewport viewport = options.centerWindow() ? ContentViewport.center() : ContentViewport.full();
-                if (business != null) {
-                    // The hosted business display now carries the instrument carrier's own
-                    // aspect; only its density is inherited from the primary screen. A
-                    // primary-sized portrait source can never fill the ultra-wide carrier.
-                    int sourceWidth = viewport.getSourceWidth();
-                    int sourceHeight = viewport.getSourceHeight();
-                    if (!options.centerWindow()) {
-                        sourceWidth = ContentViewport.FULL_MIRROR_SOURCE_WIDTH;
-                        sourceHeight = ContentViewport.FULL_MIRROR_SOURCE_HEIGHT;
-                    }
-                    viewport = new ContentViewport(sourceWidth, sourceHeight,
+                if (target.isNamed() && mirrorTicket != null) {
+                    viewport = new ContentViewport(ExternalDisplayWire.WIDTH, ExternalDisplayWire.HEIGHT,
                             viewport.getEncodedLeft(), viewport.getEncodedTop(),
                             viewport.getEncodedWidth(), viewport.getEncodedHeight());
+                }
+                if (business != null) {
+                    // Keep the business application's original main-screen layout. The
+                    // instrument's independent FIT/CROP mapping must not reflow that UI.
+                    viewport = ContentViewport.forBusiness(business,options.centerWindow());
                 }
                 center = new CenterFrameRenderer(surface, viewport, options.mode() == CaptureOptions.Mode.CROP);
                 captureSurface = center.inputSurface();
@@ -192,7 +193,8 @@ public final class ShellScreenCapture {
                 logicalWidth = 1280;
             }
             if (target.isNamed()) {
-                remote = new NamedDisplaySession(captureSurface, logicalWidth, logicalHeight);
+                remote = mirrorTicket != null ? new ExternalCaptureSession(captureSurface, mirrorTicket)
+                        : new NamedDisplaySession(captureSurface, logicalWidth, logicalHeight);
                 display = remote;
             } else if (target.isRemote()) {
                 if (selection != null && selection.getNative() != null) {
@@ -292,7 +294,8 @@ public final class ShellScreenCapture {
             }
             if (!eos && remote != null) { remote.update(codec); }
             if (!eos && center != null) { center.renderIfAvailable(remote == null || remote.renderAllowed(),
-                    remote == null ? 0L : remote.renderSourceEpochNanos()); }
+                    remote == null ? 0L : remote.renderSourceEpochNanos(),
+                    remote == null || remote.advanceSourceAllowed()); }
             // Source handoff may deliberately discard encoder output until a fresh IDR.
             // Keep the existing same-stream lease alive without forwarding that stale data.
             if (control != null && System.nanoTime() - lastIdle >= 250_000_000L) {

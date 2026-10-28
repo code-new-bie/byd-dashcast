@@ -37,6 +37,15 @@ internal class CenterFrameRenderer @JvmOverloads constructor(
     private var paddingTexture = 0
     private var paddingFramebuffer = 0
     private var paddingProgram = 0
+    private var retainedTexture = 0
+    private var retainedFramebuffer = 0
+    private var retainedProgram = 0
+    private var retainedPaddingProgram = 0
+    private var copyProgram = 0
+    private var retainedActive = false
+    private val uniformLocations = HashMap<Int,MutableMap<String,Int>>()
+    private val attributeLocations = HashMap<Int,MutableMap<String,Int>>()
+    private val identity = FloatArray(16).also { android.opengl.Matrix.setIdentityM(it,0) }
     private var paddingPosition = -1
     private var paddingUv = -1
     private var paddingImage = -1
@@ -161,6 +170,12 @@ internal class CenterFrameRenderer @JvmOverloads constructor(
         mapping = SourceRenderMapping.create(viewport, crop)
         source?.setDefaultBufferSize(width, height)
         validProducerBuffer = false
+        retainedActive = false
+        if (retainedTexture != 0) {
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,retainedTexture)
+            GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D,0,GLES20.GL_RGBA,width,height,0,
+                GLES20.GL_RGBA,GLES20.GL_UNSIGNED_BYTE,null)
+        }
         mirrorDirty = true
     }
 
@@ -186,20 +201,24 @@ internal class CenterFrameRenderer @JvmOverloads constructor(
     }
 
     @Throws(IOException::class)
-    @JvmOverloads fun renderIfAvailable(allowed: Boolean = true, minimumSourceTimestampNanos: Long = 0) {
+    @JvmOverloads fun renderIfAvailable(allowed: Boolean = true, minimumSourceTimestampNanos: Long = 0,
+            advanceSource: Boolean = true) {
         if (!allowed) { return }
-        val fresh = pending.getAndSet(false)
+        if (!advanceSource && validProducerBuffer && !retainedActive) { retainSource() }
+        val fresh = advanceSource && pending.getAndSet(false)
         val owned = source ?: throw IOException("CENTER_RENDERER_CLOSED")
         if (fresh) {
             owned.updateTexImage()
             owned.getTransformMatrix(matrix)
             val actual = owned.timestamp
-            validProducerBuffer = FrameSubmissionClock.validProducer(actual, lastTimestamp, System.nanoTime())
-            if (validProducerBuffer) { lastTimestamp = actual }
+            val valid = FrameSubmissionClock.validProducer(actual, lastTimestamp, System.nanoTime()) &&
+                FrameSubmissionClock.sourceReady(actual,minimumSourceTimestampNanos)
+            if (valid) { lastTimestamp = actual; validProducerBuffer = true; retainedActive = false }
+            else if (!retainedActive) { validProducerBuffer = false }
             sourceUpdates++
         }
         val timestamp = System.nanoTime()
-        val sourceReady = validProducerBuffer && FrameSubmissionClock.sourceReady(lastTimestamp, minimumSourceTimestampNanos)
+        val sourceReady = validProducerBuffer && (retainedActive || FrameSubmissionClock.sourceReady(lastTimestamp, minimumSourceTimestampNanos))
         if (!submissions.due(timestamp, sourceReady)) {
             if (mirrorDirty && sourceReady) { drawMirror() }
             return
@@ -210,27 +229,30 @@ internal class CenterFrameRenderer @JvmOverloads constructor(
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0)
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0)
-        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, texture)
+        bindSource()
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, paddingFramebuffer)
         GLES20.glViewport(0, 0, ContentViewport.PADDING_WIDTH, ContentViewport.PADDING_HEIGHT)
-        GLES20.glUseProgram(paddingProgram)
-        GLES20.glUniform1i(paddingImage, 0)
-        GLES20.glUniformMatrix4fv(paddingTransform, 1, false, matrix, 0)
-        GLES20.glUniform4fv(paddingSourceBounds, 1, mapping.source, 0)
-        drawQuad(paddingPosition, paddingUv)
+        val activePadding = if (retainedActive) retainedPaddingProgram else paddingProgram
+        GLES20.glUseProgram(activePadding)
+        GLES20.glUniform1i(location(activePadding,"image"), 0)
+        GLES20.glUniformMatrix4fv(location(activePadding,"transform"), 1, false, sourceMatrix(), 0)
+        GLES20.glUniform4fv(location(activePadding,"sourceBounds"), 1, mapping.source, 0)
+        drawQuad(attribute(activePadding,"position"), attribute(activePadding,"uv"))
         checkGl("padding")
         GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0)
         GLES20.glViewport(0, 0, NoAuthVideoProtocol.WIDTH, NoAuthVideoProtocol.HEIGHT)
-        GLES20.glUseProgram(program)
+        val activeProgram = if (retainedActive) retainedProgram else program
+        GLES20.glUseProgram(activeProgram)
         GLES20.glActiveTexture(GLES20.GL_TEXTURE1)
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, paddingTexture)
-        GLES20.glUniform1i(paddingLocation, 1)
+        GLES20.glUniform1i(location(activeProgram,"padding"), 1)
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
-        GLES20.glUniform1i(imageLocation, 0)
-        GLES20.glUniformMatrix4fv(transformLocation, 1, false, matrix, 0)
-        GLES20.glUniform4fv(contentLocation, 1, mapping.content, 0)
-        GLES20.glUniform4fv(sourceBoundsLocation, 1, mapping.source, 0)
-        drawQuad(positionLocation, uvLocation)
+        bindSource()
+        GLES20.glUniform1i(location(activeProgram,"image"), 0)
+        GLES20.glUniformMatrix4fv(location(activeProgram,"transform"), 1, false, sourceMatrix(), 0)
+        GLES20.glUniform4fv(location(activeProgram,"content"), 1, mapping.content, 0)
+        GLES20.glUniform4fv(location(activeProgram,"sourceBounds"), 1, mapping.source, 0)
+        drawQuad(attribute(activeProgram,"position"), attribute(activeProgram,"uv"))
         checkGl("draw")
         requireEgl(EGLExt.eglPresentationTimeANDROID(display, window, timestamp), "timestamp")
         requireEgl(EGL14.eglSwapBuffers(display, window), "swap")
@@ -238,6 +260,54 @@ internal class CenterFrameRenderer @JvmOverloads constructor(
         submittedFrames++
         if (!fresh) { repeatedDraws++ }
         drawMirror()
+    }
+
+    private fun location(shader: Int, name: String): Int = uniformLocations.getOrPut(shader) { HashMap() }
+        .getOrPut(name) { GLES20.glGetUniformLocation(shader,name) }
+    private fun attribute(shader: Int, name: String): Int = attributeLocations.getOrPut(shader) { HashMap() }
+        .getOrPut(name) { GLES20.glGetAttribLocation(shader,name) }
+    private fun sourceMatrix(): FloatArray = if (retainedActive) identity else matrix
+    private fun bindSource() {
+        if (retainedActive) { GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,retainedTexture) }
+        else { GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES,texture) }
+    }
+
+    /** Snapshot only a previously validated source, before observing any foreign/top-wait buffer. */
+    private fun retainSource() {
+        if (retainedTexture == 0) {
+            val names = IntArray(1)
+            GLES20.glGenTextures(1,names,0); retainedTexture=names[0]
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,retainedTexture)
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D,GLES20.GL_TEXTURE_MIN_FILTER,GLES20.GL_LINEAR)
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D,GLES20.GL_TEXTURE_MAG_FILTER,GLES20.GL_LINEAR)
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D,GLES20.GL_TEXTURE_WRAP_S,GLES20.GL_CLAMP_TO_EDGE)
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D,GLES20.GL_TEXTURE_WRAP_T,GLES20.GL_CLAMP_TO_EDGE)
+            GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D,0,GLES20.GL_RGBA,viewport?.sourceWidth ?: INPUT_WIDTH,
+                viewport?.sourceHeight ?: INPUT_HEIGHT,0,GLES20.GL_RGBA,GLES20.GL_UNSIGNED_BYTE,null)
+            GLES20.glGenFramebuffers(1,names,0); retainedFramebuffer=names[0]
+            GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,retainedFramebuffer)
+            GLES20.glFramebufferTexture2D(GLES20.GL_FRAMEBUFFER,GLES20.GL_COLOR_ATTACHMENT0,GLES20.GL_TEXTURE_2D,retainedTexture,0)
+            if (GLES20.glCheckFramebufferStatus(GLES20.GL_FRAMEBUFFER)!=GLES20.GL_FRAMEBUFFER_COMPLETE) {
+                throw IOException("SOURCE_RETAIN_FRAMEBUFFER_INCOMPLETE")
+            }
+            retainedProgram=linkProgram(ContentViewport.FRAGMENT.replace("samplerExternalOES image","sampler2D image"))
+            retainedPaddingProgram=linkProgram(ContentViewport.PADDING_FRAGMENT.replace("samplerExternalOES image","sampler2D image"))
+            copyProgram=linkProgram("#extension GL_OES_EGL_image_external : require\nprecision mediump float;varying vec2 tex;"+
+                "uniform samplerExternalOES image;uniform mat4 transform;void main(){gl_FragColor=texture2D(image,(transform*vec4(tex,0.0,1.0)).xy);}")
+        }
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,retainedFramebuffer)
+        GLES20.glViewport(0,0,viewport?.sourceWidth ?: INPUT_WIDTH,viewport?.sourceHeight ?: INPUT_HEIGHT)
+        GLES20.glUseProgram(copyProgram)
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D,0)
+        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES,texture)
+        GLES20.glUniform1i(location(copyProgram,"image"),0)
+        GLES20.glUniformMatrix4fv(location(copyProgram,"transform"),1,false,matrix,0)
+        drawQuad(attribute(copyProgram,"position"),attribute(copyProgram,"uv"))
+        checkGl("retain-authorized-source")
+        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER,0)
+        retainedActive=true
+        System.err.println("SHELL_NATIVE_SOURCE_RETAINED; repeats_use_actual_submission_pts=true")
     }
 
     private fun drawMirror() {
@@ -251,14 +321,15 @@ internal class CenterFrameRenderer @JvmOverloads constructor(
             val bounds = MirrorGeometry.fit(viewport?.sourceWidth ?: INPUT_WIDTH,
                 viewport?.sourceHeight ?: INPUT_HEIGHT, sink.width, sink.height)
             GLES20.glViewport(bounds.left.toInt(), bounds.top.toInt(), bounds.width.toInt(), bounds.height.toInt())
-            GLES20.glUseProgram(program)
+            val activeProgram = if (retainedActive) retainedProgram else program
+            GLES20.glUseProgram(activeProgram)
             GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
-            GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, texture)
-            GLES20.glUniform1i(imageLocation, 0)
-            GLES20.glUniformMatrix4fv(transformLocation, 1, false, matrix, 0)
-            GLES20.glUniform4fv(contentLocation, 1, floatArrayOf(0f, 0f, 1f, 1f), 0)
-            GLES20.glUniform4fv(sourceBoundsLocation, 1, floatArrayOf(0f, 0f, 1f, 1f), 0)
-            drawQuad(positionLocation, uvLocation)
+            bindSource()
+            GLES20.glUniform1i(location(activeProgram,"image"), 0)
+            GLES20.glUniformMatrix4fv(location(activeProgram,"transform"), 1, false, sourceMatrix(), 0)
+            GLES20.glUniform4fv(location(activeProgram,"content"), 1, floatArrayOf(0f, 0f, 1f, 1f), 0)
+            GLES20.glUniform4fv(location(activeProgram,"sourceBounds"), 1, floatArrayOf(0f, 0f, 1f, 1f), 0)
+            drawQuad(attribute(activeProgram,"position"), attribute(activeProgram,"uv"))
             checkGl("mirror-draw")
             requireEgl(EGL14.eglSwapBuffers(display, mirrorWindow), "mirror-swap")
             mirrorDirty = false
@@ -320,6 +391,11 @@ internal class CenterFrameRenderer @JvmOverloads constructor(
                     if (texture != 0) { GLES20.glDeleteTextures(1, intArrayOf(texture), 0) }
                     if (paddingTexture != 0) { GLES20.glDeleteTextures(1, intArrayOf(paddingTexture), 0) }
                     if (paddingFramebuffer != 0) { GLES20.glDeleteFramebuffers(1, intArrayOf(paddingFramebuffer), 0) }
+                    for (shader in intArrayOf(retainedProgram,retainedPaddingProgram,copyProgram)) {
+                        if (shader != 0) { GLES20.glDeleteProgram(shader) }
+                    }
+                    if (retainedTexture!=0) { GLES20.glDeleteTextures(1,intArrayOf(retainedTexture),0) }
+                    if (retainedFramebuffer!=0) { GLES20.glDeleteFramebuffers(1,intArrayOf(retainedFramebuffer),0) }
                 }
             }
             release { requireEgl(EGL14.eglMakeCurrent(display, EGL14.EGL_NO_SURFACE, EGL14.EGL_NO_SURFACE,

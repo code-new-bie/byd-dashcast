@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <item name="product_external_access" type="id" />
     <item name="product_tab_home" type="id" />
     <item name="product_tab_apps" type="id" />
     <item name="product_tab_settings" type="id" />

@@ -44,6 +44,10 @@ class ProductActivity : Activity() {
     private var export: Button? = null
     private var roleSwitch: Switch? = null
     private var roleState: TextView? = null
+    private var accessSwitch: Switch? = null
+    private var accessState: TextView? = null
+    private var copyScreenName: Button? = null
+    private var reflectingAccess = false
     private var reflectingRole = false
     private var apps: List<ProductApp> = emptyList()
     private var page = 0
@@ -104,6 +108,7 @@ class ProductActivity : Activity() {
         headline = null; connection = null; detail = null; sourceLabel = null
         primary = null; chooseApp = null; mirror = null; export = null
         roleSwitch = null; roleState = null
+        accessSwitch = null; accessState = null; copyScreenName = null
         window.statusBarColor = canvas
         window.navigationBarColor = canvas
         window.decorView.systemUiVisibility = if (light) View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR else 0
@@ -209,10 +214,13 @@ class ProductActivity : Activity() {
     private fun applications() {
         body.addView(text("选择投屏应用", 27, true))
         body.addView(text("一次投屏一个应用。更换时会先结束当前投屏，原应用的数据和任务会保留。", 16))
+        externalAccessCard()
         val utilities = row()
         utilities.addView(button("刷新列表") { apps = ProductAppCatalog.load(this); build() },
             LinearLayout.LayoutParams(0, -2, 1f).apply { marginEnd = dp(12) })
-        utilities.addView(button("其他投屏方式") { otherSources() }, LinearLayout.LayoutParams(0, -2, 1f))
+        utilities.addView(button("仪表地图") {
+            if (!settings.setupComplete) { firstRun() } else { control.toggleMap(); navigate(0) }
+        }, LinearLayout.LayoutParams(0, -2, 1f))
         body.addView(utilities)
         val search = EditText(this).apply {
             id = R.id.product_app_search; hint = "搜索应用"; textSize = 20f
@@ -296,6 +304,7 @@ class ProductActivity : Activity() {
     private fun preferences() {
         body.addView(text("投屏设置", 27, true))
         body.addView(text("画面设置在下次投屏时生效。", 16))
+        externalAccessCard()
         addCard {
             addView(text("仪表画面", 21, true))
             choices(this, "画面大小", listOf("全屏", "小窗"), if (settings.underlay) 0 else 1) {
@@ -352,7 +361,7 @@ class ProductActivity : Activity() {
         }
         addCard {
             addView(text("关于 Dashcast", 21, true))
-            addView(text("应用版本 ${BuildConfig.VERSION_NAME}\n配套仪表包 1.12.6，已安装此仪表包时无需重复更新。", 16))
+            addView(text("应用版本 ${BuildConfig.VERSION_NAME}\n本版本需配套更新 1.14.0 仪表包。", 16))
             addView(button(if (advancedHelp) "收起支持选项" else "更多支持选项") { advancedHelp = !advancedHelp; build() })
             if (advancedHelp) {
                 addView(button("查看技术详情") { info("技术详情", control.diagnosticText().takeLast(20000)) })
@@ -370,23 +379,32 @@ class ProductActivity : Activity() {
         }
     }
 
-    private fun otherSources() {
-        AlertDialog.Builder(this).setTitle("其他投屏方式")
-            .setItems(arrayOf("仪表地图快捷开关", "接入应用内投屏")) { _, item ->
-                if (!settings.setupComplete) { firstRun(); return@setItems }
-                if (item == 0) { control.toggleMap(); navigate(0) } else { namedSource() }
-            }.setNegativeButton("取消", null).show()
-    }
-
-    private fun namedSource() {
-        AlertDialog.Builder(this).setTitle("接入应用内投屏")
-            .setMessage("适用于自带投屏设置的应用。\n\n点击接入后，在该应用的“屏幕名”中填写：\n${NamedDisplayContract.NAME}\n\n一次接入一个应用，更换时会先结束原投屏。")
-            .setPositiveButton("开始接入") { _, _ -> control.namedDisplay(); navigate(0) }
-            .setNeutralButton("复制屏幕名") { _, _ ->
+    private fun externalAccessCard() {
+        addCard {
+            val line = row().apply { gravity = Gravity.CENTER_VERTICAL }
+            line.addView(text("应用内投屏接入",21,true),LinearLayout.LayoutParams(0,-2,1f))
+            accessSwitch = Switch(this@ProductActivity).apply {
+                id = R.id.product_external_access
+                textOn = ""; textOff = ""; showText = false
+                isChecked = ExternalDisplayAccess.enabled()
+                contentDescription = "应用内投屏接入开关"
+                setOnCheckedChangeListener { _, checked ->
+                    if (!reflectingAccess) {
+                        if (!settings.setupComplete) { firstRun(); build() }
+                        else { ExternalDisplayService.setEnabled(this@ProductActivity,checked) }
+                    }
+                }
+            }.also { line.addView(it,LinearLayout.LayoutParams(dp(64),dp(48)).apply { marginStart=dp(16) }) }
+            addView(line)
+            addView(text("开启后，可在支持投屏的应用中填写屏幕名发送画面。开关不改变仪表，关闭也不打断当前投屏。",16))
+            addView(text("定制地图缺少原按钮时，启用应用的无障碍服务即可显示地图投屏入口。切到其他应用后自动隐藏。",15))
+            accessState = text(ExternalDisplayAccess.message,15).also { addView(it) }
+            copyScreenName = button("复制屏幕名") {
                 (getSystemService(CLIPBOARD_SERVICE) as ClipboardManager)
-                    .setPrimaryClip(ClipData.newPlainText("仪表屏幕名", NamedDisplayContract.NAME))
-                Toast.makeText(this, "屏幕名已复制", Toast.LENGTH_SHORT).show()
-            }.setNegativeButton("取消", null).show()
+                    .setPrimaryClip(ClipData.newPlainText("仪表屏幕名",NamedDisplayContract.NAME))
+                Toast.makeText(this@ProductActivity,"屏幕名已复制",Toast.LENGTH_SHORT).show()
+            }.also { it.visibility=if (ExternalDisplayAccess.enabled()) View.VISIBLE else View.GONE; addView(it) }
+        }
     }
 
     private fun firstRun() {
@@ -435,6 +453,12 @@ class ProductActivity : Activity() {
             roleState?.text = if (control.busy && control.operation == ProductOperation.MODE) "正在切换…"
                 else if (usb.observed) usb.description else "未检测到投屏连接"
         } finally { reflectingRole = false }
+        reflectingAccess = true
+        try {
+            accessSwitch?.isChecked = ExternalDisplayAccess.enabled()
+            accessState?.text = ExternalDisplayAccess.message
+            copyScreenName?.visibility = if (ExternalDisplayAccess.enabled()) View.VISIBLE else View.GONE
+        } finally { reflectingAccess = false }
     }
 
     private fun accessibilityEnabled(): Boolean {

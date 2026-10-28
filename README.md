@@ -1,8 +1,8 @@
 # Dashcast 仪表投屏
 
-BYD Android 车机 → QNX 仪表的 USB 应用投屏。当前应用 **1.13.0 / code58**：重新整理投屏、应用、设置、帮助四页，日常界面使用简明中文；常用操作集中，技术详情和开发工具折叠。
+BYD Android 车机 → QNX 仪表的 USB 应用投屏。当前应用 **1.14.0 / code59**：独立接入开关与按屏幕名发送，修复持续显示、正式退出和仪表车模/道路绘制。
 
-[1.13.0 设置与交互调整](docs/PRODUCT_1.13.0.md) · [当前使用说明](docs/USAGE.md) · [1.12.6 仪表范围与边界](docs/PRODUCT_1.12.6.md)。仪表逐字节沿用1.12.6/RWVE，已安装该仪表包者只需覆盖安装APK，保留原数据和ADB身份。全屏上下各8、左右各32像素外扩及原生背景/续航底板保持；本轮未改仪表或传输。普通应用宽源镜像留边、异形开口角落控件与真实3D场景仍有边界，不以UI优化宣称已修复。
+[1.14.0 改动与边界](docs/PRODUCT_1.14.0.md) · [当前使用说明](docs/USAGE.md)。需要配套更新RWVF仪表App和APK，保留数据及ADB身份；曲线、窄边、原背景和信息布局承接1.12.6。离线和Android模拟器通过不代表真实QNX或车辆已经验收。
 
 - 首页一键开始/停止；普通应用任务位于自有VirtualDisplay，同帧GL分发到编码器和可挂卸主屏镜像，不采集其他主屏应用。停止精确归还业务任务，不强停/清数据。
 - 应用搜索、收藏、默认选择；普通单任务入口也走托管，不限制应用类别。原图标在投屏期间进入镜像；切走不主动停止仪表。原车定制导航按可配置表保留独立Meter入口，不接管其主屏图标。
@@ -37,7 +37,7 @@ Windows 用 gradlew.bat。首次依赖需要网络；准备完缓存才能 --off
 
 Kotlin 产品界面、状态协调、应用目录、配置、角色工作流和持续合成控制位于 phase1/android；已打通的 Java 编码/DCV1/NCM/shell ABI 保留。phase1/qnx 提供脚本、精确 ARM/Thumb 适配源及便携控制器；analysis 与 tools 提供哈希固定组件生成和公开内容检查。
 
-配套仪表沿用1.12.6/RWVE，MCU、参考OS/MLO/IFS/Boot及USB角色不改。公开源码不含固件原件、APK、SDK、密钥、ADB身份或原始实车日志；配套另行分发。tools/build_axes_rim_components.py可复现沿用的组件，输出不是可刷FULL，[仪表细节](docs/PRODUCT_1.12.6.md)。
+配套仪表1.14.0/RWVF，MCU、参考OS/MLO/IFS/Boot及USB角色不改。公开源码不含固件原件、APK、SDK、密钥、ADB身份或原始实车日志；配套另行分发。tools/build_product_runtime_components.py可复现本版组件，输出不是可刷FULL，[仪表细节](docs/PRODUCT_1.14.0.md)。
 
 [使用](docs/USAGE.md) · [发布边界](docs/PUBLISHING.md) · [安全](SECURITY.md) · [依赖来源](THIRD_PARTY_NOTICES.md) · [许可证待选](LICENSE_STATUS.md) · [贡献](CONTRIBUTING.md)
 

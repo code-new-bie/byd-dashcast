@@ -5,6 +5,10 @@ internal object ProductErrors {
     fun explain(error: Exception): String {
         val text = error.message.orEmpty()
         return when {
+            text.contains("EXTERNAL_ONE_APPLICATION_NOT_READY") || text.contains("EXTERNAL_APPLICATION_CHANGED_OR_CLOSED") ->
+                "应用已结束外部投屏。可在原应用中重新发送，或从应用列表开始投屏。"
+            text.contains("EXTERNAL_") || text.contains("NAMED_WINDOW") ->
+                "应用接入暂不可用。请先关闭再开启接入，或从应用列表开始投屏。"
             text.contains("CLEANUP_UNCONFIRMED") || text.contains("HOT_RELEASE_UNCONFIRMED") ->
                 "上次投屏尚未完全结束，已停止重试。请重启仪表和应用后再试。"
             text.contains("APP_NATIVE_SECONDARY_VERSION") ->

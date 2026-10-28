@@ -30,7 +30,11 @@ final class RemoteDisplaySession implements RemoteCaptureSession {
     private int user;
     private int displayId = -1;
     private String component;
-    private boolean closed;
+    private volatile boolean closed;
+    private volatile AppTaskPolicy.Task observedTask;
+    private volatile long observedAt;
+    private volatile Exception observationFailure;
+    private Thread observer;
     private boolean frameAvailable;
     private boolean everAvailable;
     private long sourceEpoch = System.nanoTime();
@@ -69,9 +73,12 @@ final class RemoteDisplaySession implements RemoteCaptureSession {
                     throw new IOException("APP_NATIVE_SECONDARY_ALREADY_IN_USE; existing task left untouched");
                 }
             }
+            String ownName = null;
             if (profile != null) {
-                NamedDisplayContract.requireAvailable(context);
-                display = createVirtualDisplay(context, surface, width, height, densityDpi, FLAGS, NamedDisplayContract.NAME);
+                // The SDK matches fission_ prefixes, so a distinct alias preserves it
+                // while the canonical external standby may be toggled at any time.
+                ownName = NamedDisplayContract.nativeName(NamedDisplayContract.names().values());
+                display = createVirtualDisplay(context, surface, width, height, densityDpi, FLAGS, ownName);
             } else {
                 display = createVirtualDisplay(context, surface, width, height, densityDpi);
             }
@@ -82,7 +89,7 @@ final class RemoteDisplaySession implements RemoteCaptureSession {
             displayId = info.getDisplayId();
             System.err.println("SHELL_CAPTURE_REMOTE_DISPLAY_CREATED id=" + displayId
                     + " size=" + width + "x" + height + " density=" + densityDpi
-                    + " name=" + (profile != null ? NamedDisplayContract.NAME : "dashcast-independent")
+                    + " name=" + (profile != null ? ownName : "dashcast-independent")
                     + " direct_surface=true own_content_only=true");
             policy = new IndependentTaskPolicy(existing, component, user, displayId);
             List<String> arguments = new java.util.ArrayList<>(plan.arguments(displayId, user));
@@ -106,6 +113,24 @@ final class RemoteDisplaySession implements RemoteCaptureSession {
                     + " user=" + user + " entry=" + component + " size=" + width + "x" + height
                     + " direct_surface=true source_display_zero=false same_user_data=true native_secondary="
                     + plan.getNativeSecondary());
+            observedTask = owned;
+            observedAt = System.nanoTime();
+            observer = new Thread(() -> {
+                try {
+                    while (!closed) {
+                        AppTaskPolicy.Task next = policy.findOwned(access.projectionTasks());
+                        observedTask = next;
+                        observedAt = System.nanoTime();
+                        Thread.sleep(100);
+                    }
+                } catch (InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                } catch (Exception error) {
+                    if (!closed) { observationFailure = error; }
+                }
+            }, "dashcast-native-task-observer");
+            observer.setDaemon(true);
+            observer.start();
         } catch (Exception failure) {
             try { close(); } catch (Exception cleanup) { failure.addSuppressed(cleanup); }
             throw failure;
@@ -123,24 +148,28 @@ final class RemoteDisplaySession implements RemoteCaptureSession {
 
     public boolean acceptFrame(long ptsMicros, boolean key) throws Exception {
         checkTask();
-        return frameAvailable && frameFence.accept(ptsMicros, key, System.nanoTime());
+        return everAvailable && frameFence.accept(ptsMicros, key, System.nanoTime());
     }
 
-    public boolean renderAllowed() { return frameAvailable; }
+    public boolean renderAllowed() { return everAvailable; }
+    public boolean advanceSourceAllowed() { return frameAvailable; }
     public long renderSourceEpochNanos() { return sourceEpoch; }
 
     private void checkTask() throws Exception {
         if (closed) { throw new IOException("APP_INDEPENDENT_CAPTURE_CLOSED"); }
         if (!polls.due(System.nanoTime())) { return; }
-        AppTaskPolicy.Task current = policy.findOwned(access.projectionTasks());
+        if (observationFailure != null) { throw new IOException("APP_NATIVE_TASK_OBSERVER_FAILED", observationFailure); }
+        long age = System.nanoTime() - observedAt;
+        if (age < 0 || age >= 4_000_000_000L) { throw new IOException("APP_NATIVE_TASK_OBSERVATION_STALE"); }
+        AppTaskPolicy.Task current = observedTask;
         if (current == null || current.id != owned.id) {
             throw new IOException("APP_INDEPENDENT_TASK_LOST; original tasks left untouched");
         }
-        boolean available = current.top.startsWith(component.substring(0, component.indexOf('/')) + "/");
+        boolean available = age < 500_000_000L && current.top.startsWith(component.substring(0, component.indexOf('/')) + "/");
         if (available && !frameAvailable) {
             long now = System.nanoTime();
-            frameFence.changed(now);
-            if (everAvailable) { sourceEpoch = now; }
+            if (!everAvailable) { frameFence.changed(now); }
+            else { sourceEpoch = now; }
             everAvailable = true;
         }
         if (!available && frameAvailable) {
@@ -217,6 +246,16 @@ final class RemoteDisplaySession implements RemoteCaptureSession {
     public void close() throws Exception {
         if (closed) { return; }
         closed = true;
+        IOException observerCleanup = null;
+        if (observer != null) {
+            observer.interrupt();
+            try { observer.join(4500); }
+            catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+                observerCleanup = new IOException("CLEANUP_UNCONFIRMED native observer join interrupted", interrupted);
+            }
+            if (observer.isAlive()) { observerCleanup = new IOException("CLEANUP_UNCONFIRMED native task observer still running"); }
+        }
         try {
             IndependentTaskCleanup.close(policy, new IndependentTaskCleanup.Backend() {
                 @Override
@@ -243,5 +282,6 @@ final class RemoteDisplaySession implements RemoteCaptureSession {
             System.err.println("SHELL_CAPTURE_INDEPENDENT_CLEANUP task_queries=" + polls.getQueries()
                     + "; original_tasks_not_moved_or_removed");
         }
+        if (observerCleanup != null) { throw observerCleanup; }
     }
 }

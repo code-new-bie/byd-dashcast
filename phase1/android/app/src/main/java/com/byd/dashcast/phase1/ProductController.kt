@@ -86,6 +86,7 @@ internal class ProductController private constructor(context: Context) {
         if (!settings.setupComplete) { message = "请先完成首次连接设置"; return }
         if (ProjectionService.active()) { message = "已有投屏会话，请先停止再切换应用"; return }
         if (busy) { message = "当前操作尚未完成，请稍候"; return }
+        if (!target.isNamed) { ExternalDisplayAccess.suppressCurrent() }
         val request = StartRequest(target, settings.options(), settings.underlay, startGeneration.incrementAndGet())
         requestedTarget = target
         operation("正在连接仪表并准备画面。", ProductOperation.START) { prepareStart(request) }
@@ -104,6 +105,8 @@ internal class ProductController private constructor(context: Context) {
     }
 
     fun namedDisplay() = replace(ProjectionTarget.namedDisplay())
+
+    fun recordExternal(line: String) = log(line)
 
     private fun replace(target: ProjectionTarget) {
         if (!settings.setupComplete) { message = "请先完成首次连接设置"; return }
@@ -150,6 +153,7 @@ internal class ProductController private constructor(context: Context) {
     }
 
     fun stop() {
+        ExternalDisplayAccess.suppressCurrent()
         startGeneration.incrementAndGet()
         usbPermission.clear()
         val wasActive = ProjectionService.active()
@@ -253,7 +257,13 @@ internal class ProductController private constructor(context: Context) {
             if (request.generation != startGeneration.get()) { return@post }
             try {
                 requireClean()
-                ProjectionService.startProduct(app, request.options, request.target, request.underlay)
+                val selection = ProjectionEntryRouter.resolve(app,request.target,java.util.function.Consumer { log(it) })
+                val displayTarget = if (request.target.isRemote && selection.native != null &&
+                    ExternalDisplayAccess.providesPackage(app,request.target.component().substringBefore('/'))) {
+                    log("PRODUCT_NATIVE_ENTRY_REUSES_OWN_EXTERNAL_DISPLAY; original_application_task_preserved=true")
+                    ProjectionTarget.namedDisplay()
+                } else { request.target }
+                ProjectionService.startProduct(app, request.options, displayTarget, request.underlay)
                 message = "正在准备应用画面，连接好后会显示在仪表上。"
                 log("PRODUCT_SESSION_REQUEST target=${request.target} underlay=${request.underlay}")
             } catch (error: Exception) {

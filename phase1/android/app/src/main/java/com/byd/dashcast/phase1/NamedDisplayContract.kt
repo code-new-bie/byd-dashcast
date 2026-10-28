@@ -6,6 +6,14 @@ import java.io.IOException
 /** Public display-name contract; no Binder/HTTP control endpoint is exposed. */
 internal object NamedDisplayContract {
     const val NAME = "fission_dashcast_meter"
+    const val NATIVE_NAME = "fission_dashcast_native"
+    /** The map SDK matches fission_ prefixes. Keep that contract without occupying standby's exact name. */
+    @JvmStatic fun nativeName(existing: Collection<String>): String {
+        if (existing.any { matchesMeter(it) && it != NAME }) {
+            throw IOException("METER_DISPLAY_CONFLICT: 已有其他仪表显示屏，请先结束其他投屏服务")
+        }
+        return NATIVE_NAME
+    }
     fun matchesMeter(name: String): Boolean = name.startsWith("fission_") || name == "叠加视图 #1"
     /** app_process has no Activity display Context; read structured DisplayInfo directly. */
     @JvmStatic fun names(): Map<Int, String> {
@@ -25,11 +33,14 @@ internal object NamedDisplayContract {
             id to name
         }.toMap()
     }
-    @JvmStatic fun requireAvailable(@Suppress("UNUSED_PARAMETER") context: Context) {
-        if (names().values.any { matchesMeter(it) }) {
+    @JvmStatic @JvmOverloads fun requireAvailable(@Suppress("UNUSED_PARAMETER") context: Context,
+            allowNative: Boolean = false) {
+        if (!standbyAvailable(names().values,allowNative)) {
             throw IOException("METER_DISPLAY_CONFLICT: 已有仪表显示屏，请先结束其他投屏服务")
         }
     }
+    fun standbyAvailable(existing: Collection<String>, allowNative: Boolean): Boolean =
+        existing.none { matchesMeter(it) && !(allowNative && it == NATIVE_NAME) }
 }
 
 /** Frozen Android-10 dumpsys field contract. Titles, content and text are never retained/logged. */
@@ -38,10 +49,26 @@ internal object NamedWindowPolicy {
     private val display = Regex("\\bmDisplayId=(\\d+)")
     private val uid = Regex("\\bmOwnerUid=(\\d+)")
     private val visibility = Regex("\\bmViewVisibility=(0x[0-9a-fA-F]+|\\d+)")
+    private val windowHeader = Regex("^\\s*Window #\\d+ Window\\{.*")
+    private val displaySection = Regex("^\\s*Display: mDisplayId=(\\d+)\\s*$")
+    /** Match focus inside the physical display section, not a MeterActivity on a secondary display. */
+    fun mainMapFocused(text: String, user: Int): Boolean {
+        require(text.length <= MAX_BYTES && user >= 0)
+        var main = false
+        val focusedMap=Regex("^\\s*mCurrentFocus=Window\\{[a-fA-F0-9]+ u" + user +
+            " com\\.byd\\.automap/[a-zA-Z0-9_.$]+\\}\\s*$")
+        for (line in text.lineSequence()) {
+            val section = displaySection.matchEntire(line)
+            if (section != null) { main = section.groupValues[1] == "0"; continue }
+            if (line.startsWith("WINDOW MANAGER ")) { main = false }
+            if (main && focusedMap.matches(line)) { return true }
+        }
+        return false
+    }
     fun owners(text: String, target: Int, ownUid: Int, user: Int): Set<Int> {
         require(text.length <= MAX_BYTES && target > 0 && user >= 0)
         val windows = text.lineSequence().fold(mutableListOf<StringBuilder>()) { blocks, line ->
-            if (line.trimStart().startsWith("Window #")) { blocks.add(StringBuilder()) }
+            if (windowHeader.matches(line)) { blocks.add(StringBuilder()) }
             if (blocks.size > 256) { throw IOException("NAMED_WINDOW_LIMIT") }
             blocks.lastOrNull()?.append(line)?.append('\n')
             blocks

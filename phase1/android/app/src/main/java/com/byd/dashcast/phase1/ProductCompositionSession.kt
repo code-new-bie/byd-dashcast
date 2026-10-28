@@ -126,7 +126,12 @@ internal class ProductCompositionSession @JvmOverloads constructor(
         }
         if (now - lastRenew >= RENEW_INTERVAL) {
             if (!drawingConfirmed && (delta(reply, 16) == 0L || delta(reply, 17) == 0L)) {
-                throw IOException("PRODUCT_BACKGROUND_DRAW_NOT_CONFIRMED")
+                throw IOException("PRODUCT_SCENE_DRAW_NOT_CONFIRMED")
+            }
+            if (!drawingConfirmed) {
+                log.log("PRODUCT_SCENE_DRAW_PROGRESS_CONFIRMED scene_visits=${delta(reply,16)} " +
+                    "root_background_draws=${delta(reply,17)} suppressed_2d=${delta(reply,27)} " +
+                    "suppressed_3d=${delta(reply,28)}; native traversal evidence, not physical picture certification")
             }
             drawingConfirmed = true
             val renewed = exchange(channel, RENEW)
@@ -181,7 +186,7 @@ internal class ProductCompositionSession @JvmOverloads constructor(
         InstrumentCompositionTrial.exchangePacket(channel, operation, request(operation, nonce, centerWindow))
 
     companion object {
-        const val CAPABILITY = 0x5257563e // RWVE: horizontal and vertical outset with OEM foreground above
+        const val CAPABILITY = 0x5257563f // RWVF: runtime plain-scene filter and real draw progress
         const val NAVIGATION_READY = 0x4e4c4300
         const val NAVIGATION_ACTIVE = 0x4e4c4301
         const val NAVIGATION_PENDING = 0x4e4c4302

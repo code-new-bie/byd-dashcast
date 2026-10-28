@@ -26,11 +26,13 @@ internal data class ContentViewport(
 
     companion object {
         @JvmStatic fun full(): ContentViewport = ContentViewport(1696, 456, 112, 112, 1696, 456)
-        /** Mirror-hosted apps render on a 2x supersample of the full carrier so generic
-         *  layouts get a usable wide canvas (~1131x304dp at 480dpi) and the instrument
-         *  downscale stays sharp. Exact carrier aspect: no letterboxing in either mode. */
+        /** Historical carrier fixture sizes; live generic apps use forBusiness instead. */
         const val FULL_MIRROR_SOURCE_WIDTH = 3392
         const val FULL_MIRROR_SOURCE_HEIGHT = 912
+        @JvmStatic fun forBusiness(profile: BusinessDisplayProfile, center: Boolean): ContentViewport {
+            val destination = if (center) center() else full()
+            return destination.copy(sourceWidth=profile.width,sourceHeight=profile.height)
+        }
         /** Fully clear conservative box inside the curved full-mode aperture. */
         @JvmStatic fun fullSafeBounds(): IntArray = intArrayOf(320, 176, 1280, 336)
         @JvmStatic fun center(): ContentViewport = ContentViewport(1200, 640, 60, 40, 1800, 640)

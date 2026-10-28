@@ -111,10 +111,17 @@ internal class MirrorAppSession @JvmOverloads constructor(surface: Surface, entr
         endpoint.sinks.take()?.let { sink ->
             var handedOff = false
             try {
-                // The optional preview consumer only attaches a render surface. It must
-                // never reflow the business display: the mirror page fits the complete
-                // carrier-aspect source (letterboxed), instead of the carrier shrinking
-                // back to a portrait primary-sized strip.
+                // Match the actual app area, including this ROM's system-bar/IME insets.
+                // The encoded carrier and native aperture remain fixed and independent.
+                if (sink.surface != null && (sourceWidth != sink.width || sourceHeight != sink.height)) {
+                    require(BusinessDisplayProfile.valid(sink.width,sink.height,sourceDensity))
+                    display!!.resize(sink.width,sink.height,sourceDensity)
+                    renderer.resizeBusinessSource(sink.width,sink.height)
+                    sourceWidth=sink.width;sourceHeight=sink.height
+                    sourceEpoch=System.nanoTime();fence.changed(sourceEpoch)
+                    endpoint.geometry(sourceWidth,sourceHeight)
+                    System.err.println("SHELL_MIRROR_BUSINESS_VIEWPORT size=${sourceWidth}x$sourceHeight; primary_client_area=true encoded_carrier_unchanged=true")
+                }
                 renderer.setMirrorSink(sink)
                 handedOff = true
             } finally { if (!handedOff) { sink.surface?.release() } }

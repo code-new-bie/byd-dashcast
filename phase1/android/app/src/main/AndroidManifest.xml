@@ -31,6 +31,10 @@
             android:name=".MirrorHostReceiver"
             android:exported="true"
             android:permission="android.permission.DUMP" />
+        <receiver android:name=".ExternalDisplayReceiver" android:exported="true"
+            android:permission="android.permission.DUMP" />
+        <service android:name=".ExternalDisplayService" android:exported="false"
+            android:stopWithTask="false" />
         <activity
             android:name=".MirrorActivity"
             android:exported="true"

@@ -67,6 +67,7 @@ final class ContinuousProjectionTask implements ProjectionSessionController.Task
         boolean usbClean = true;
         boolean captureAttempted = false;
         String mirrorTicket = null;
+        String externalTicket = null;
         IOException[] receiverFailure = {null};
         try {
             LogHub.banner("CONTINUOUS_VIDEO_ATTEMPT " + System.currentTimeMillis() + " seconds=" + seconds);
@@ -159,6 +160,10 @@ final class ContinuousProjectionTask implements ProjectionSessionController.Task
                     // USB abort must not cancel the independent localhost channel before its owned STOP/EXIT.
                     AndroidAdbIdentity.load(), log, new AtomicBoolean());
             source = new AdbScreenVideoSource(adb, frames, log);
+            if (target.isNamed() && ExternalDisplayAccess.ready()) {
+                externalTicket = ExternalDisplayAccess.beginCapture();
+                source.setMirrorTicket(externalTicket);
+            }
             if (target.isRemote()) {
                 ProjectionEntryRouter.Selection entry = ProjectionEntryRouter.resolve(context, target, log);
                 mirrorTicket = entry.getNative() == null
@@ -175,6 +180,11 @@ final class ContinuousProjectionTask implements ProjectionSessionController.Task
         } catch (IOException | RuntimeException error) {
             failure = new IOException("Continuous projection failed: " + error, error);
         } finally {
+            try {
+                ExternalDisplayAccess.endCapture(externalTicket);
+            } catch (Exception externalCleanup) {
+                failure = collect(failure, externalCleanup);
+            }
             MirrorBridge.end(mirrorTicket);
             log.accept(frameRateGate.statistics());
             log.accept(framePacer.statistics());
