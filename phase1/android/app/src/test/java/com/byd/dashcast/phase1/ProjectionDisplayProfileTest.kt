@@ -13,7 +13,7 @@ class ProjectionDisplayProfileTest {
 
     @Test fun fullUsesTheEffectiveBoundsAtOneToOneScale() {
         val full = ContentViewport.full()
-        assertEquals(1632, full.sourceWidth)
+        assertEquals(1696, full.sourceWidth)
         assertEquals(440, full.sourceHeight)
         assertEquals(160, ProjectionDisplayProfile.densityDpi(full.sourceWidth, full.sourceHeight))
         assertEquals(full.sourceWidth, full.encodedWidth)
@@ -33,7 +33,8 @@ class ProjectionDisplayProfileTest {
     }
 
     @Test fun nativeGeometryCapabilityIsDifferentFromFrozenRwv3() {
-        assertEquals(0x5257563c, ProductCompositionSession.CAPABILITY)
+        assertEquals(0x5257563d, ProductCompositionSession.CAPABILITY)
+        assertNotEquals(0x5257563c, ProductCompositionSession.CAPABILITY)
         assertNotEquals(0x5257563b, ProductCompositionSession.CAPABILITY)
         assertNotEquals(0x5257563a, ProductCompositionSession.CAPABILITY)
         assertNotEquals(0x52575639, ProductCompositionSession.CAPABILITY)
