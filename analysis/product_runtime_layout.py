@@ -1,9 +1,11 @@
-"""RWVF: projection-only native render filtering, with real scene-draw feedback.
+"""WITHDRAWN 1.14.0 RWVF layout; retained for startup-failure forensics.
 
 Existing OEM LOAD segments, relocations, interpreter, unwind tables and RELRO
 remain intact. A separate RX LOAD carries bounded, hash-pinned Thumb hooks.
-The program-header table is relocated into that LOAD; no old header/data slot
-is stolen. This is a binary adaptation, not a QNX SDK build or a vehicle test.
+The supplied QNX libc derives the main ELF header as AT_PHDR - p_offset.
+Relocating PHDR into the new LOAD violates that interpreter's contract. The
+default builder now rejects this known failing layout. The explicit forensic
+option is only for reproducing historical bytes, never a usable upgrade.
 """
 import io
 import re
@@ -57,7 +59,25 @@ def _assemble(source):
     return bytes(output), {n: addresses[n] for n in ENTRIES}
 
 
-def build_runtime_hmi(original):
+def require_qnx_header_anchor(raw):
+    """Enforce the actual supplied interpreter's main-object header derivation."""
+    elf = ELFFile(io.BytesIO(raw))
+    phdr = next(s for s in elf.iter_segments() if s['p_type'] == 'PT_PHDR')
+    header_load = next(s for s in elf.iter_segments()
+        if s['p_type'] == 'PT_LOAD' and s['p_offset'] == 0 and s['p_filesz'] >= 52)
+    table_load = next(s for s in elf.iter_segments()
+        if s['p_type'] == 'PT_LOAD' and s['p_offset'] <= elf['e_phoff'] and
+        elf['e_phoff'] + elf['e_phnum'] * elf['e_phentsize'] <= s['p_offset'] + s['p_filesz'])
+    actual_table = table_load['p_vaddr'] + elf['e_phoff'] - table_load['p_offset']
+    if phdr['p_offset'] != elf['e_phoff'] or phdr['p_vaddr'] != actual_table:
+        raise ValueError('QNX main ELF PHDR mapping mismatch')
+    if actual_table - phdr['p_offset'] != header_load['p_vaddr']:
+        raise ValueError('WITHDRAWN 1.14.0: QNX interpreter derives an unmapped ELF header; do not flash')
+    return dict(elf_header=header_load['p_vaddr'], at_phdr=actual_table,
+        phoff=elf['e_phoff'], interpreter_header_derivation_valid=True)
+
+
+def build_runtime_hmi(original, *, forensic_withdrawn=False):
     base, prior = build_axes_hmi(original)
     elf = ELFFile(io.BytesIO(base))
     # Layout offsets below are derived from these exact, disassembled methods.
@@ -123,6 +143,8 @@ def build_runtime_hmi(original):
         if old['p_type'] != 'PT_PHDR':
             assert old == dict(new.header)
     assert parsed['e_entry'] == elf['e_entry'] and parsed['e_shoff'] == elf['e_shoff']
+    if not forensic_withdrawn:
+        require_qnx_header_anchor(final)
     return final, dict(input_sha256=digest(original), output_sha256=digest(final), prior=prior,
         capability=CAPABILITY, extension_address=EXTENSION, code_address=CODE,
         extension_file_offset=offset, extension_bytes=load_size, entries=entries,
@@ -132,7 +154,8 @@ def build_runtime_hmi(original):
         feedback_words={'scene_traversal':16,'root_background_draw':17,'suppressed_2d':27,'suppressed_3d':28},
         runtime_root_ids={'full_2d':95,'small_2d':96,'scene_3d':97},runtime_root_format='NN%u',
         current_registry_identity_required_for_generated_names=True,
-        property_overwrites_cannot_restore_filtered_draw=True, qnx_runtime_tested=False)
+        property_overwrites_cannot_restore_filtered_draw=True, qnx_runtime_tested=False,
+        withdrawn_for_boot_failure=True, forensic_only=forensic_withdrawn)
 
 
 def build_runtime_kzb(original, toc):

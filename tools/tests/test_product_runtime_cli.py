@@ -14,7 +14,7 @@ class ProductRuntimeCliTest(unittest.TestCase):
         self.assertEqual(0, result.returncode, result.stderr)
         self.assertIn('--scene', result.stdout)
 
-    def test_wrong_toc_cannot_create_an_output_or_modify_inputs(self):
+    def test_withdrawn_command_cannot_create_an_output_or_modify_any_input(self):
         with tempfile.TemporaryDirectory() as folder:
             base = Path(folder)
             command = [sys.executable, '-B', ROOT/'tools/build_product_runtime_components.py']
@@ -25,9 +25,10 @@ class ProductRuntimeCliTest(unittest.TestCase):
             out = base/'output'
             result = subprocess.run([*command, '--output', out], capture_output=True, text=True, timeout=20)
             self.assertNotEqual(0, result.returncode)
-            self.assertIn('Wrong original TOC', result.stderr)
+            self.assertIn('WITHDRAWN 1.14.0', result.stderr)
             self.assertFalse(out.exists())
-            self.assertEqual(b'invalid-toc', (base/'toc').read_bytes())
+            for name in ('hmi', 'kzb', 'scene', 'toc', 'receiver'):
+                self.assertEqual(b'invalid-'+name.encode(), (base/name).read_bytes())
 
 if __name__ == '__main__':
     unittest.main()

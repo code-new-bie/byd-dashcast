@@ -4,7 +4,7 @@
   "ncm_original_author_confirmed": true,
   "project_license": "NOT_SELECTED_BY_OWNER",
   "original_runtime_java_semantics_changed": true,
-  "runtime_changes": "RWVF native scoped ego/road draw filters and live feedback; independent external standby switch with shared video arbiter; map-only accessibility fallback; primary-aspect generic business UI; actual capture EXIT and authorized source retention; original preferences, ADB identity, role/cleanup guards retained; no target vehicle acceptance claim",
+  "runtime_changes": "1.14.0 instrument WITHDRAWN after animation-to-black startup failure; real supplied QNX libc replay confirms relocated PHDR derives unmapped ELF header; generator blocked and prior working instrument recovery advised; Android code unchanged; historical runtime semantics retained only for forensics; no corrected firmware or target startup certification",
   "excluded_test_files": [
     "AdbVideoOfflineCheck.java",
     "ReferenceRenderEvidence.java",
@@ -62,8 +62,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "bytes": 31676,
-      "sha256": "93284ea3e243a45d756ee7a0cb648e39a3d65d996e44d72cf4ed9ccf75ba670e",
+      "bytes": 32220,
+      "sha256": "82db49bb0e81a2e2d221d921b0de9a384ca1b2627940a4ef16c791595ab4cba2",
       "origin": "publication/template/CHANGELOG.md",
       "transformations": [
         "CRLF_TO_LF"
@@ -85,8 +85,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 4382,
-      "sha256": "02a05b27eeee418871269411bf4822eab4e79c51d0a56fbdcb7885da57b40e72",
+      "bytes": 4832,
+      "sha256": "50e770e17153779086d2dcf7831cb572821594e974df515dc4ebb53440faa468",
       "origin": "publication/template/README.md",
       "transformations": [
         "CRLF_TO_LF"
@@ -273,8 +273,8 @@
     },
     {
       "path": "analysis/product_runtime_layout.py",
-      "bytes": 7954,
-      "sha256": "4824eb207abeb0200c344fd2ed0ea0a8fbb8760cf09e5529ca400e7007c4cf05",
+      "bytes": 9400,
+      "sha256": "6385887dd9276db2afb3ad07f81617822457c5eb8bf3d5fbb8a442c868defaf2",
       "origin": "analysis/product_runtime_layout.py",
       "transformations": []
     },
@@ -348,6 +348,13 @@
       "bytes": 13235,
       "sha256": "cc5a544ba85bee7d8ed8f795d5b279f15edeb3bc59c6f806f8102ca6ec6a9836",
       "origin": "publication/template/docs/BUILD.md",
+      "transformations": []
+    },
+    {
+      "path": "docs/INCIDENT_1.14.0_BOOT.md",
+      "bytes": 2084,
+      "sha256": "b0ed046007602bcf679abd62f643c3c1150767e8e3e87d4b4e4a8455268d9b09",
+      "origin": "publication/template/docs/INCIDENT_1.14.0_BOOT.md",
       "transformations": []
     },
     {
@@ -466,8 +473,8 @@
     },
     {
       "path": "docs/PRODUCT_1.14.0.md",
-      "bytes": 4473,
-      "sha256": "6f548481c8e28ad911fbbd029c2b564f953dedef7c4e1c7ced1519bd06489d65",
+      "bytes": 5004,
+      "sha256": "d0da5261df1eb05729219a8ae51e169a08220a2336dde979ce8559f37c9ff516",
       "origin": "publication/template/docs/PRODUCT_1.14.0.md",
       "transformations": []
     },
@@ -669,8 +676,8 @@
     },
     {
       "path": "docs/USAGE.md",
-      "bytes": 16866,
-      "sha256": "83b1e5a0b3295ff93b415780287965599639ed4199cef3c27b5ba2ef6784ed27",
+      "bytes": 17175,
+      "sha256": "4bdf8ff3ea458ad346cb5736729f6d29e44003b7fea1acda4a9595944ae778c8",
       "origin": "publication/template/docs/USAGE.md",
       "transformations": [
         "CRLF_TO_LF"
@@ -2731,8 +2738,8 @@
     },
     {
       "path": "tools/build_product_runtime_components.py",
-      "bytes": 2507,
-      "sha256": "4b7dddaa9d6906dcb7efd063075f2a4622d7c3aeaf6324a0639573fbd3c4ca5b",
+      "bytes": 595,
+      "sha256": "1ed99473747729a37d79d0b1583cfaf360f4ef16f6e1e3182d16c14bb1ef3df7",
       "origin": "publication/template/tools/build_product_runtime_components.py",
       "transformations": []
     },
@@ -2901,8 +2908,8 @@
     },
     {
       "path": "tools/tests/test_product_runtime_cli.py",
-      "bytes": 1497,
-      "sha256": "a4f7fcef2b0a59bb83a1d882cc803472f10b07aceec3c1eee974ddfea661b594",
+      "bytes": 1588,
+      "sha256": "d7dcb8f634162dc86764356b3977f65f7b02a67285d3d581608809df9a44662d",
       "origin": "publication/template/tools/tests/test_product_runtime_cli.py",
       "transformations": []
     },
