@@ -1,10 +1,10 @@
 {
-  "snapshot_version": "1.14.2",
+  "snapshot_version": "1.14.3",
   "snapshot_date": "2026-10-29",
   "ncm_original_author_confirmed": true,
   "project_license": "NOT_SELECTED_BY_OWNER",
   "original_runtime_java_semantics_changed": true,
-  "runtime_changes": "1.14.2 default proportional instrument fill with one-time legacy preference migration; later explicit complete-display preference retained; full main-screen source unaffected; real Android29 same-fixture old/new dual-output and saved-aperture pixel checks; instrument binary remains 1.14.1 boot fix byte-for-byte; full-mode background feedback is separately open; no complete target QNX or vehicle certification",
+  "runtime_changes": "1.14.3 restores original clear RGBA via one four-byte owned tail branch; native curve mask is the sole video aperture; original two-LOAD boot fix, resources, receiver and wire protocol preserved; actual delivered clear-entry regression plus original interpreter/native lease and GLES partial-draw checks; APK version/help labels only over 1.14.2 fill fix; no complete target QNX or vehicle certification",
   "excluded_test_files": [
     "AdbVideoOfflineCheck.java",
     "ReferenceRenderEvidence.java",
@@ -62,8 +62,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "bytes": 33501,
-      "sha256": "8563adf2cb51a56dc60c88929fb632018b252cc5f8319997e1c32aaf309d7792",
+      "bytes": 34058,
+      "sha256": "dd562442272bd44c7c343e154e7b197ee67ee07999cb1713bc8b78f89816efd6",
       "origin": "publication/template/CHANGELOG.md",
       "transformations": [
         "CRLF_TO_LF"
@@ -85,8 +85,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 5012,
-      "sha256": "eaee3e54fcadeebd0264ef1c0e37500013df2728ff83c37d5b6cc948b8bc6798",
+      "bytes": 4934,
+      "sha256": "8a25b84f72b398ae03d9431df6c2105fbe9679caa1bc3701739d8cb7ffba9ead",
       "origin": "publication/template/README.md",
       "transformations": [
         "CRLF_TO_LF"
@@ -234,6 +234,13 @@
       "bytes": 13335,
       "sha256": "7a14acb5003f8830af175a9c792d784e2f04199142b87f2e914216ae1d92f1fc",
       "origin": "analysis/integrated_layout.py",
+      "transformations": []
+    },
+    {
+      "path": "analysis/native_background_clear.py",
+      "bytes": 2626,
+      "sha256": "8b55def1e5f557ac2a0e3dbcaee15b65387830a7106141b22820dc030acac542",
+      "origin": "analysis/native_background_clear.py",
       "transformations": []
     },
     {
@@ -500,6 +507,13 @@
       "transformations": []
     },
     {
+      "path": "docs/PRODUCT_1.14.3.md",
+      "bytes": 2987,
+      "sha256": "2bac25fded4ff5e6346c751aede39801629d4f2d4fe603d5ca17a6f809addb8b",
+      "origin": "publication/template/docs/PRODUCT_1.14.3.md",
+      "transformations": []
+    },
+    {
       "path": "docs/PRODUCT_1.2.0.md",
       "bytes": 2876,
       "sha256": "155d916a1c95c21ebdcec22968c2af3190a278abcfa402f8779358d0c40991cf",
@@ -697,8 +711,8 @@
     },
     {
       "path": "docs/USAGE.md",
-      "bytes": 17222,
-      "sha256": "154c4dc70ab3a7068b53f0ff44f4651970c5fbd939393b5f0bf9cec2399da1a3",
+      "bytes": 17213,
+      "sha256": "226c70b9bb264f5e9e4d465190676a1845e33778c2fbe19a678f3c917bbca7a8",
       "origin": "publication/template/docs/USAGE.md",
       "transformations": [
         "CRLF_TO_LF"
@@ -721,7 +735,7 @@
     {
       "path": "phase1/android/app/build.gradle",
       "bytes": 1107,
-      "sha256": "29afa96126aa99dc2842bc40b69ab8c2e9902a37c9e955cf5ed8da21a82f3617",
+      "sha256": "542cdba2d1ea56d10865436b649550ae1707dac89fc67055e05b8ef1a527cb0a",
       "origin": "phase1/android/app/build.gradle",
       "transformations": []
     },
@@ -1331,8 +1345,8 @@
     },
     {
       "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/ProductActivity.kt",
-      "bytes": 31491,
-      "sha256": "c00bbd2ea3d4e96dc36557e7f07b2a906561c37486107b68cc554d5c178639ad",
+      "bytes": 31497,
+      "sha256": "2129482df356f1e3cb91d8881a3ce767ae0fac17c8aef7a703d4eb2876ad5a24",
       "origin": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/ProductActivity.kt",
       "transformations": [
         "CRLF_TO_LF"
@@ -1770,7 +1784,7 @@
     {
       "path": "phase1/android/app/src/main/res/values/strings.xml",
       "bytes": 2794,
-      "sha256": "bdca23ebb1c216435a7ef436962e01d65df03a82c5f1181e7f165d969cca9ee1",
+      "sha256": "b9aa8df599bf3425dc13e903eaf4c3c4b1094eec94b4f9faf6b9cb462703b326",
       "origin": "phase1/android/app/src/main/res/values/strings.xml",
       "transformations": []
     },
@@ -2744,6 +2758,13 @@
       ]
     },
     {
+      "path": "tools/build_native_clear_components.py",
+      "bytes": 2392,
+      "sha256": "565557af09f5761017f42307825d90bddbfcb987d56f2e527457f3e528ad64a7",
+      "origin": "publication/template/tools/build_native_clear_components.py",
+      "transformations": []
+    },
+    {
       "path": "tools/build_navigation_components.py",
       "bytes": 2335,
       "sha256": "e1cc5fa4c45436ac946556e5592554ff7e900350923c07717ffbcaffbbf7a56c",
@@ -2918,6 +2939,13 @@
       "bytes": 1503,
       "sha256": "e3d64c139c3d7c16a683477a1bb2aed2e2fa8fb2f4308e132efa42a3de9937af",
       "origin": "publication/template/tools/tests/test_native_background_cli.py",
+      "transformations": []
+    },
+    {
+      "path": "tools/tests/test_native_clear_cli.py",
+      "bytes": 1451,
+      "sha256": "1d617285792f4cade39646a5eda823178d6c84d40f7e073563b893c6fde03e19",
+      "origin": "publication/template/tools/tests/test_native_clear_cli.py",
       "transformations": []
     },
     {

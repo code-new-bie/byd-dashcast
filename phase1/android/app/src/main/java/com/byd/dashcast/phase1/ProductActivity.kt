@@ -363,7 +363,7 @@ class ProductActivity : Activity() {
         }
         addCard {
             addView(text("关于 Dashcast", 21, true))
-            addView(text("应用版本 ${BuildConfig.VERSION_NAME}\n配套仪表包为 1.14.1，已安装的无需重复更新。", 16))
+            addView(text("应用版本 ${BuildConfig.VERSION_NAME}\n配套仪表包为 1.14.3，本次背景修复需要更新仪表。", 16))
             addView(button(if (advancedHelp) "收起支持选项" else "更多支持选项") { advancedHelp = !advancedHelp; build() })
             if (advancedHelp) {
                 addView(button("查看技术详情") { info("技术详情", control.diagnosticText().takeLast(20000)) })

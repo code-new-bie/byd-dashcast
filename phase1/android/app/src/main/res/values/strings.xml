@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Dashcast 仪表投屏</string>
-    <string name="screen_title">Dashcast 1.14.2 开发工具</string>
+    <string name="screen_title">Dashcast 1.14.3 开发工具</string>
     <string name="mirror_accessibility_label">Dashcast 应用快捷打开</string>
     <string name="mirror_accessibility_description">投屏时从原应用图标打开操作画面，并响应地图自带的仪表投屏按钮。不读取输入的文字或密码；此权限由你自行开启。</string>
     <string name="control_initial_status">待连接 ADB；原厂导航中继版本、USB 枚举与视频需分别验证。</string>
