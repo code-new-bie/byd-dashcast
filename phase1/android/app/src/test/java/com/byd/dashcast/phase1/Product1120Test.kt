@@ -60,28 +60,24 @@ class Product1120Test {
         assertNotNull(video)
     }
     @Test fun fullModeMirrorBusinessFillsCarrierAndMirrorKeepsCompleteSource() {
-        // Real-vehicle feedback: a primary-sized portrait business source left the
-        // full-mode video as a narrow strip. The mirror-hosted business display now
-        // carries the carrier aspect itself.
-        assertEquals(1696f / 456f,
-            ContentViewport.FULL_MIRROR_SOURCE_WIDTH.toFloat() / ContentViewport.FULL_MIRROR_SOURCE_HEIGHT, 1e-4f)
-        assertTrue(BusinessDisplayProfile.valid(ContentViewport.FULL_MIRROR_SOURCE_WIDTH,
-            ContentViewport.FULL_MIRROR_SOURCE_HEIGHT, 480))
-        val viewport = ContentViewport(ContentViewport.FULL_MIRROR_SOURCE_WIDTH,
-            ContentViewport.FULL_MIRROR_SOURCE_HEIGHT, 112, 112, 1696, 456)
-        val fit = SourceRenderMapping.create(viewport, false).content
-        val crop = SourceRenderMapping.create(viewport, true).source
-        assertEquals(112f / 1920f, fit[0], 1e-6f)
-        assertEquals((720 - 112 - 456) / 720f, fit[1], 1e-6f)
-        assertEquals(1696f / 1920f, fit[2], 1e-6f)
-        assertEquals(456f / 720f, fit[3], 1e-6f)
-        // Identical aspect: FIT performs no letterboxing and CROP clips nothing.
-        assertEquals(1f, crop[2], 1e-6f);assertEquals(1f, crop[3], 1e-6f)
-        // A portrait mirror page letterboxes the complete wide source; the carrier
-        // never shrinks back to a primary-shaped strip when the preview attaches.
-        val mirror = MirrorGeometry.fit(ContentViewport.FULL_MIRROR_SOURCE_WIDTH,
-            ContentViewport.FULL_MIRROR_SOURCE_HEIGHT, 1080, 1920)
-        assertEquals(1080f, mirror.width, 0.5f)
-        assertEquals(1080f * 456f / 1696f, mirror.height, 0.5f)
+        // Use the actual main-screen/client-area business profiles. The former
+        // carrier-shaped 3392x912 fixture concealed FIT shrinking ordinary apps.
+        for ((width, height) in listOf(1920 to 1080, 1920 to 936, 1080 to 1794)) {
+            val profile = BusinessDisplayProfile(width, height, 160)
+            for (small in listOf(false, true)) {
+                val viewport = ContentViewport.forBusiness(profile, small)
+                assertEquals(width, viewport.sourceWidth)
+                assertEquals(height, viewport.sourceHeight)
+                val mapping = SourceRenderMapping.create(viewport, ProductSettings.DEFAULT_CROP)
+                assertArrayEquals(viewport.normalized(), mapping.content, 1e-6f)
+                assertTrue(mapping.source[2] < 1f || mapping.source[3] < 1f)
+                // Main control always fits the complete source to its own client
+                // area; the instrument's crop does not modify either dimension.
+                val mirror = MirrorGeometry.fit(width, height, width, height)
+                assertEquals(0f, mirror.left, 0f);assertEquals(0f, mirror.top, 0f)
+                assertEquals(width.toFloat(), mirror.width, 0f)
+                assertEquals(height.toFloat(), mirror.height, 0f)
+            }
+        }
     }
 }

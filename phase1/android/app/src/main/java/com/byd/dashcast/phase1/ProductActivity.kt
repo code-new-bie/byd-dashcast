@@ -311,6 +311,8 @@ class ProductActivity : Activity() {
                 settings.underlay = it == 0; build()
             }
             addView(text("全屏扩大显示范围；小窗保留周围仪表布局。车速、挡位和续航等信息由仪表正常显示。", 16))
+            addView(text(if (settings.crop) "当前按原比例填满仪表区域，边缘内容可能被裁掉。车机操作画面保持完整。"
+                else "当前完整显示应用画面，比例不同时仪表周围会留边。可在更多画面选项中改为填满。", 16))
             addView(button(if (advancedPicture) "收起更多画面选项" else "更多画面选项") {
                 advancedPicture = !advancedPicture; build()
             }.apply { id = R.id.product_picture_more })
@@ -318,7 +320,7 @@ class ProductActivity : Activity() {
                 choices(this, "画面比例", listOf("完整显示", "填满区域"), if (settings.crop) 1 else 0) {
                     settings.crop = it == 1; build()
                 }
-                addView(text("仅在画面比例不一致时生效。“填满区域”可能裁掉边缘内容。", 15))
+                addView(text("填满区域：保持原比例并裁去多出的边缘。完整显示：保留全部内容，比例不同时会留边。只影响仪表，车机操作画面保持完整。", 15))
             }
         }
         addCard {
@@ -361,7 +363,7 @@ class ProductActivity : Activity() {
         }
         addCard {
             addView(text("关于 Dashcast", 21, true))
-            addView(text("应用版本 ${BuildConfig.VERSION_NAME}\n本版本需配套更新 1.14.1 仪表包。", 16))
+            addView(text("应用版本 ${BuildConfig.VERSION_NAME}\n配套仪表包为 1.14.1，已安装的无需重复更新。", 16))
             addView(button(if (advancedHelp) "收起支持选项" else "更多支持选项") { advancedHelp = !advancedHelp; build() })
             if (advancedHelp) {
                 addView(button("查看技术详情") { info("技术详情", control.diagnosticText().takeLast(20000)) })

@@ -7,7 +7,25 @@ import android.content.Context
  * @date 2026/10/21
  */
 internal class ProductSettings(context: Context) {
+    companion object {
+        const val DEFAULT_CROP = true
+        private const val FRAMING_MIGRATED = "instrument_framing_v2"
+    }
+
     private val preferences = context.applicationContext.getSharedPreferences("dashcast.product.v1", Context.MODE_PRIVATE)
+
+    init {
+        // Older installs persisted FIT for a carrier-shaped business display.
+        // Business displays now follow the main screen. Migrate once; a later
+        // deliberate choice of complete display must survive every reopen.
+        synchronized(preferences) {
+            if (!preferences.getBoolean(FRAMING_MIGRATED, false)) {
+                preferences.edit().putBoolean("crop", DEFAULT_CROP)
+                    .putBoolean(FRAMING_MIGRATED, true).apply()
+            }
+        }
+    }
+
     var setupComplete: Boolean
         get() = preferences.getBoolean("setup_complete", false)
         set(value) { preferences.edit().putBoolean("setup_complete", value).apply() }
@@ -15,7 +33,7 @@ internal class ProductSettings(context: Context) {
         get() = preferences.getString("target", null)
         set(value) { preferences.edit().putString("target", value).apply() }
     var crop: Boolean
-        get() = preferences.getBoolean("crop", false)
+        get() = preferences.getBoolean("crop", DEFAULT_CROP)
         set(value) { preferences.edit().putBoolean("crop", value).apply() }
     var light: Boolean
         get() = preferences.getBoolean("light", false)
