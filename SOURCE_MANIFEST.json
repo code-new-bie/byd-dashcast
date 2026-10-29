@@ -1,10 +1,10 @@
 {
-  "snapshot_version": "1.14.0",
+  "snapshot_version": "1.14.1",
   "snapshot_date": "2026-10-29",
   "ncm_original_author_confirmed": true,
   "project_license": "NOT_SELECTED_BY_OWNER",
   "original_runtime_java_semantics_changed": true,
-  "runtime_changes": "1.14.0 instrument WITHDRAWN after animation-to-black startup failure; real supplied QNX libc replay confirms relocated PHDR derives unmapped ELF header; generator blocked and prior working instrument recovery advised; Android code unchanged; historical runtime semantics retained only for forensics; no corrected firmware or target startup certification",
+  "runtime_changes": "1.14.1 QNX startup correction: same two LOADs with mapped prefix RX page and fixed original business VAs; actual supplied interpreter prelude and full segment parser pass; RWVF runtime scope/features retained; Android version/help labels only; 1.14.0 tail-PHDR builder remains withdrawn; no complete target QNX boot certification",
   "excluded_test_files": [
     "AdbVideoOfflineCheck.java",
     "ReferenceRenderEvidence.java",
@@ -62,8 +62,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "bytes": 32220,
-      "sha256": "82db49bb0e81a2e2d221d921b0de9a384ca1b2627940a4ef16c791595ab4cba2",
+      "bytes": 32934,
+      "sha256": "950179a23c03c4a273bd7fbcfeec7e8a392f1216498189d5dfd3686e53f96b52",
       "origin": "publication/template/CHANGELOG.md",
       "transformations": [
         "CRLF_TO_LF"
@@ -85,8 +85,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 4832,
-      "sha256": "50e770e17153779086d2dcf7831cb572821594e974df515dc4ebb53440faa468",
+      "bytes": 4825,
+      "sha256": "19fefde89ee4fd67782640ef1e5ed366582d0caf4a8e35397e65983bc69ace39",
       "origin": "publication/template/README.md",
       "transformations": [
         "CRLF_TO_LF"
@@ -265,6 +265,13 @@
       "transformations": []
     },
     {
+      "path": "analysis/product_boot_layout.py",
+      "bytes": 6492,
+      "sha256": "c1bb83edf1c6a64d8285f831276da01a060f762d4f53f45ad6ddff91922f9303",
+      "origin": "analysis/product_boot_layout.py",
+      "transformations": []
+    },
+    {
       "path": "analysis/product_native.py",
       "bytes": 3888,
       "sha256": "92bcac7e641845adf4baf190986b36f19716208adade5917bd790bf9ba8a7764",
@@ -273,8 +280,8 @@
     },
     {
       "path": "analysis/product_runtime_layout.py",
-      "bytes": 9400,
-      "sha256": "6385887dd9276db2afb3ad07f81617822457c5eb8bf3d5fbb8a442c868defaf2",
+      "bytes": 9441,
+      "sha256": "16c74eb705d98c819e8436851085b9c96fa263871b6cdb32d72e0ad1e5fded40",
       "origin": "analysis/product_runtime_layout.py",
       "transformations": []
     },
@@ -352,8 +359,8 @@
     },
     {
       "path": "docs/INCIDENT_1.14.0_BOOT.md",
-      "bytes": 2084,
-      "sha256": "b0ed046007602bcf679abd62f643c3c1150767e8e3e87d4b4e4a8455268d9b09",
+      "bytes": 2106,
+      "sha256": "dc6af3373e6e43d55585a3b3ed195c1d177351be015cd75d2d53ea62b8da0ab7",
       "origin": "publication/template/docs/INCIDENT_1.14.0_BOOT.md",
       "transformations": []
     },
@@ -473,9 +480,16 @@
     },
     {
       "path": "docs/PRODUCT_1.14.0.md",
-      "bytes": 5004,
-      "sha256": "d0da5261df1eb05729219a8ae51e169a08220a2336dde979ce8559f37c9ff516",
+      "bytes": 4930,
+      "sha256": "8849f21bd2d0ab9bf73f8593da1b40217724059a6b91ae437f3786e737d8d360",
       "origin": "publication/template/docs/PRODUCT_1.14.0.md",
+      "transformations": []
+    },
+    {
+      "path": "docs/PRODUCT_1.14.1.md",
+      "bytes": 2401,
+      "sha256": "f5918211a6ed7f90bbba881045720f46a2be2cb00171731035756007e8da5766",
+      "origin": "publication/template/docs/PRODUCT_1.14.1.md",
       "transformations": []
     },
     {
@@ -676,8 +690,8 @@
     },
     {
       "path": "docs/USAGE.md",
-      "bytes": 17175,
-      "sha256": "4bdf8ff3ea458ad346cb5736729f6d29e44003b7fea1acda4a9595944ae778c8",
+      "bytes": 17114,
+      "sha256": "fd58ce59bd40c1f7f70c66e7da690b2f4389a601515fafcb0c2c7abea2f50bfa",
       "origin": "publication/template/docs/USAGE.md",
       "transformations": [
         "CRLF_TO_LF"
@@ -700,7 +714,7 @@
     {
       "path": "phase1/android/app/build.gradle",
       "bytes": 1107,
-      "sha256": "89e517ffd2d9c91cee36446e67804d31ff8a7a5bfe15eab80961c89339a7f3ad",
+      "sha256": "aa37d58b39651bec0d0c01b68215b43fec613bf79e9bc69df98c6cdb5a5c5101",
       "origin": "phase1/android/app/build.gradle",
       "transformations": []
     },
@@ -1311,7 +1325,7 @@
     {
       "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/ProductActivity.kt",
       "bytes": 31094,
-      "sha256": "41b30c08d98fcb9d9b5a6a91ebac3859c8c3879f7433a119311ab075d6a28aaa",
+      "sha256": "ea2eaae5d476661ac14295358c79a0b18d87ad40abb97895dd069744390482d0",
       "origin": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/ProductActivity.kt",
       "transformations": [
         "CRLF_TO_LF"
@@ -1749,7 +1763,7 @@
     {
       "path": "phase1/android/app/src/main/res/values/strings.xml",
       "bytes": 2794,
-      "sha256": "584f2e7f6d34523e61a1d7ff4ec98588d47d906cff9c757d4dd0333cbcf50afa",
+      "sha256": "b3111529df420fb0dce5ae4827becfa2a78b4bfd8640c6278da7ee40d73f9d71",
       "origin": "phase1/android/app/src/main/res/values/strings.xml",
       "transformations": []
     },
@@ -2730,6 +2744,13 @@
       "transformations": []
     },
     {
+      "path": "tools/build_product_boot_components.py",
+      "bytes": 2442,
+      "sha256": "e1e787a32dc709520a0bf2a0fdc7805587150b1585e93ac18b8dafc7d63ca27f",
+      "origin": "publication/template/tools/build_product_boot_components.py",
+      "transformations": []
+    },
+    {
       "path": "tools/build_product_components.py",
       "bytes": 2405,
       "sha256": "aef5106db5293da07c4c715e0ce6935c49caa60c7a2fd106dc1bba76d73e335e",
@@ -2897,6 +2918,13 @@
       "bytes": 1638,
       "sha256": "917af8dce0736441256681ff9e05c1d4719897e068b798a76ffe48ef4d07aae2",
       "origin": "publication/template/tools/tests/test_navigation_overlay_cli.py",
+      "transformations": []
+    },
+    {
+      "path": "tools/tests/test_product_boot_cli.py",
+      "bytes": 1509,
+      "sha256": "af76dcb7ffc60f7bdf660d25ab15a2aff97ac1163fe4c32251764a5de42d564f",
+      "origin": "publication/template/tools/tests/test_product_boot_cli.py",
       "transformations": []
     },
     {

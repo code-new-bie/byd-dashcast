@@ -31,7 +31,8 @@ RECURSIVE_2D = 0x081d15fc
 RENDER_MESH = 0x08216184
 
 
-def _assemble(source):
+def _assemble(source, address=CODE):
+    origin = address
     external = []
     def defer(match):
         name = 'runtime_external_' + str(len(external))
@@ -40,7 +41,7 @@ def _assemble(source):
     source = re.sub(r'(?m)^(b\.w|bl) #0x([0-9a-fA-F]+)\s*$', defer, source)
     names = ENTRIES + tuple(v[0] for v in external)
     assembled, _ = Ks(KS_ARCH_ARM, KS_MODE_THUMB).asm(source + '\n.balign 4\n' +
-        '\n'.join('.word ' + n for n in names), addr=CODE)
+        '\n'.join('.word ' + n for n in names), addr=origin)
     if assembled is None:
         raise ValueError('Runtime Thumb assembly failed')
     raw = bytes(assembled)
@@ -53,7 +54,7 @@ def _assemble(source):
         decoded = list(cs.disasm(bytes(code), address))
         if len(code) != 4 or len(decoded) != 1 or int(decoded[0].op_str.lstrip('#'), 16) != destination:
             raise ValueError('Runtime external branch drift')
-        output[address-CODE:address-CODE+4] = bytes(code)
+        output[address-origin:address-origin+4] = bytes(code)
     if len(output) > 0xc00:
         raise ValueError('Runtime RX budget exceeded')
     return bytes(output), {n: addresses[n] for n in ENTRIES}

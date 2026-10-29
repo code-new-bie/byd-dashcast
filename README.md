@@ -1,10 +1,10 @@
 # Dashcast 仪表投屏
 
-**2026-10-29：暂停使用1.14.0/RWVF仪表包。** 已收到启动动画后黑屏的实车反馈，并用原OS的QNX解释器指令复现程序头搬迁导致错误ELF地址。请恢复此前可启动仪表包；1.14.0 APK不能与旧RWVE仪表混搭投屏。组件生成器已阻止重建该失败版本。[启动故障与恢复说明](docs/INCIDENT_1.14.0_BOOT.md)。下文1.14.0功能说明保留为历史，不代表当前推荐可刷。
+**2026-10-29：1.14.1修正仪表启动布局，1.14.0仪表仍暂停使用。** 本版采用原两段装载方式，实际QNX解释器初始化和完整段解析通过；不撤掉RWVF功能来换取启动。整套目标QNX启动仍须实车确认。[启动修正与验收](docs/PRODUCT_1.14.1.md) · [1.14.0故障记录](docs/INCIDENT_1.14.0_BOOT.md)。
 
-BYD Android 车机 → QNX 仪表的 USB 应用投屏。当前应用 **1.14.0 / code59**：独立接入开关与按屏幕名发送，修复持续显示、正式退出和仪表车模/道路绘制。
+BYD Android 车机 → QNX 仪表的 USB 应用投屏。当前应用 **1.14.1 / code60**：保留独立接入开关、按屏幕名发送、持续显示、正式退出与仪表车模/道路绘制适配，修正HMI启动布局。
 
-[1.14.0 改动与边界](docs/PRODUCT_1.14.0.md) · [当前使用说明](docs/USAGE.md)。需要配套更新RWVF仪表App和APK，保留数据及ADB身份；曲线、窄边、原背景和信息布局承接1.12.6。离线和Android模拟器通过不代表真实QNX或车辆已经验收。
+[1.14.1 改动与边界](docs/PRODUCT_1.14.1.md) · [当前使用说明](docs/USAGE.md)。使用本轮RWVF启动修正版与APK，保留数据及ADB身份；曲线、窄边、原背景和信息布局承接1.12.6。离线和Android模拟器通过不代表真实QNX或车辆已经验收。
 
 - 首页一键开始/停止；普通应用任务位于自有VirtualDisplay，同帧GL分发到编码器和可挂卸主屏镜像，不采集其他主屏应用。停止精确归还业务任务，不强停/清数据。
 - 应用搜索、收藏、默认选择；普通单任务入口也走托管，不限制应用类别。原图标在投屏期间进入镜像；切走不主动停止仪表。原车定制导航按可配置表保留独立Meter入口，不接管其主屏图标。
@@ -39,7 +39,7 @@ Windows 用 gradlew.bat。首次依赖需要网络；准备完缓存才能 --off
 
 Kotlin 产品界面、状态协调、应用目录、配置、角色工作流和持续合成控制位于 phase1/android；已打通的 Java 编码/DCV1/NCM/shell ABI 保留。phase1/qnx 提供脚本、精确 ARM/Thumb 适配源及便携控制器；analysis 与 tools 提供哈希固定组件生成和公开内容检查。
 
-1.14.0/RWVF仪表已暂停使用；MCU、参考OS/MLO/IFS/Boot及USB角色没有本次改动。公开源码不含固件原件、APK、SDK、密钥、ADB身份或原始实车日志。tools/build_product_runtime_components.py现在明确拒绝生成失败组件，[仪表细节及暂停说明](docs/PRODUCT_1.14.0.md)。
+1.14.1保留原MCU、参考OS/MLO/IFS/Boot及USB角色，仪表相对1.14.0仅修HMI。公开源码不含固件原件、APK、SDK、密钥、ADB身份或原始实车日志。tools/build_product_boot_components.py生成本版组件，不是可刷FULL；旧build_product_runtime_components.py继续拒绝生成1.14.0失败布局，[修正细节](docs/PRODUCT_1.14.1.md)。
 
 [使用](docs/USAGE.md) · [发布边界](docs/PUBLISHING.md) · [安全](SECURITY.md) · [依赖来源](THIRD_PARTY_NOTICES.md) · [许可证待选](LICENSE_STATUS.md) · [贡献](CONTRIBUTING.md)
 
