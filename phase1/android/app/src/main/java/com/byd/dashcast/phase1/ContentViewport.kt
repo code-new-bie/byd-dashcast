@@ -6,23 +6,27 @@ package com.byd.dashcast.phase1
  * @author Codex
  * @date 2026/10/23
  */
-internal data class ContentViewport(
+internal data class ContentViewport @JvmOverloads constructor(
     val sourceWidth: Int,
     val sourceHeight: Int,
     val encodedLeft: Int,
     val encodedTop: Int,
     val encodedWidth: Int,
-    val encodedHeight: Int
+    val encodedHeight: Int,
+    val physicalAspect: Float = encodedWidth.toFloat() / encodedHeight
 ) {
     init {
         require(sourceWidth in 1..3840 && sourceHeight in 1..2160 && sourceWidth.toLong() * sourceHeight <= 8_294_400)
         require(encodedLeft >= 0 && encodedTop >= 0 && encodedWidth > 0 && encodedHeight > 0)
         require(encodedLeft + encodedWidth <= 1920 && encodedTop + encodedHeight <= 720)
+        require(physicalAspect.isFinite() && physicalAspect > 0f)
     }
 
     /** Bottom-left GL coordinates; Android/QNX profile coordinates are top-left. */
     fun normalized(): FloatArray = floatArrayOf(encodedLeft / 1920f,
         (720 - encodedTop - encodedHeight) / 720f, encodedWidth / 1920f, encodedHeight / 720f)
+
+    fun withSourceSize(width: Int, height: Int): ContentViewport = copy(sourceWidth=width,sourceHeight=height)
 
     companion object {
         @JvmStatic fun full(): ContentViewport = ContentViewport(1696, 456, 112, 112, 1696, 456)
@@ -35,7 +39,9 @@ internal data class ContentViewport(
         }
         /** Fully clear conservative box inside the curved full-mode aperture. */
         @JvmStatic fun fullSafeBounds(): IntArray = intArrayOf(320, 176, 1280, 336)
-        @JvmStatic fun center(): ContentViewport = ContentViewport(1200, 640, 60, 40, 1800, 640)
+        // The RGBA overlay now provides the feather itself. Keep sharp source
+        // throughout the physical window, including every partly visible edge.
+        @JvmStatic fun center(): ContentViewport = ContentViewport(1280,720,0,0,1920,720,768f/432f)
 
         const val PADDING_WIDTH = 32
         const val PADDING_HEIGHT = 16

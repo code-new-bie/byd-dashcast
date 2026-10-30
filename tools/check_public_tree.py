@@ -15,6 +15,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 WRAPPER = "phase1/android/gradle/wrapper/gradle-wrapper.jar"
 WRAPPER_HASH = "497c8c2a7e5031f6aa847f88104aa80a93532ec32ee17bdb8d1d2f67a194a9c7"
+OWNED_BACKGROUNDS = {
+    "assets/backgrounds/full-dark.png": "058c12def19b93ff433964d247898e7fc729a61b247076ab8341d7f443e7c411",
+    "assets/backgrounds/full-light.png": "a9163305594485444bc4d624f73eb658f66ea33d5c35fa96f036c1ae99540e61",
+    "assets/backgrounds/center-dark.png": "3d1afb21cdff2da37b035606d16a08ed66f40cc50e575cf2dd6275c388b32a59",
+    "assets/backgrounds/center-light.png": "4866ac38362995ec9d1c91bb701ca9fbb7d56007efff639e40541229c25a4670",
+}
 FORBIDDEN_EXTENSIONS = {".sv", ".zip", ".apk", ".aab", ".img", ".bin", ".elf", ".so", ".dll",
                         ".h264", ".dcv1", ".ts", ".mp4", ".log", ".jks", ".keystore", ".pem",
                         ".p12", ".pfx", ".key", ".class", ".jar"}
@@ -86,6 +92,10 @@ def inspect_files(root, names):
         if name == WRAPPER:
             if hashlib.sha256(data).hexdigest() != WRAPPER_HASH:
                 issues.append((name, "UNVERIFIED_GRADLE_WRAPPER"))
+            continue
+        if name in OWNED_BACKGROUNDS:
+            if hashlib.sha256(data).hexdigest() != OWNED_BACKGROUNDS[name]:
+                issues.append((name, "CHANGED_OWNED_BACKGROUND"))
             continue
         if path.suffix.lower() in FORBIDDEN_EXTENSIONS or fnmatch.fnmatch(path.name, "adbkey*"):
             issues.append((name, "BINARY_FIRMWARE_LOG_OR_KEY"))

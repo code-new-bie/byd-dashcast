@@ -35,6 +35,7 @@ object ShellExternalDisplay {
                     var pulse = 0L
                     val output = ShellCaptureOutput.videoStream()
                     while (!stop.stopped() && !host.stopping.get()) {
+                        host.requireRegistration()
                         host.observe()
                         val now = System.nanoTime()
                         if (now-pulse >= 1_000_000_000L) {
@@ -44,7 +45,6 @@ object ShellExternalDisplay {
                     }
                 }
             }
-            System.err.println("EXTERNAL_DISPLAY_RESOURCES_RELEASED")
             status = 0
         } catch (failure: Exception) {
             System.err.println("EXTERNAL_DISPLAY_FAILED type=${failure.javaClass.simpleName} detail=${failure.message}")
@@ -58,9 +58,9 @@ internal class ExternalHostEndpoint(private val ticket: String) : Binder(), Auto
     private val context = RemoteDisplaySession.shellContext()
     private val appUid = context.packageManager.getApplicationInfo(BuildConfig.APPLICATION_ID, 0).uid
     private val user = appUid / 100000
-    private val worker = HandlerThread("dashcast-standby-frames").apply { start() }
-    private val reader = ImageReader.newInstance(ExternalDisplayWire.WIDTH, ExternalDisplayWire.HEIGHT,
-        PixelFormat.RGBA_8888, 2)
+    private var worker: HandlerThread? = null
+    private var reader: ImageReader? = null
+    private val createdAt = System.nanoTime()
     private var display: VirtualDisplay? = null
     private var client: IBinder? = null
     private var capture: IBinder? = null
@@ -78,13 +78,29 @@ internal class ExternalHostEndpoint(private val ticket: String) : Binder(), Auto
     init {
         try {
             NamedDisplayContract.requireAvailable(context,allowNative=true)
-            reader.setOnImageAvailableListener({ source -> source.acquireLatestImage()?.close() }, Handler(worker.looper))
-            display = RemoteDisplaySession.createVirtualDisplay(context, reader.surface,
+            val frames = HandlerThread("dashcast-standby-frames").apply { start() }
+            worker = frames
+            val images = ImageReader.newInstance(ExternalDisplayWire.WIDTH, ExternalDisplayWire.HEIGHT,
+                PixelFormat.RGBA_8888, 2)
+            reader = images
+            images.setOnImageAvailableListener({ source -> source.acquireLatestImage()?.close() }, Handler(frames.looper))
+            display = RemoteDisplaySession.createVirtualDisplay(context, images.surface,
                 ExternalDisplayWire.WIDTH, ExternalDisplayWire.HEIGHT, 160, 1 or 2 or 8,
                 NamedDisplayContract.NAME)
+            val id = display?.display?.displayId ?: -1
+            if (id <= 0) { throw IOException("EXTERNAL_DISPLAY_NOT_CREATED") }
+            System.err.println("EXTERNAL_DISPLAY_CREATED display=$id; name=${NamedDisplayContract.NAME}")
         } catch (error: Exception) {
             try { close() } catch (cleanup: Exception) { error.addSuppressed(cleanup) }
             throw error
+        }
+    }
+
+    @Synchronized fun requireRegistration() {
+        // Only an unclaimed startup is bounded; registered standby/video sessions
+        // have no duration limit. A lost rendezvous must not leave a named orphan.
+        if (client == null && System.nanoTime() - createdAt >= 10_000_000_000L) {
+            throw IOException("EXTERNAL_HOST_NEVER_REGISTERED")
         }
     }
 
@@ -165,7 +181,7 @@ internal class ExternalHostEndpoint(private val ticket: String) : Binder(), Auto
 
     private fun detach() {
         if (captureTicket == null) { return }
-        display?.surface = reader.surface
+        display?.surface = reader?.surface ?: throw IOException("EXTERNAL_READER_CLOSED")
         capture?.unlinkToDeath(captureDeath, 0)
         captureSurface?.release()
         captureSurface = null; capture = null; captureTicket = null
@@ -182,10 +198,13 @@ internal class ExternalHostEndpoint(private val ticket: String) : Binder(), Auto
         }
         release { detach() }
         release { display?.release() }; display = null
-        release { reader.setOnImageAvailableListener(null, null); reader.close() }
-        release { worker.quitSafely(); worker.join(2000)
-            if (worker.isAlive) { throw IOException("EXTERNAL_FRAME_WORKER_STILL_ALIVE") } }
+        release { reader?.setOnImageAvailableListener(null, null); reader?.close() }; reader = null
+        release { worker?.let { frames ->
+            frames.quitSafely(); frames.join(2000)
+            if (frames.isAlive) { throw IOException("EXTERNAL_FRAME_WORKER_STILL_ALIVE") }
+        } }; worker = null
         release { client?.unlinkToDeath(clientDeath, 0) }; client = null
         failure?.let { throw it }
+        System.err.println("EXTERNAL_DISPLAY_RESOURCES_RELEASED")
     }
 }

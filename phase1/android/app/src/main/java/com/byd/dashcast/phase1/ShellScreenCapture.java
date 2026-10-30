@@ -174,9 +174,7 @@ public final class ShellScreenCapture {
             if (options.contentViewport()) {
                 ContentViewport viewport = options.centerWindow() ? ContentViewport.center() : ContentViewport.full();
                 if (target.isNamed() && mirrorTicket != null) {
-                    viewport = new ContentViewport(ExternalDisplayWire.WIDTH, ExternalDisplayWire.HEIGHT,
-                            viewport.getEncodedLeft(), viewport.getEncodedTop(),
-                            viewport.getEncodedWidth(), viewport.getEncodedHeight());
+                    viewport = viewport.withSourceSize(ExternalDisplayWire.WIDTH, ExternalDisplayWire.HEIGHT);
                 }
                 if (business != null) {
                     // Keep the business application's original main-screen layout. The

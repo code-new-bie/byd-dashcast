@@ -17,7 +17,24 @@ class ExternalAccessPolicyTest {
         assertTrue(NamedDisplayContract.standbyAvailable(listOf(NamedDisplayContract.NATIVE_NAME),true))
         assertFalse(NamedDisplayContract.standbyAvailable(listOf(NamedDisplayContract.NATIVE_NAME),false))
         assertFalse(NamedDisplayContract.standbyAvailable(listOf(NamedDisplayContract.NAME),true))
-        assertThrows(java.io.IOException::class.java) {NamedDisplayContract.nativeName(listOf("fission_foreign"))}
+        assertEquals(NamedDisplayContract.NATIVE_NAME,NamedDisplayContract.nativeName(listOf("fission_foreign")))
+        assertThrows(java.io.IOException::class.java) {
+            NamedDisplayContract.nativeName(listOf(NamedDisplayContract.NATIVE_NAME))
+        }
+    }
+    @Test fun sdkDiscoveryAliasesAreNotExclusiveDisplayNames() {
+        val existing=listOf("Built-in Screen","叠加视图 #1","fission_bg_xdjaVirtualSurface","fission_other")
+        assertTrue(NamedDisplayContract.matchesMeter("叠加视图 #1"))
+        assertTrue(NamedDisplayContract.standbyAvailable(existing,true))
+        assertTrue(NamedDisplayContract.standbyAvailable(existing,false))
+        assertEquals(NamedDisplayContract.NATIVE_NAME,NamedDisplayContract.nativeName(existing))
+        assertEquals(4,existing.size)
+    }
+    @Test fun exactPublicCollisionIsRejectedEvenAmongUnrelatedCompatibleDisplays() {
+        val existing=listOf("fission_other",NamedDisplayContract.NAME,"叠加视图 #1")
+        assertFalse(NamedDisplayContract.standbyAvailable(existing,true))
+        assertFalse(NamedDisplayContract.standbyAvailable(existing,false))
+        assertEquals(NamedDisplayContract.NATIVE_NAME,NamedDisplayContract.nativeName(existing))
     }
     @Test fun fullWindowDumpMustNotTreatAnimatorSummariesAsRealWindows() {
         val dump="""WINDOW MANAGER ANIMATOR STATE

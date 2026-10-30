@@ -359,7 +359,7 @@ class ProductActivity : Activity() {
         }
         addCard {
             addView(text("关于 Dashcast", 21, true))
-            addView(text("应用版本 ${BuildConfig.VERSION_NAME}\n配套仪表包为 1.15.0，本次背景适配需要更新仪表。", 16))
+            addView(text("应用版本 ${BuildConfig.VERSION_NAME}\n配套仪表包为 1.16.0，本次背景更新需要同步更新仪表。", 16))
             addView(button("查看技术详情") { info("技术详情", control.diagnosticText().takeLast(20000)) })
         }
     }

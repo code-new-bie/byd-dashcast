@@ -39,6 +39,21 @@ class PublicCheckTests(unittest.TestCase):
         self.put("README.md", b"# Synthetic test\n")
         self.assertEqual([], inspect_files(self.root, proposed_files(self.root)))
 
+    def test_only_exact_reviewed_owned_background_pngs_are_allowed(self):
+        from tools.check_public_tree import OWNED_BACKGROUNDS
+        for name in OWNED_BACKGROUNDS:
+            data = (ROOT / name).read_bytes()
+            self.assertTrue(data.startswith(b'\x89PNG\r\n\x1a\n'))
+            self.put(name, data)
+        self.assertEqual([], inspect_files(self.root, proposed_files(self.root)))
+        name = next(iter(OWNED_BACKGROUNDS))
+        self.put(name, b'changed artwork')
+        self.assertIn((name, 'CHANGED_OWNED_BACKGROUND'), inspect_files(self.root, proposed_files(self.root)))
+
+    def test_unreviewed_png_remains_rejected(self):
+        self.put('unreviewed.png', b'\x89PNG\r\n\x1a\n' + bytes(20))
+        self.assertIn(('unreviewed.png', 'UNREVIEWED_BINARY'), inspect_files(self.root, proposed_files(self.root)))
+
     def test_kotlin_session_cache_excluded_but_explicit_tracking_refused(self):
         name = "phase1/android/.kotlin/sessions/synthetic-session"
         self.put(name, b"synthetic generated cache")

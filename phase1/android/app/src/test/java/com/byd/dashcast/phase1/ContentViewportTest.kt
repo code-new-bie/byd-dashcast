@@ -20,12 +20,30 @@ class ContentViewportTest {
         assertTrue(ContentViewport.FRAGMENT.contains("texture2D(padding"))
         assertTrue(ContentViewport.PADDING_FRAGMENT.contains("sum/64.0"))
     }
-    @Test fun centerInnerAspectIncludesBothFeatherMarginsAndWindowResampling() {
+    @Test fun centerKeepsSharpVideoUnderTheEntireSuppliedOverlayAndItsFeather() {
         val p = ContentViewport.center()
-        assertEquals(15.0 / 8, p.sourceWidth.toDouble() / p.sourceHeight, 0.0)
-        assertEquals(720.0, p.encodedWidth * .4, 0.0)
-        assertEquals(384.0, p.encodedHeight * .6, 0.0)
-        assertEquals(15.0 / 8, p.encodedWidth * .4 / (p.encodedHeight * .6), 0.0)
+        assertEquals(16.0 / 9, p.sourceWidth.toDouble() / p.sourceHeight, 0.0)
+        assertEquals(768.0, p.encodedWidth * .4, 0.0)
+        assertEquals(432.0, p.encodedHeight * .6, 0.0)
+        assertEquals(768.0 / 432, p.physicalAspect.toDouble(), .00001)
+        assertArrayEquals(floatArrayOf(0f,0f,1f,1f),p.normalized(),0f)
+    }
+    @Test fun namedAndBusinessSourcesKeepPhysicalAspectWhenTheirLogicalSizeChanges() {
+        val base=ContentViewport.center()
+        val named=base.withSourceSize(1920,720)
+        val business=ContentViewport.forBusiness(BusinessDisplayProfile(1920,990,240),true)
+        assertEquals(base.physicalAspect,named.physicalAspect,0f)
+        assertEquals(base.physicalAspect,business.physicalAspect,0f)
+        assertEquals(990,business.sourceHeight)
+        assertArrayEquals(base.normalized(),named.normalized(),0f)
+        assertArrayEquals(base.normalized(),business.normalized(),0f)
+    }
+    @Test fun invalidPhysicalAspectIsRejectedBeforeRendering() {
+        for (aspect in listOf(0f,-1f,Float.NaN,Float.POSITIVE_INFINITY)) {
+            assertThrows(IllegalArgumentException::class.java) {
+                ContentViewport(1920,1080,0,0,1920,720,aspect)
+            }
+        }
     }
     @Test fun fixedTokensRoundTripAcrossTheControlledAdbBoundary() {
         for (center in listOf(false, true)) for (mode in listOf(CaptureOptions.Mode.FIT, CaptureOptions.Mode.CROP)) {

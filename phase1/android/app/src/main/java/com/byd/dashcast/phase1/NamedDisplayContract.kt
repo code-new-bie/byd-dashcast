@@ -9,8 +9,10 @@ internal object NamedDisplayContract {
     const val NATIVE_NAME = "fission_dashcast_native"
     /** The map SDK matches fission_ prefixes. Keep that contract without occupying standby's exact name. */
     @JvmStatic fun nativeName(existing: Collection<String>): String {
-        if (existing.any { matchesMeter(it) && it != NAME }) {
-            throw IOException("METER_DISPLAY_CONFLICT: 已有其他仪表显示屏，请先结束其他投屏服务")
+        // A discovery alias is not an exclusive resource. Other fission_/overlay
+        // displays are not ours and must neither block admission nor be closed.
+        if (NATIVE_NAME in existing) {
+            throw IOException("DISPLAY_NAME_IN_USE: $NATIVE_NAME; 已有同名接收屏，原屏保持不变")
         }
         return NATIVE_NAME
     }
@@ -35,12 +37,30 @@ internal object NamedDisplayContract {
     }
     @JvmStatic @JvmOverloads fun requireAvailable(@Suppress("UNUSED_PARAMETER") context: Context,
             allowNative: Boolean = false) {
-        if (!standbyAvailable(names().values,allowNative)) {
-            throw IOException("METER_DISPLAY_CONFLICT: 已有仪表显示屏，请先结束其他投屏服务")
+        val displays = names()
+        recordAdmission("external", displays)
+        if (!standbyAvailable(displays.values,allowNative)) {
+            throw IOException("DISPLAY_NAME_IN_USE: $NAME; 已有同名接收屏，原屏保持不变")
         }
     }
     fun standbyAvailable(existing: Collection<String>, allowNative: Boolean): Boolean =
-        existing.none { matchesMeter(it) && !(allowNative && it == NATIVE_NAME) }
+        existing.none { it == NAME || (!allowNative && it == NATIVE_NAME) }
+
+    /** Names/IDs are inspected, never used as ownership proof for closing other displays. */
+    @JvmStatic fun nativeNameFromSystem(): String {
+        val displays = names()
+        recordAdmission("native", displays)
+        return nativeName(displays.values)
+    }
+
+    private fun recordAdmission(role: String, displays: Map<Int, String>) {
+        val publicIds = displays.filterValues { it == NAME }.keys.sorted()
+        val nativeIds = displays.filterValues { it == NATIVE_NAME }.keys.sorted()
+        val compatible = displays.count { (_, name) -> matchesMeter(name) && name != NAME && name != NATIVE_NAME }
+        // Do not dump arbitrary display names, device addresses or window titles.
+        System.err.println("DISPLAY_ADMISSION role=$role displays=${displays.size}" +
+            " public_ids=$publicIds native_ids=$nativeIds compatible_other=$compatible; foreign_displays_untouched=true")
+    }
 }
 
 /** Frozen Android-10 dumpsys field contract. Titles, content and text are never retained/logged. */

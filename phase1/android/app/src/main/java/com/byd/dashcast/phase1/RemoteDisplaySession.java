@@ -77,7 +77,7 @@ final class RemoteDisplaySession implements RemoteCaptureSession {
             if (profile != null) {
                 // The SDK matches fission_ prefixes, so a distinct alias preserves it
                 // while the canonical external standby may be toggled at any time.
-                ownName = NamedDisplayContract.nativeName(NamedDisplayContract.names().values());
+                ownName = NamedDisplayContract.nativeNameFromSystem();
                 display = createVirtualDisplay(context, surface, width, height, densityDpi, FLAGS, ownName);
             } else {
                 display = createVirtualDisplay(context, surface, width, height, densityDpi);

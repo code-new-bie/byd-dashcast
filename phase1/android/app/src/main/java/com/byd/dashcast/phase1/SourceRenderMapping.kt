@@ -10,8 +10,7 @@ internal data class SourceRenderMapping(val content: FloatArray, val source: Flo
         fun create(viewport: ContentViewport?, crop: Boolean): SourceRenderMapping {
             val content = viewport?.normalized() ?: floatArrayOf(0f, 0f, 1f, 1f)
             if (viewport == null) { return SourceRenderMapping(content, floatArrayOf(0f, 0f, 1f, 1f)) }
-            val targetAspect = if (viewport.encodedWidth == 1800 && viewport.encodedHeight == 640)
-                720f / 384f else viewport.encodedWidth.toFloat() / viewport.encodedHeight
+            val targetAspect = viewport.physicalAspect
             val sourceAspect = viewport.sourceWidth.toFloat() / viewport.sourceHeight
             val source = floatArrayOf(0f, 0f, 1f, 1f)
             if (crop) {
