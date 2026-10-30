@@ -359,7 +359,7 @@ class ProductActivity : Activity() {
         }
         addCard {
             addView(text("关于 Dashcast", 21, true))
-            addView(text("应用版本 ${BuildConfig.VERSION_NAME}\n配套仪表包为 1.14.5，本次边缘融合修复需要更新仪表。", 16))
+            addView(text("应用版本 ${BuildConfig.VERSION_NAME}\n配套仪表包为 1.15.0，本次背景适配需要更新仪表。", 16))
             addView(button("查看技术详情") { info("技术详情", control.diagnosticText().takeLast(20000)) })
         }
     }
@@ -385,10 +385,18 @@ class ProductActivity : Activity() {
             addView(text("定制地图缺少原按钮时，启用应用的无障碍服务即可显示地图投屏入口。切到其他应用后自动隐藏。",15))
             accessState = text(ExternalDisplayAccess.message,15).also { addView(it) }
             copyScreenName = button("复制屏幕名") {
+                if (!ExternalDisplayAccess.ready()) {
+                    Toast.makeText(this@ProductActivity,"接收屏还在准备，请稍候再复制。",Toast.LENGTH_SHORT).show()
+                    return@button
+                }
                 (getSystemService(CLIPBOARD_SERVICE) as ClipboardManager)
                     .setPrimaryClip(ClipData.newPlainText("仪表屏幕名",NamedDisplayContract.NAME))
                 Toast.makeText(this@ProductActivity,"屏幕名已复制",Toast.LENGTH_SHORT).show()
-            }.also { it.visibility=if (ExternalDisplayAccess.enabled()) View.VISIBLE else View.GONE; addView(it) }
+            }.also {
+                it.visibility=if (ExternalDisplayAccess.enabled()) View.VISIBLE else View.GONE
+                it.isEnabled=ExternalDisplayAccess.ready()
+                addView(it)
+            }
         }
     }
 
@@ -443,6 +451,7 @@ class ProductActivity : Activity() {
             accessSwitch?.isChecked = ExternalDisplayAccess.enabled()
             accessState?.text = ExternalDisplayAccess.message
             copyScreenName?.visibility = if (ExternalDisplayAccess.enabled()) View.VISIBLE else View.GONE
+            copyScreenName?.isEnabled = ExternalDisplayAccess.ready()
         } finally { reflectingAccess = false }
     }
 

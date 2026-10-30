@@ -4,6 +4,12 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class ExternalAccessPolicyTest {
+    @Test fun reopeningStandbyAdmitsTheSameApplicationWithoutAnEmptyWindowPoll() {
+        val policy=ExternalAccessPolicy()
+        policy.consume(10001)
+        policy.reset()
+        assertEquals(10001,policy.candidate(setOf(10001),true,true,false,false))
+    }
     @Test fun nativeMapPreservesItsNameWithoutBlockingAnOwnedStandby() {
         assertEquals(NamedDisplayContract.NATIVE_NAME,NamedDisplayContract.nativeName(emptyList()))
         assertEquals(NamedDisplayContract.NATIVE_NAME,NamedDisplayContract.nativeName(listOf(NamedDisplayContract.NAME)))
@@ -47,8 +53,23 @@ class ExternalAccessPolicyTest {
     }
     @Test fun manualVideoKeepsPriorityAndOldExternalWindowCannotStealAfterStop() {
         val policy=ExternalAccessPolicy()
+        policy.consume(10001) // Choosing a manual target explicitly suppresses an already present external window.
         assertNull(policy.candidate(setOf(10001),true,true,true,false))
         assertNull(policy.candidate(setOf(10001),true,true,false,false))
+    }
+    @Test fun newExternalRequestDuringManualVideoRemainsPendingUntilCleanupCompletes() {
+        val policy=ExternalAccessPolicy()
+        assertNull(policy.candidate(setOf(10001),true,true,true,false))
+        assertNull(policy.candidate(setOf(10001),true,true,false,true))
+        assertEquals(10001,policy.candidate(setOf(10001),true,true,false,false))
+        policy.consume(10001)
+        assertNull(policy.candidate(setOf(10001),true,true,false,false))
+    }
+    @Test fun busyOrSkippedDispatchDoesNotConsumeARequest() {
+        val policy=ExternalAccessPolicy()
+        assertEquals(10001,policy.candidate(setOf(10001),true,true,false,false))
+        assertNull(policy.candidate(setOf(10001),true,true,false,true))
+        assertEquals(10001,policy.candidate(setOf(10001),true,true,false,false))
     }
     @Test fun replacingApplicationWaitsUntilPriorVideoHasFinished() {
         val policy=ExternalAccessPolicy()

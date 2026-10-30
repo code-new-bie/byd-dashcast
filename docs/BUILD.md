@@ -1,5 +1,17 @@
 # 构建与复现
 
+## 当前1.15.0：四边背景蒙版与屏幕名接入
+
+APK code65，按下文既有Android命令构建。仪表组件使用：
+
+```text
+python tools/build_background_mask_components.py --hmi ORIGINAL_HMI --kzb ORIGINAL_KZB --scene ORIGINAL_3DSCREEN_KZB --toc ORIGINAL_TOC --receiver RECEIVER_120 --output NEW_DIRECTORY
+```
+
+输入仍为操作者自备的精确原件，依赖仍是既有requirements-native.txt；不需要SciPy/OpenCV或原厂背景图片。输出HMI、KZB、3D场景和receiver四组件，不是可刷ZIP。保持原HMI启动/透明度修正和接收器，KZB只替换四张自有Alpha蒙版，原960×360纹理尺寸和实时背景/原生信息不变。旧各组件CLI保留用于历史复现，不用于生成本版背景。[使用及验证边界](PRODUCT_1.15.0.md)。
+
+下述各版本的“当前”仅为历史构建说明。
+
 ## 1.11.0 RWV7曲边与场景（当前）
 
 APK code50，原JDK21/SDK35/AGP9.3工具链保持。操作者自备精确原始HMI/主KZB/3dscreen.kzb/TOC与1.2 receiver（不是已经打补丁的成品），安装requirements-native.txt，运行：

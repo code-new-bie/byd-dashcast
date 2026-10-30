@@ -1,10 +1,10 @@
 {
-  "snapshot_version": "1.14.5",
+  "snapshot_version": "1.15.0",
   "snapshot_date": "2026-10-30",
   "ncm_original_author_confirmed": true,
   "project_license": "NOT_SELECTED_BY_OWNER",
   "original_runtime_java_semantics_changed": true,
-  "runtime_changes": "1.14.5 matches only the owned HMI window alpha mode to the premultiplied original-background aperture, removing double attenuation at every feather; preserves create result on optional setter failure; original two-LOAD boot layout, clear RGBA, mask curves/resources and wire protocol remain; actual ARM create/stub, original interpreter, paired native and GLES old-default/new-mode evidence; APK version/help only; no complete target QNX or vehicle certification",
+  "runtime_changes": "1.15.0 adapts full/center background alpha design within the original clear/visible/midpoint contours and original texture dimensions; preserves live OEM backgrounds and byte-identical boot-fixed HMI/receiver/scene. Fixes named-display requests being consumed while waiting or before accepted dispatch, protects copied-name readiness, exports bounded standby state. No complete target QNX or vehicle certification.",
   "excluded_test_files": [
     "AdbVideoOfflineCheck.java",
     "ReferenceRenderEvidence.java",
@@ -62,8 +62,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "bytes": 35575,
-      "sha256": "fbafa5c45c1f9d3ed106b3ccba9735991953d3719a58e1c4450050c8c9b134dc",
+      "bytes": 36360,
+      "sha256": "2a2f8ebce4e0f6c481f4feb6e95e96aa9c0e95dc341c187100d4a3677c56e034",
       "origin": "publication/template/CHANGELOG.md",
       "transformations": [
         "CRLF_TO_LF"
@@ -85,8 +85,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 4964,
-      "sha256": "397ef24ffe118c0896a9ed85668884146b795941dac15d433316adf15b4903b1",
+      "bytes": 4946,
+      "sha256": "d882ff210183534badbe96abeb32d8b5c0a0e6376ed2656ef6f227bd80184928",
       "origin": "publication/template/README.md",
       "transformations": [
         "CRLF_TO_LF"
@@ -258,6 +258,13 @@
       "transformations": []
     },
     {
+      "path": "analysis/native_background_masks.py",
+      "bytes": 18426,
+      "sha256": "930d242926f5007ee9c46da8fa830126345e4286bb67e12fe7584698f04d6fab",
+      "origin": "analysis/native_background_masks.py",
+      "transformations": []
+    },
+    {
       "path": "analysis/navigation_layout.py",
       "bytes": 12217,
       "sha256": "df14939e749b0acafcef87a4775165018d875a3c1f91e6d0d765b315f3e27b9c",
@@ -366,8 +373,8 @@
     },
     {
       "path": "docs/BUILD.md",
-      "bytes": 13235,
-      "sha256": "cc5a544ba85bee7d8ed8f795d5b279f15edeb3bc59c6f806f8102ca6ec6a9836",
+      "bytes": 14086,
+      "sha256": "8759c88e26eb7f944c1de6394ce2fcbaa789895d958d8e54b64f2ab9ed44746e",
       "origin": "publication/template/docs/BUILD.md",
       "transformations": []
     },
@@ -532,6 +539,13 @@
       "bytes": 2410,
       "sha256": "e7f22cbc2897c48488a867083a08d4f4b32da4f80190a556afb6c5bb15f96478",
       "origin": "publication/template/docs/PRODUCT_1.14.5.md",
+      "transformations": []
+    },
+    {
+      "path": "docs/PRODUCT_1.15.0.md",
+      "bytes": 2650,
+      "sha256": "b3834b0650ebf627c2006df7977e4fab1b456a137a4c9673f408cb7b20d97d45",
+      "origin": "publication/template/docs/PRODUCT_1.15.0.md",
       "transformations": []
     },
     {
@@ -732,8 +746,8 @@
     },
     {
       "path": "docs/USAGE.md",
-      "bytes": 17292,
-      "sha256": "e6a7e82fe45e542edf38dcb2509a328b5e0c243da4fdfa8fe8727baeccf843a4",
+      "bytes": 17440,
+      "sha256": "42893380f0f9847ed1f4b22416f7fe8407704d2df236dfce96313bb0a2798fd3",
       "origin": "publication/template/docs/USAGE.md",
       "transformations": [
         "CRLF_TO_LF"
@@ -756,7 +770,7 @@
     {
       "path": "phase1/android/app/build.gradle",
       "bytes": 1107,
-      "sha256": "ada8ed3a5ac54c2e9debec0c3d64e1f68e4706576a14f1ed6d8f58ffb98d7ff7",
+      "sha256": "042ab7eb6053461a2fcdb65230a48151a4a81daba79cc466f490c8c89b7a5bbc",
       "origin": "phase1/android/app/build.gradle",
       "transformations": []
     },
@@ -1009,8 +1023,8 @@
     },
     {
       "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/ExternalAccessPolicy.kt",
-      "bytes": 686,
-      "sha256": "ff6d60ecd7c128e0bb68f68d73e5417413fbb96e0999130ae06e7871e0047fa5",
+      "bytes": 892,
+      "sha256": "b1dce390592c4256f5b73ff3c6458e43598ec3329162fc56562ea3ab2ece8b1c",
       "origin": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/ExternalAccessPolicy.kt",
       "transformations": []
     },
@@ -1023,8 +1037,8 @@
     },
     {
       "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/ExternalDisplayAccess.kt",
-      "bytes": 12424,
-      "sha256": "15726d630b4fe592558daa1964b0de37989583f4dd14dacc466aa33b64348175",
+      "bytes": 13585,
+      "sha256": "6798498ae98a7b6e36a4612abbfd002f73251a0d276ee83c26537c6ce55c403d",
       "origin": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/ExternalDisplayAccess.kt",
       "transformations": []
     },
@@ -1345,8 +1359,8 @@
     },
     {
       "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/ProductActivity.kt",
-      "bytes": 30333,
-      "sha256": "758d7a18237427c29ec7600e4ac1f35e37fef1662bc35682ae62b19ddd0b5647",
+      "bytes": 30736,
+      "sha256": "a3c1359be2050864d918843d7b2cc3d5e55c5f5d439866dd57aa38b64e031ea4",
       "origin": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/ProductActivity.kt",
       "transformations": [
         "CRLF_TO_LF"
@@ -1368,8 +1382,8 @@
     },
     {
       "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/ProductController.kt",
-      "bytes": 24439,
-      "sha256": "07a9a356ef638e800d9df37e491540929b9c091834677fa70983d0c776b8cf81",
+      "bytes": 24895,
+      "sha256": "14fbecd868ad9b695284a71514b90676882e034d25b9630bb56a24a0fdb4e06d",
       "origin": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/ProductController.kt",
       "transformations": [
         "CRLF_TO_LF"
@@ -1946,8 +1960,8 @@
     },
     {
       "path": "phase1/android/app/src/test/java/com/byd/dashcast/phase1/ExternalAccessPolicyTest.kt",
-      "bytes": 4001,
-      "sha256": "c529a21b34423b84e23c8de01852c653ca2b4432f3df0a1f527a7a07ce5c1fbf",
+      "bytes": 5191,
+      "sha256": "cdf0fa0c761e58cdcdb54dfa0929353a805de30e3e93da4fb5e0d1cecc0e9dc8",
       "origin": "phase1/android/app/src/test/java/com/byd/dashcast/phase1/ExternalAccessPolicyTest.kt",
       "transformations": []
     },
@@ -2628,6 +2642,13 @@
       "transformations": []
     },
     {
+      "path": "tools/build_background_mask_components.py",
+      "bytes": 2429,
+      "sha256": "13bfcc675cce717ebe1c816dd4341199ab9de645b159b7cddd7235b3464e31d4",
+      "origin": "publication/template/tools/build_background_mask_components.py",
+      "transformations": []
+    },
+    {
       "path": "tools/build_background_poc_components.py",
       "bytes": 2198,
       "sha256": "768f3a9fd8898680d715b50fd749dad390f9c8322c5b75db5066bab0ba915210",
@@ -2818,6 +2839,13 @@
       "bytes": 1476,
       "sha256": "6a1e260e8e850155d1195148faca370cd2944c586e0c705d68493c63336af524",
       "origin": "publication/template/tools/tests/test_axes_rim_cli.py",
+      "transformations": []
+    },
+    {
+      "path": "tools/tests/test_background_mask_cli.py",
+      "bytes": 1463,
+      "sha256": "2c1a2a4fb1bb644b9a382875bdf9b975308aec5d3d683c8f195ebb12f3bf6fde",
+      "origin": "publication/template/tools/tests/test_background_mask_cli.py",
       "transformations": []
     },
     {

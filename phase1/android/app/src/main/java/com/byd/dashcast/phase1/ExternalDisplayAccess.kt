@@ -24,6 +24,7 @@ internal object ExternalDisplayAccess {
     @Volatile private var owners: Set<Int> = emptySet()
     @Volatile private var healthy = false
     @Volatile private var mainMapFocused = false
+    @Volatile private var observedDisplayId = -1
     @Volatile var message: String = "关闭后，可继续从应用列表投屏。"
         private set
     private var context: Context? = null
@@ -62,6 +63,7 @@ internal object ExternalDisplayAccess {
         context = app.applicationContext
         stopService = stop
         desired = enabled
+        record("EXTERNAL_ACCESS_SWITCH enabled=$enabled; standby_only=true")
         MirrorIconService.refresh()
         if (!enabled) {
             policy.consume(owners.singleOrNull())
@@ -73,6 +75,9 @@ internal object ExternalDisplayAccess {
             if (hostStop!!.get()) { desired = false; message = "接入正在关闭，请稍后再开启。" }
             return
         }
+        // A new display lifetime must not inherit a consumed UID from the
+        // previous display, even if its first observation already has a window.
+        policy.reset()
         val ownContext = app.applicationContext
         val ticket = DuplexTicket.create()
         val cancelled = AtomicBoolean()
@@ -184,11 +189,17 @@ internal object ExternalDisplayAccess {
             val available = data.readInt() == 1
             val count = data.readInt()
             if (id <= 0 || count !in 0..64) { throw IOException("EXTERNAL_SNAPSHOT_INVALID") }
+            observedDisplayId = id
             val windows = (0 until count).map { data.readInt() }.toSet()
             Triple(available,windows,data.readInt()==1)
         }
         val hadMapEntry = mapEntryVisible()
+        val oldHealthy = healthy
+        val oldOwners = owners
         healthy = snapshot.first; owners = snapshot.second; mainMapFocused = snapshot.third
+        if (oldHealthy != healthy || oldOwners != owners) {
+            record("EXTERNAL_DISPLAY_OBSERVATION display=$observedDisplayId healthy=$healthy applications=${owners.size}")
+        }
         if (hadMapEntry != mapEntryVisible()) { MirrorIconService.refresh() }
         if (!desired && captureTicket == null && owners.isEmpty()) {
             ExternalDisplayWire.command(host,ticket,ExternalDisplayWire.RELEASE)
@@ -201,17 +212,19 @@ internal object ExternalDisplayAccess {
             policy.candidate(owners,healthy,desired,ProjectionService.active(),controller.busy)
         }
         if (next != null && ProjectionService.readyForNewService() && !ProjectionService.blocksOperations()) {
-            synchronized(this) { policy.consume(next) }
-            record("EXTERNAL_APPLICATION_READY uid=$next; routed_to_single_product_session=true")
-            Handler(app.mainLooper).post { if (desired && ready() && !ProjectionService.active() && !controller.busy) {
-                controller.namedDisplay()
+            Handler(app.mainLooper).post { if (desired && ready() && owners == setOf(next) &&
+                ProjectionService.readyForNewService() && !ProjectionService.blocksOperations() && !controller.busy) {
+                if (controller.namedDisplay()) {
+                    synchronized(this) { policy.consume(next) }
+                    record("EXTERNAL_APPLICATION_READY uid=$next; routed_to_single_product_session=true")
+                }
             } }
         }
         if (desired && captureTicket == null) {
             message = when {
                 !healthy -> "接入已开启，正在检查应用画面。"
                 owners.size>1 -> "请先结束其他应用的外部投屏，一次只能显示一个应用。"
-                owners.size==1 && ProjectionService.active() -> "已有画面正在投屏；接入保持待命。"
+                owners.size==1 && ProjectionService.active() -> "已收到应用画面，当前投屏结束后接入。"
                 else -> "接入已开启，等待应用发送画面。"
             }
         }
@@ -236,7 +249,14 @@ internal object ExternalDisplayAccess {
         record("EXTERNAL_VIDEO_ENDED; standby_display_preserved=true")
     }
 
-    @JvmStatic @Synchronized fun suppressCurrent() { policy.consume(owners.singleOrNull()) }
+    @JvmStatic @JvmOverloads @Synchronized fun suppressCurrent(captureOnly: Boolean = false) {
+        policy.consume(if (captureOnly) captureUid else owners.singleOrNull())
+    }
+
+    @JvmStatic fun diagnosticText(): String =
+        "EXTERNAL_ACCESS_STATE enabled=$desired ready=${ready()} endpoint_alive=${endpoint?.isBinderAlive == true}" +
+        " healthy=$healthy display=$observedDisplayId name=${NamedDisplayContract.NAME}" +
+        " applications=${owners.size} capture_active=${captureTicket != null}\n"
 
     private fun record(line: String) {
         context?.let { ProductController.get(it).recordExternal(line) }

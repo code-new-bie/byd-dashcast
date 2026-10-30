@@ -104,17 +104,18 @@ internal class ProductController private constructor(context: Context) {
         replace(next)
     }
 
-    fun namedDisplay() = replace(ProjectionTarget.namedDisplay())
+    fun namedDisplay(): Boolean = replace(ProjectionTarget.namedDisplay())
 
     fun recordExternal(line: String) = log(line)
 
-    private fun replace(target: ProjectionTarget) {
-        if (!settings.setupComplete) { message = "请先完成首次连接设置"; return }
-        if (busy) { message = "当前操作尚未完成，请稍候"; return }
+    private fun replace(target: ProjectionTarget): Boolean {
+        if (!settings.setupComplete) { message = "请先完成首次连接设置"; return false }
+        if (busy) { message = "当前操作尚未完成，请稍候"; return false }
+        if (!target.isNamed) { ExternalDisplayAccess.suppressCurrent() }
         stop()
         val request = StartRequest(target, settings.options(), settings.underlay, startGeneration.incrementAndGet())
         requestedTarget = target
-        operation("正在结束上次投屏并准备新画面。", ProductOperation.START) {
+        return operation("正在结束上次投屏并准备新画面。", ProductOperation.START) {
             val deadline = System.nanoTime() + 15_000_000_000L
             while (!ProjectionService.readyForNewService()) {
                 if (request.generation != startGeneration.get()) { return@operation }
@@ -153,7 +154,7 @@ internal class ProductController private constructor(context: Context) {
     }
 
     fun stop() {
-        ExternalDisplayAccess.suppressCurrent()
+        ExternalDisplayAccess.suppressCurrent(captureOnly = true)
         startGeneration.incrementAndGet()
         usbPermission.clear()
         val wasActive = ProjectionService.active()
@@ -163,6 +164,7 @@ internal class ProductController private constructor(context: Context) {
     }
 
     fun changingTarget() {
+        ExternalDisplayAccess.suppressCurrent()
         stop()
         message = "已更换应用，原投屏结束后点击开始即可。"
         log("PRODUCT_TARGET_CHANGED old_session_stop_requested")
@@ -176,7 +178,11 @@ internal class ProductController private constructor(context: Context) {
 
     fun switchRole(command: InstrumentUsbCommand) {
         if (!settings.setupComplete) { message = "请先完成首次连接设置"; return }
-        if (command == InstrumentUsbCommand.HOST) { startGeneration.incrementAndGet(); usbPermission.clear() }
+        if (command == InstrumentUsbCommand.HOST) {
+            ExternalDisplayAccess.suppressCurrent()
+            startGeneration.incrementAndGet()
+            usbPermission.clear()
+        }
         operation(if (command == InstrumentUsbCommand.HOST) "正在停止投屏并恢复 U盘使用。" else "正在连接仪表。",
             ProductOperation.MODE) {
             if (command == InstrumentUsbCommand.NCM && !ProjectionService.active() &&
@@ -206,7 +212,8 @@ internal class ProductController private constructor(context: Context) {
         val file = DownloadLogExporter.fileName(System.currentTimeMillis())
         val entryDiagnostics = ProductAppCatalog.diagnostics(ProductAppCatalog.load(app))
         DownloadLogExporter.export(MediaStoreDownloadStore(app.contentResolver), file,
-            "APK ${BuildConfig.VERSION_NAME}\n" + history.coordinatorSnapshot() + "\n" + ProjectionService.journal() +
+            "APK ${BuildConfig.VERSION_NAME}\n" + ExternalDisplayAccess.diagnosticText() +
+                history.coordinatorSnapshot() + "\n" + ProjectionService.journal() +
                 "\n" + RecoveryIncidentStore.snapshot(app) + "\n" + entryDiagnostics,
             LogHub.snapshot(), "Product relay evidence is recorded in report.txt; no new system probes.\n",
             "NCM observation=${observe()}\n${ProjectionService.status()}\n" + RecoveryIncidentStore.snapshot(app))
@@ -242,6 +249,7 @@ internal class ProductController private constructor(context: Context) {
     }
 
     fun diagnosticText(): String = "Dashcast ${BuildConfig.VERSION_NAME}\nADB=${adbReady}\n${usbSummary()}\n" +
+        ExternalDisplayAccess.diagnosticText() +
         ProjectionService.status() + "\n\n" + history.coordinatorSnapshot() + "\n" + ProjectionService.journal() +
         "\n" + RecoveryIncidentStore.snapshot(app)
 
@@ -422,8 +430,11 @@ internal class ProductController private constructor(context: Context) {
         catch (error: RuntimeException) { log("CLEANUP_DIAGNOSTIC_SAVE_FAILED $error") }
     }
 
-    private fun operation(status: String, kind: ProductOperation, action: () -> Unit) {
-        if (!occupied.compareAndSet(false, true)) { message = "当前操作尚未完成，请稍候；停止投屏仍可使用"; return }
+    private fun operation(status: String, kind: ProductOperation, action: () -> Unit): Boolean {
+        if (!occupied.compareAndSet(false, true)) {
+            message = "当前操作尚未完成，请稍候；停止投屏仍可使用"
+            return false
+        }
         operation = kind
         message = status
         try {
@@ -439,7 +450,9 @@ internal class ProductController private constructor(context: Context) {
             operation = ProductOperation.NONE
             message = "操作队列暂不可用，请稍后重试"
             log("PRODUCT_QUEUE_REJECTED $error")
+            return false
         }
+        return true
     }
 
     private fun log(line: String) { history.append(line) }
