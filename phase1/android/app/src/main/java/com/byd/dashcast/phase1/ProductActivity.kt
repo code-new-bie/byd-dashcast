@@ -359,7 +359,7 @@ class ProductActivity : Activity() {
         }
         addCard {
             addView(text("关于 Dashcast", 21, true))
-            addView(text("应用版本 ${BuildConfig.VERSION_NAME}\n配套仪表包为 1.14.3，已安装的无需重复升级。", 16))
+            addView(text("应用版本 ${BuildConfig.VERSION_NAME}\n配套仪表包为 1.14.5，本次边缘融合修复需要更新仪表。", 16))
             addView(button("查看技术详情") { info("技术详情", control.diagnosticText().takeLast(20000)) })
         }
     }

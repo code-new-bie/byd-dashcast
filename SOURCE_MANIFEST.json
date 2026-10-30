@@ -1,10 +1,10 @@
 {
-  "snapshot_version": "1.14.4",
+  "snapshot_version": "1.14.5",
   "snapshot_date": "2026-10-30",
   "ncm_original_author_confirmed": true,
   "project_license": "NOT_SELECTED_BY_OWNER",
   "original_runtime_java_semantics_changed": true,
-  "runtime_changes": "1.14.4 removes the legacy developer Activity, its hidden navigation, capture-settings UI, RTP/TS-only sender/packetizers and their retired tests; technical details and Downloads log export remain; product capture, task/input, named display, USB and recovery sources unchanged; firmware is the byte-identical 1.14.3 RWVF pair; no new target QNX or vehicle certification",
+  "runtime_changes": "1.14.5 matches only the owned HMI window alpha mode to the premultiplied original-background aperture, removing double attenuation at every feather; preserves create result on optional setter failure; original two-LOAD boot layout, clear RGBA, mask curves/resources and wire protocol remain; actual ARM create/stub, original interpreter, paired native and GLES old-default/new-mode evidence; APK version/help only; no complete target QNX or vehicle certification",
   "excluded_test_files": [
     "AdbVideoOfflineCheck.java",
     "ReferenceRenderEvidence.java",
@@ -62,8 +62,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "bytes": 34711,
-      "sha256": "739eca532189c86d60c80e912301df3c32a7eb40cf92df7bfa12a0641ae6c5f9",
+      "bytes": 35575,
+      "sha256": "fbafa5c45c1f9d3ed106b3ccba9735991953d3719a58e1c4450050c8c9b134dc",
       "origin": "publication/template/CHANGELOG.md",
       "transformations": [
         "CRLF_TO_LF"
@@ -85,8 +85,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 4949,
-      "sha256": "f4bdf762d692012cefd6620208cb5460dfd3f382adea4c7ec2ec3aba0dda51d2",
+      "bytes": 4964,
+      "sha256": "397ef24ffe118c0896a9ed85668884146b795941dac15d433316adf15b4903b1",
       "origin": "publication/template/README.md",
       "transformations": [
         "CRLF_TO_LF"
@@ -234,6 +234,13 @@
       "bytes": 13335,
       "sha256": "7a14acb5003f8830af175a9c792d784e2f04199142b87f2e914216ae1d92f1fc",
       "origin": "analysis/integrated_layout.py",
+      "transformations": []
+    },
+    {
+      "path": "analysis/native_background_alpha.py",
+      "bytes": 3321,
+      "sha256": "49ae555e656fd9471cc0a42494d74e44d8c0477579fe795dc72694ba48784296",
+      "origin": "analysis/native_background_alpha.py",
       "transformations": []
     },
     {
@@ -521,6 +528,13 @@
       "transformations": []
     },
     {
+      "path": "docs/PRODUCT_1.14.5.md",
+      "bytes": 2410,
+      "sha256": "e7f22cbc2897c48488a867083a08d4f4b32da4f80190a556afb6c5bb15f96478",
+      "origin": "publication/template/docs/PRODUCT_1.14.5.md",
+      "transformations": []
+    },
+    {
       "path": "docs/PRODUCT_1.2.0.md",
       "bytes": 2876,
       "sha256": "155d916a1c95c21ebdcec22968c2af3190a278abcfa402f8779358d0c40991cf",
@@ -718,8 +732,8 @@
     },
     {
       "path": "docs/USAGE.md",
-      "bytes": 17304,
-      "sha256": "88679c2ebfc11724ca24f8d30da72df34be8a9daf7a0069109bc83443ef8f589",
+      "bytes": 17292,
+      "sha256": "e6a7e82fe45e542edf38dcb2509a328b5e0c243da4fdfa8fe8727baeccf843a4",
       "origin": "publication/template/docs/USAGE.md",
       "transformations": [
         "CRLF_TO_LF"
@@ -742,7 +756,7 @@
     {
       "path": "phase1/android/app/build.gradle",
       "bytes": 1107,
-      "sha256": "89716eecdd013c30dc2b9ad67a915cfc93635616e2a05a4efd321fce968cf5da",
+      "sha256": "ada8ed3a5ac54c2e9debec0c3d64e1f68e4706576a14f1ed6d8f58ffb98d7ff7",
       "origin": "phase1/android/app/build.gradle",
       "transformations": []
     },
@@ -1331,8 +1345,8 @@
     },
     {
       "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/ProductActivity.kt",
-      "bytes": 30321,
-      "sha256": "53859b266678866326c069327092eacde8e6788feed2a81bcabaefe6016cf79c",
+      "bytes": 30333,
+      "sha256": "758d7a18237427c29ec7600e4ac1f35e37fef1662bc35682ae62b19ddd0b5647",
       "origin": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/ProductActivity.kt",
       "transformations": [
         "CRLF_TO_LF"
@@ -2779,6 +2793,13 @@
       "transformations": []
     },
     {
+      "path": "tools/build_window_alpha_components.py",
+      "bytes": 2423,
+      "sha256": "bcf727af7f88b7748583f4d92092f35deb5a27de2f43af66e0e999a22bcb1ed5",
+      "origin": "publication/template/tools/build_window_alpha_components.py",
+      "transformations": []
+    },
+    {
       "path": "tools/check_public_tree.py",
       "bytes": 7839,
       "sha256": "068174facd3b3acfd9ab0c20f6d51b947a0a6318071644a7375df597bb59d306",
@@ -2960,6 +2981,13 @@
       "bytes": 2351,
       "sha256": "83c4b297b0537969d48aca422e01d86f2a5f5753fc2c20388eccbeaadc6f72b4",
       "origin": "publication/template/tools/tests/test_viewport_cli.py",
+      "transformations": []
+    },
+    {
+      "path": "tools/tests/test_window_alpha_cli.py",
+      "bytes": 1473,
+      "sha256": "6a7b6e49ee99272b278f419039ac46838b5c83041e4ba10c0ee93a2ddf3b52e4",
+      "origin": "publication/template/tools/tests/test_window_alpha_cli.py",
       "transformations": []
     }
   ]
