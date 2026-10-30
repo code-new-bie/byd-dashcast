@@ -1,10 +1,10 @@
 {
-  "snapshot_version": "1.14.3",
-  "snapshot_date": "2026-10-29",
+  "snapshot_version": "1.14.4",
+  "snapshot_date": "2026-10-30",
   "ncm_original_author_confirmed": true,
   "project_license": "NOT_SELECTED_BY_OWNER",
   "original_runtime_java_semantics_changed": true,
-  "runtime_changes": "1.14.3 restores original clear RGBA via one four-byte owned tail branch; native curve mask is the sole video aperture; original two-LOAD boot fix, resources, receiver and wire protocol preserved; actual delivered clear-entry regression plus original interpreter/native lease and GLES partial-draw checks; APK version/help labels only over 1.14.2 fill fix; no complete target QNX or vehicle certification",
+  "runtime_changes": "1.14.4 removes the legacy developer Activity, its hidden navigation, capture-settings UI, RTP/TS-only sender/packetizers and their retired tests; technical details and Downloads log export remain; product capture, task/input, named display, USB and recovery sources unchanged; firmware is the byte-identical 1.14.3 RWVF pair; no new target QNX or vehicle certification",
   "excluded_test_files": [
     "AdbVideoOfflineCheck.java",
     "ReferenceRenderEvidence.java",
@@ -62,8 +62,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "bytes": 34058,
-      "sha256": "dd562442272bd44c7c343e154e7b197ee67ee07999cb1713bc8b78f89816efd6",
+      "bytes": 34711,
+      "sha256": "739eca532189c86d60c80e912301df3c32a7eb40cf92df7bfa12a0641ae6c5f9",
       "origin": "publication/template/CHANGELOG.md",
       "transformations": [
         "CRLF_TO_LF"
@@ -85,8 +85,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 4934,
-      "sha256": "8a25b84f72b398ae03d9431df6c2105fbe9679caa1bc3701739d8cb7ffba9ead",
+      "bytes": 4949,
+      "sha256": "f4bdf762d692012cefd6620208cb5460dfd3f382adea4c7ec2ec3aba0dda51d2",
       "origin": "publication/template/README.md",
       "transformations": [
         "CRLF_TO_LF"
@@ -514,6 +514,13 @@
       "transformations": []
     },
     {
+      "path": "docs/PRODUCT_1.14.4.md",
+      "bytes": 1553,
+      "sha256": "40e12b71abf5631f3113ec43011f07373d174cb870f5ec5e3a039269d8c765b2",
+      "origin": "publication/template/docs/PRODUCT_1.14.4.md",
+      "transformations": []
+    },
+    {
       "path": "docs/PRODUCT_1.2.0.md",
       "bytes": 2876,
       "sha256": "155d916a1c95c21ebdcec22968c2af3190a278abcfa402f8779358d0c40991cf",
@@ -711,8 +718,8 @@
     },
     {
       "path": "docs/USAGE.md",
-      "bytes": 17213,
-      "sha256": "226c70b9bb264f5e9e4d465190676a1845e33778c2fbe19a678f3c917bbca7a8",
+      "bytes": 17304,
+      "sha256": "88679c2ebfc11724ca24f8d30da72df34be8a9daf7a0069109bc83443ef8f589",
       "origin": "publication/template/docs/USAGE.md",
       "transformations": [
         "CRLF_TO_LF"
@@ -735,7 +742,7 @@
     {
       "path": "phase1/android/app/build.gradle",
       "bytes": 1107,
-      "sha256": "542cdba2d1ea56d10865436b649550ae1707dac89fc67055e05b8ef1a527cb0a",
+      "sha256": "89716eecdd013c30dc2b9ad67a915cfc93635616e2a05a4efd321fce968cf5da",
       "origin": "phase1/android/app/build.gradle",
       "transformations": []
     },
@@ -748,8 +755,8 @@
     },
     {
       "path": "phase1/android/app/src/main/AndroidManifest.xml",
-      "bytes": 3040,
-      "sha256": "9d820f29ab1bf96da317bc192c4c9e4fdb7e7fb5e3980d46b592100d844b049e",
+      "bytes": 2941,
+      "sha256": "9394a64c3fec95b826d59d0b4d260216a7efa747683c2099dd6d0aa1c8435c57",
       "origin": "phase1/android/app/src/main/AndroidManifest.xml",
       "transformations": []
     },
@@ -891,13 +898,6 @@
       "bytes": 8899,
       "sha256": "4949906bca169825bf9b240eb2ba71155dfdb518387cf5f95c3116f63597eaf5",
       "origin": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/CaptureOptions.java",
-      "transformations": []
-    },
-    {
-      "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/CaptureSettingsView.java",
-      "bytes": 5679,
-      "sha256": "9841d8c6714b8f0ee3a10d898a7dd88a31f076bbfaede1012e7bee2ac445fbb5",
-      "origin": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/CaptureSettingsView.java",
       "transformations": []
     },
     {
@@ -1141,13 +1141,6 @@
       "transformations": []
     },
     {
-      "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/MainActivity.java",
-      "bytes": 77340,
-      "sha256": "a5f659a5389be7361e00d6bbb609b7065d13fd30a2643f6602c48039369d21ae",
-      "origin": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/MainActivity.java",
-      "transformations": []
-    },
-    {
       "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/MapEntryOverlay.kt",
       "bytes": 3134,
       "sha256": "683a83d4558183342288fff23c87b39bd291b9f984f0deffed08e30c5ba589d7",
@@ -1246,13 +1239,6 @@
       "transformations": []
     },
     {
-      "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/MpegTsMuxer.java",
-      "bytes": 5689,
-      "sha256": "25bb7fcde96f1b22f5d5147a2524f0036800694f57f408add166018f50e5edca",
-      "origin": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/MpegTsMuxer.java",
-      "transformations": []
-    },
-    {
       "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/NamedDisplayContract.kt",
       "bytes": 5160,
       "sha256": "5d9a26c4190a132a8af2f06b35b3a2e4e256402382918245b0ab0d6f17f9f9f9",
@@ -1345,8 +1331,8 @@
     },
     {
       "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/ProductActivity.kt",
-      "bytes": 31497,
-      "sha256": "2129482df356f1e3cb91d8881a3ce767ae0fac17c8aef7a703d4eb2876ad5a24",
+      "bytes": 30321,
+      "sha256": "53859b266678866326c069327092eacde8e6788feed2a81bcabaefe6016cf79c",
       "origin": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/ProductActivity.kt",
       "transformations": [
         "CRLF_TO_LF"
@@ -1509,13 +1495,6 @@
       "transformations": []
     },
     {
-      "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/RtpTransportPacketizer.java",
-      "bytes": 2771,
-      "sha256": "7a6ba327c426297e6bfede1322a261fe0c1a6d898756abdde203278f0229289f",
-      "origin": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/RtpTransportPacketizer.java",
-      "transformations": []
-    },
-    {
       "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/SafeSettingsNavigator.kt",
       "bytes": 2238,
       "sha256": "392833e65d3cc1ceab8b5293e3c54cbf9edbfee1927a550b0c816c70399af148",
@@ -1632,13 +1611,6 @@
       "bytes": 1078,
       "sha256": "765bd118125913cfafabcdbb6938b1298d43e8144ad505cc82cb00b33a306130",
       "origin": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/UsbRoleRequestPolicy.java",
-      "transformations": []
-    },
-    {
-      "path": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/UsbRtpSender.java",
-      "bytes": 5485,
-      "sha256": "f7a63f67280d9dd70c57d82be4c3e67934effbad7bd32a1e181a8321695d77ec",
-      "origin": "phase1/android/app/src/main/java/com/byd/dashcast/phase1/UsbRtpSender.java",
       "transformations": []
     },
     {
@@ -1783,8 +1755,8 @@
     },
     {
       "path": "phase1/android/app/src/main/res/values/strings.xml",
-      "bytes": 2794,
-      "sha256": "b9aa8df599bf3425dc13e903eaf4c3c4b1094eec94b4f9faf6b9cb462703b326",
+      "bytes": 756,
+      "sha256": "4d339c7d2b5a89a0687814c65e50c2fe80d83eeacda5f88401db7bff1854cdb0",
       "origin": "phase1/android/app/src/main/res/values/strings.xml",
       "transformations": []
     },
@@ -2071,20 +2043,6 @@
       "transformations": []
     },
     {
-      "path": "phase1/android/app/src/test/java/com/byd/dashcast/phase1/MpegTsMuxerTest.java",
-      "bytes": 2796,
-      "sha256": "313620d116ecdc755ba36a9bb7e66e66bbf6f241d5491135e59056c4f6bfd9d8",
-      "origin": "phase1/android/app/src/test/java/com/byd/dashcast/phase1/MpegTsMuxerTest.java",
-      "transformations": []
-    },
-    {
-      "path": "phase1/android/app/src/test/java/com/byd/dashcast/phase1/MuxOfflineCheck.java",
-      "bytes": 2983,
-      "sha256": "95a62817bed427cafa65c2e1e81ac7c3dd3ac877a5ca3b445f1a9da1a814e6fa",
-      "origin": "phase1/android/app/src/test/java/com/byd/dashcast/phase1/MuxOfflineCheck.java",
-      "transformations": []
-    },
-    {
       "path": "phase1/android/app/src/test/java/com/byd/dashcast/phase1/NativeAppLaunchEventTest.kt",
       "bytes": 2632,
       "sha256": "7c9139bbf6ae1427e941a09c3c597f88d89ce64081d5debc67ba79cb2600ab0e",
@@ -2236,13 +2194,6 @@
       "bytes": 1427,
       "sha256": "7c98aebf7dd9361929f0af7d2fb264de05cd543724db87d157b7290139e5510a",
       "origin": "phase1/android/app/src/test/java/com/byd/dashcast/phase1/RemoteProbeCompletionTest.java",
-      "transformations": []
-    },
-    {
-      "path": "phase1/android/app/src/test/java/com/byd/dashcast/phase1/RtpTransportPacketizerTest.java",
-      "bytes": 2125,
-      "sha256": "848a047dd68bd721a4d883f6bf66595e4659ad745ba245bcaba5efa5ab42fbfd",
-      "origin": "phase1/android/app/src/test/java/com/byd/dashcast/phase1/RtpTransportPacketizerTest.java",
       "transformations": []
     },
     {

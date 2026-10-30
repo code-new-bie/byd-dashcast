@@ -6,7 +6,6 @@ import android.app.AlertDialog
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.ComponentName
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.Typeface
@@ -55,7 +54,6 @@ class ProductActivity : Activity() {
     private var query = ""
     private var favoritesOnly = false
     private var advancedPicture = false
-    private var advancedHelp = false
     private val main = Handler(Looper.getMainLooper())
     private val refresh = object : Runnable {
         override fun run() { updateStatus(); main.postDelayed(this, 500) }
@@ -78,7 +76,6 @@ class ProductActivity : Activity() {
         query = savedInstanceState?.getString("query").orEmpty()
         favoritesOnly = savedInstanceState?.getBoolean("favorites") ?: false
         advancedPicture = savedInstanceState?.getBoolean("advanced_picture") ?: false
-        advancedHelp = savedInstanceState?.getBoolean("advanced_help") ?: false
         build()
         if (!settings.setupComplete && savedInstanceState == null) { firstRun() }
     }
@@ -94,7 +91,6 @@ class ProductActivity : Activity() {
         outState.putString("query", query)
         outState.putBoolean("favorites", favoritesOnly)
         outState.putBoolean("advanced_picture", advancedPicture)
-        outState.putBoolean("advanced_help", advancedHelp)
         super.onSaveInstanceState(outState)
     }
     @Deprecated("Vehicle runs Android 10 legacy back dispatch")
@@ -363,21 +359,8 @@ class ProductActivity : Activity() {
         }
         addCard {
             addView(text("关于 Dashcast", 21, true))
-            addView(text("应用版本 ${BuildConfig.VERSION_NAME}\n配套仪表包为 1.14.3，本次背景修复需要更新仪表。", 16))
-            addView(button(if (advancedHelp) "收起支持选项" else "更多支持选项") { advancedHelp = !advancedHelp; build() })
-            if (advancedHelp) {
-                addView(button("查看技术详情") { info("技术详情", control.diagnosticText().takeLast(20000)) })
-                addView(button("开发工具") {
-                    if (control.busy || ProjectionService.active() || ProjectionService.blocksOperations()) {
-                        info("请先结束当前操作", "投屏或恢复过程中不能打开开发工具，请等待当前操作结束。")
-                    } else {
-                        AlertDialog.Builder(this@ProductActivity).setTitle("开发工具")
-                            .setMessage("这里保留测试和排查功能，日常投屏无需使用。")
-                            .setPositiveButton("打开") { _, _ -> startActivity(Intent(this@ProductActivity, MainActivity::class.java)) }
-                            .setNegativeButton("取消", null).show()
-                    }
-                })
-            }
+            addView(text("应用版本 ${BuildConfig.VERSION_NAME}\n配套仪表包为 1.14.3，已安装的无需重复升级。", 16))
+            addView(button("查看技术详情") { info("技术详情", control.diagnosticText().takeLast(20000)) })
         }
     }
 
