@@ -141,7 +141,7 @@ final class CaptureOptions {
         if (args.length == 1 || args.length == 2 && "live".equals(args[1])) {
             return of(Mode.STRETCH);
         }
-        if (args.length == 3 && "remote".equals(args[1])) {
+        if (args.length == 3 && ("remote".equals(args[1]) || "workspace".equals(args[1]))) {
             return of(Mode.STRETCH);
         }
         if (!"live".equals(args[1])) {
@@ -150,7 +150,7 @@ final class CaptureOptions {
         // Source selectors have different arities: remote consumes a component,
         // named consumes only its keyword. Geometry starts AFTER that selector.
         int geometryStart = 2;
-        if (args.length > 2 && "remote".equals(args[2])) {
+        if (args.length > 2 && ("remote".equals(args[2]) || "workspace".equals(args[2]))) {
             if (args.length < 4) {
                 throw new IllegalArgumentException("Remote display component is required");
             }

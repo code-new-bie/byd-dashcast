@@ -101,6 +101,13 @@ internal class CenterFrameRenderer @JvmOverloads constructor(
         config = configs[0]
         window = EGL14.eglCreateWindowSurface(display, configs[0], output, intArrayOf(EGL14.EGL_NONE), 0)
         requireEgl(window != EGL14.EGL_NO_SURFACE && EGL14.eglMakeCurrent(display, window, window, context), "surface")
+        if (viewport?.workspaceSource == true) {
+            val maximum = IntArray(1)
+            GLES20.glGetIntegerv(GLES20.GL_MAX_TEXTURE_SIZE, maximum, 0)
+            if (maximum[0] < maxOf(viewport!!.sourceWidth, viewport!!.sourceHeight)) {
+                throw IOException("WORKSPACE_RENDER_SIZE_UNSUPPORTED")
+            }
+        }
         val names = IntArray(1)
         GLES20.glGenTextures(1, names, 0)
         texture = names[0]

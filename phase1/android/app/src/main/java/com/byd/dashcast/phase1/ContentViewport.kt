@@ -13,7 +13,8 @@ internal data class ContentViewport @JvmOverloads constructor(
     val encodedTop: Int,
     val encodedWidth: Int,
     val encodedHeight: Int,
-    val physicalAspect: Float = encodedWidth.toFloat() / encodedHeight
+    val physicalAspect: Float = encodedWidth.toFloat() / encodedHeight,
+    val workspaceSource: Boolean = false
 ) {
     init {
         require(sourceWidth in 1..3840 && sourceHeight in 1..2160 && sourceWidth.toLong() * sourceHeight <= 8_294_400)
@@ -49,6 +50,10 @@ internal data class ContentViewport @JvmOverloads constructor(
         @JvmStatic fun forBusiness(profile: BusinessDisplayProfile, center: Boolean): ContentViewport {
             val destination = if (center) center() else full()
             return destination.copy(sourceWidth=profile.width,sourceHeight=profile.height)
+        }
+        @JvmStatic fun forWorkspace(profile: WorkspaceDisplayProfile, center: Boolean): ContentViewport {
+            val destination = if (center) center() else full()
+            return destination.copy(sourceWidth = profile.width, sourceHeight = profile.height, workspaceSource = true)
         }
         /** Fully clear conservative box inside the curved full-mode aperture. */
         @JvmStatic fun fullSafeBounds(): IntArray = intArrayOf(320, 176, 1280, 336)

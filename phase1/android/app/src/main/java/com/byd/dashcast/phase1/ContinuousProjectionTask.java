@@ -166,9 +166,11 @@ final class ContinuousProjectionTask implements ProjectionSessionController.Task
             }
             if (target.isRemote()) {
                 ProjectionEntryRouter.Selection entry = ProjectionEntryRouter.resolve(context, target, log);
+                if (!target.isWorkspace()) { MirrorWorkspace.clearFinished(); }
                 mirrorTicket = entry.getNative() == null
                         ? MirrorBridge.begin(context, target.component().substring(0, target.component().indexOf('/')))
                         : DuplexTicket.create();
+                if (target.isWorkspace()) { MirrorWorkspace.bind(target, mirrorTicket); }
                 source.setMirrorTicket(mirrorTicket);
             }
             captureAttempted = true;

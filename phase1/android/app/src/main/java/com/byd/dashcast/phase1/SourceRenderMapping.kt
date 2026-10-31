@@ -13,6 +13,10 @@ internal data class SourceRenderMapping(val content: FloatArray, val source: Flo
             val targetAspect = viewport.physicalAspect
             val sourceAspect = viewport.sourceWidth.toFloat() / viewport.sourceHeight
             val source = floatArrayOf(0f, 0f, 1f, 1f)
+            if (viewport.workspaceSource) {
+                require(kotlin.math.abs(sourceAspect - targetAspect) < 0.0001f)
+                return SourceRenderMapping(content, source)
+            }
             if (!crop) {
                 val fitted=viewport.readableCandidates().map { area ->
                     val candidate=area.copyOf()

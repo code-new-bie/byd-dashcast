@@ -6,25 +6,38 @@ import java.util.Objects;
 final class ProjectionTarget {
     private static final String PRIMARY_TOKEN = "primary";
     private static final String REMOTE_PREFIX = "remote:";
+    private static final String WORKSPACE_PREFIX = "workspace:";
     private static final int MAX_COMPONENT_CHARS = 384;
     private static final int MAX_LABEL_CHARS = 128;
 
     private final String component;
     private final String label;
     private final boolean named;
+    private final boolean workspace;
 
     private ProjectionTarget(String component, String label) {
         this(component, label, false);
     }
 
     private ProjectionTarget(String component, String label, boolean named) {
+        this(component, label, named, false);
+    }
+
+    private ProjectionTarget(String component, String label, boolean named, boolean workspace) {
         this.component = component;
         this.label = label;
         this.named = named;
+        this.workspace = workspace;
     }
 
     static ProjectionTarget namedDisplay() { return new ProjectionTarget(null, "按屏幕名接入", true); }
     boolean isNamed() { return named; }
+    boolean isWorkspace() { return workspace; }
+
+    static ProjectionTarget workspaceComponent(String componentName, String label) {
+        ProjectionTarget checked = remoteComponent(componentName, label);
+        return new ProjectionTarget(checked.component, checked.label, false, true);
+    }
 
     static ProjectionTarget primary() {
         return new ProjectionTarget(null, "车机主屏（现有链路）");
@@ -53,6 +66,9 @@ final class ProjectionTarget {
         if (PRIMARY_TOKEN.equals(token)) {
             return primary();
         }
+        if (token != null && token.startsWith(WORKSPACE_PREFIX)) {
+            return workspaceComponent(token.substring(WORKSPACE_PREFIX.length()), null);
+        }
         if (token == null || !token.startsWith(REMOTE_PREFIX)) {
             throw new IllegalArgumentException("Unknown projection target");
         }
@@ -67,17 +83,18 @@ final class ProjectionTarget {
         if (args.length > 2 && "live".equals(args[1]) && "named".equals(args[2])) {
             return namedDisplay();
         }
-        if (args.length > 1 && "remote".equals(args[1])) {
+        if (args.length > 1 && ("remote".equals(args[1]) || "workspace".equals(args[1]))) {
             if (args.length != 3) {
                 throw new IllegalArgumentException("Remote display component is required");
             }
-            return remoteComponent(args[2], null);
+            return "workspace".equals(args[1]) ? workspaceComponent(args[2], null) : remoteComponent(args[2], null);
         }
-        if (args.length > 2 && "live".equals(args[1]) && "remote".equals(args[2])) {
+        if (args.length > 2 && "live".equals(args[1])
+                && ("remote".equals(args[2]) || "workspace".equals(args[2]))) {
             if (args.length < 4) {
                 throw new IllegalArgumentException("Remote display component is required");
             }
-            return remoteComponent(args[3], null);
+            return "workspace".equals(args[2]) ? workspaceComponent(args[3], null) : remoteComponent(args[3], null);
         }
         if (args.length > 1 && !"live".equals(args[1])) {
             throw new IllegalArgumentException("Unknown shell capture source prefix");
@@ -101,7 +118,7 @@ final class ProjectionTarget {
     }
 
     String token() {
-        return named ? "named" : isRemote() ? REMOTE_PREFIX + component : PRIMARY_TOKEN;
+        return named ? "named" : isRemote() ? (workspace ? WORKSPACE_PREFIX : REMOTE_PREFIX) + component : PRIMARY_TOKEN;
     }
 
     /** Emits only fixed words and a previously allowlisted component. */
@@ -110,7 +127,7 @@ final class ProjectionTarget {
         if (!isRemote()) {
             return "";
         }
-        return "remote '" + component.replace("'", "'\\''") + "'";
+        return (workspace ? "workspace '" : "remote '") + component.replace("'", "'\\''") + "'";
     }
 
     @Override
@@ -127,12 +144,12 @@ final class ProjectionTarget {
             return false;
         }
         ProjectionTarget that = (ProjectionTarget) other;
-        return named == that.named && Objects.equals(component, that.component);
+        return named == that.named && workspace == that.workspace && Objects.equals(component, that.component);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(component, named);
+        return Objects.hash(component, named, workspace);
     }
 
     private static void validateComponent(String componentName) {

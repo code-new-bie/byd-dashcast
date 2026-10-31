@@ -42,6 +42,7 @@ internal object ProjectionEntryRouter {
     fun resolve(context: Context, target: ProjectionTarget,
         record: Consumer<String> = Consumer {}): Selection {
         if (target.isNamed) { return Selection(null, null) }
+        if (target.isWorkspace) { return Selection(null, SingleAppEntry.resolve(context, target, record)) }
         val installed = context.createPackageContext(BuildConfig.APPLICATION_ID, Context.CONTEXT_IGNORE_SECURITY)
         val entries = installed.assets.open("native_projection_entries.json").bufferedReader().use {
             val buffer = CharArray(16385)

@@ -111,17 +111,8 @@ internal class MirrorAppSession @JvmOverloads constructor(surface: Surface, entr
         endpoint.sinks.take()?.let { sink ->
             var handedOff = false
             try {
-                // Match the actual app area, including this ROM's system-bar/IME insets.
-                // The encoded carrier and native aperture remain fixed and independent.
-                if (sink.surface != null && (sourceWidth != sink.width || sourceHeight != sink.height)) {
-                    require(BusinessDisplayProfile.valid(sink.width,sink.height,sourceDensity))
-                    display!!.resize(sink.width,sink.height,sourceDensity)
-                    renderer.resizeBusinessSource(sink.width,sink.height)
-                    sourceWidth=sink.width;sourceHeight=sink.height
-                    sourceEpoch=System.nanoTime();fence.changed(sourceEpoch)
-                    endpoint.geometry(sourceWidth,sourceHeight)
-                    System.err.println("SHELL_MIRROR_BUSINESS_VIEWPORT size=${sourceWidth}x$sourceHeight; primary_client_area=true encoded_carrier_unchanged=true")
-                }
+                // A main-screen consumer never changes the application's locked source layout.
+                // Fit and inverse input mapping use this same source geometry.
                 renderer.setMirrorSink(sink)
                 handedOff = true
             } finally { if (!handedOff) { sink.surface?.release() } }

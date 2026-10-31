@@ -52,6 +52,7 @@ internal class ProductController private constructor(context: Context) {
                     Usb.hasPermission(app, device))
                 if (outcome.result == UsbPermissionContinuation.Result.DENIED) {
                     message = "尚未允许访问仪表 USB，可再次点击开始并选择允许。"
+                    MirrorWorkspace.fail(startGeneration.get(), message)
                     log("PRODUCT_USB_PERMISSION_DENIED")
                 } else if (outcome.result == UsbPermissionContinuation.Result.GRANTED) {
                     val next = outcome.request ?: return
@@ -61,6 +62,7 @@ internal class ProductController private constructor(context: Context) {
                         worker.execute {
                             if (!occupied.compareAndSet(false, true)) {
                                 message = "已允许访问仪表，请等当前操作结束后再点开始。"
+                                MirrorWorkspace.fail(next.generation, message)
                                 return@execute
                             }
                             operation = ProductOperation.START
@@ -68,11 +70,13 @@ internal class ProductController private constructor(context: Context) {
                                 if (next.generation == startGeneration.get()) { prepareStart(next) }
                             } catch (error: Exception) {
                                 message = ProductErrors.explain(error)
+                                MirrorWorkspace.fail(next.generation, message)
                                 log("PRODUCT_PERMISSION_RESUME_FAILED $error")
                             } finally { operation = ProductOperation.NONE; occupied.set(false) }
                         }
                     } catch (error: RejectedExecutionException) {
                         message = "已允许访问仪表，请再次点击开始。"
+                        MirrorWorkspace.fail(next.generation, message)
                         log("PRODUCT_PERMISSION_QUEUE_REJECTED $error")
                     }
                 }
@@ -82,13 +86,25 @@ internal class ProductController private constructor(context: Context) {
 
     fun connect() = operation("正在连接车机，如出现调试弹窗请选择允许。", ProductOperation.CONNECT) { authenticate() }
 
-    fun start(target: ProjectionTarget) {
+    fun startWorkspace(target: ProjectionTarget) {
+        val next = ProjectionTarget.workspaceComponent(target.component(), target.displayLabel())
+        start(next, true)
+    }
+
+    fun start(target: ProjectionTarget) = start(target, false)
+
+    private fun start(target: ProjectionTarget, showWorkspace: Boolean) {
         if (!settings.setupComplete) { message = "请先完成首次连接设置"; return }
-        if (ProjectionService.active()) { message = "已有投屏会话，请先停止再切换应用"; return }
         if (busy) { message = "当前操作尚未完成，请稍候"; return }
+        if (ProjectionService.active()) {
+            if (showWorkspace) { replace(target, true) }
+            else { message = "已有投屏会话，请先停止再切换应用" }
+            return
+        }
         if (!target.isNamed) { ExternalDisplayAccess.suppressCurrent() }
         val request = StartRequest(target, settings.options(), settings.underlay, startGeneration.incrementAndGet())
         requestedTarget = target
+        if (showWorkspace) { MirrorWorkspace.begin(app, target, request.generation) }
         operation("正在连接仪表并准备画面。", ProductOperation.START) { prepareStart(request) }
     }
 
@@ -108,13 +124,14 @@ internal class ProductController private constructor(context: Context) {
 
     fun recordExternal(line: String) = log(line)
 
-    private fun replace(target: ProjectionTarget): Boolean {
+    private fun replace(target: ProjectionTarget, showWorkspace: Boolean = false): Boolean {
         if (!settings.setupComplete) { message = "请先完成首次连接设置"; return false }
         if (busy) { message = "当前操作尚未完成，请稍候"; return false }
         if (!target.isNamed) { ExternalDisplayAccess.suppressCurrent() }
         stop()
         val request = StartRequest(target, settings.options(), settings.underlay, startGeneration.incrementAndGet())
         requestedTarget = target
+        if (showWorkspace) { MirrorWorkspace.begin(app, target, request.generation) }
         return operation("正在结束上次投屏并准备新画面。", ProductOperation.START) {
             val deadline = System.nanoTime() + 15_000_000_000L
             while (!ProjectionService.readyForNewService()) {
@@ -154,6 +171,7 @@ internal class ProductController private constructor(context: Context) {
     }
 
     fun stop() {
+        MirrorWorkspace.stopping()
         ExternalDisplayAccess.suppressCurrent(captureOnly = true)
         startGeneration.incrementAndGet()
         usbPermission.clear()
@@ -276,6 +294,7 @@ internal class ProductController private constructor(context: Context) {
                 log("PRODUCT_SESSION_REQUEST target=${request.target} underlay=${request.underlay}")
             } catch (error: Exception) {
                 message = ProductErrors.explain(error)
+                MirrorWorkspace.fail(request.generation, message)
                 log("PRODUCT_START_ENQUEUE_FAILED $error")
             }
         }
@@ -437,11 +456,13 @@ internal class ProductController private constructor(context: Context) {
         }
         operation = kind
         message = status
+        val generation = startGeneration.get()
         try {
             worker.execute {
                 try { action() } catch (error: Exception) {
                     if (error is InterruptedException) { Thread.currentThread().interrupt() }
                     message = ProductErrors.explain(error)
+                    if (kind == ProductOperation.START) { MirrorWorkspace.fail(generation, message) }
                     log("PRODUCT_OPERATION_FAILED ${error.javaClass.simpleName}: ${error.message}")
                 } finally { operation = ProductOperation.NONE; occupied.set(false) }
             }
@@ -449,6 +470,7 @@ internal class ProductController private constructor(context: Context) {
             occupied.set(false)
             operation = ProductOperation.NONE
             message = "操作队列暂不可用，请稍后重试"
+            if (kind == ProductOperation.START) { MirrorWorkspace.fail(generation, message) }
             log("PRODUCT_QUEUE_REJECTED $error")
             return false
         }

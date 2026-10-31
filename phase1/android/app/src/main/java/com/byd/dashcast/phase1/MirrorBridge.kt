@@ -114,7 +114,11 @@ internal object MirrorBridge {
     }
 
     fun open(context: Context) {
-        if (session?.endpoint == null) { message = "请先开始一个普通应用的投屏会话"; return }
+        if (session?.endpoint == null) {
+            if (MirrorWorkspace.current() != null) { MirrorWorkspace.open(context) }
+            else { message = "请先开始一个普通应用的投屏会话" }
+            return
+        }
         try {
             context.startActivity(Intent(context, MirrorActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or

@@ -37,6 +37,7 @@ public final class ProjectionService extends Service {
     private final Handler main = new Handler(Looper.getMainLooper());
     private ThreadPoolExecutor worker;
     private ProjectionSessionController controller;
+    private long workspaceGeneration;
     private PowerManager.WakeLock wakeLock;
     private static final long WAKE_LEASE_MILLIS = 60_000L;
     private static final long WAKE_RENEW_MILLIS = 20_000L;
@@ -185,6 +186,7 @@ public final class ProjectionService extends Service {
         }, new ThreadPoolExecutor.AbortPolicy());
         controller = new ProjectionSessionController(worker, (state, detail) -> {
             JOURNAL.state(state, detail);
+            MirrorWorkspace.state(workspaceGeneration, state);
             try {
                 RecoveryIncidentStore.record(this, state, detail);
             } catch (RuntimeException diagnosticError) {
@@ -271,6 +273,7 @@ public final class ProjectionService extends Service {
             else { ProjectionLimits.requireSeconds(seconds); }
             CaptureOptions options = CaptureOptions.parse(intent.getStringExtra("capture_selection"));
             ProjectionTarget target = ProjectionTarget.parse(intent.getStringExtra("projection_target"));
+            workspaceGeneration = target.isWorkspace() ? MirrorWorkspace.starting(target) : 0;
             boolean composition = intent.getBooleanExtra("composition_trial", false);
             boolean probe = intent.getBooleanExtra("capture_only_probe", false);
             boolean underlay = intent.getBooleanExtra("product_underlay", false);
@@ -335,6 +338,7 @@ public final class ProjectionService extends Service {
             ownedLease = null;
             lease.close();
             JOURNAL.append("START_FAILED before capture: " + error);
+            MirrorWorkspace.state(workspaceGeneration, ProjectionSessionController.State.FAILED);
             if (!JOURNAL.quarantined()) { JOURNAL.state(ProjectionSessionController.State.FAILED, error.toString()); }
             releaseWakeLock();
             stopForeground(STOP_FOREGROUND_REMOVE);

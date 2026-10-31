@@ -171,6 +171,8 @@ public final class ShellScreenCapture {
                         line -> System.err.println("SHELL_CAPTURE_" + line)) : null;
             BusinessDisplayProfile business = selection != null && selection.getNative() == null && mirrorTicket != null
                 ? BusinessDisplayProfile.read(RemoteDisplaySession.shellContext()) : null;
+            WorkspaceDisplayProfile workspace = business != null && target.isWorkspace()
+                    ? WorkspaceDisplayProfile.forMode(options.centerWindow()) : null;
             if (options.contentViewport()) {
                 ContentViewport viewport = options.centerWindow() ? ContentViewport.center() : ContentViewport.full();
                 if (target.isNamed() && mirrorTicket != null) {
@@ -179,7 +181,8 @@ public final class ShellScreenCapture {
                 if (business != null) {
                     // Keep the business application's original main-screen layout. The
                     // instrument's independent FIT/CROP mapping must not reflow that UI.
-                    viewport = ContentViewport.forBusiness(business,options.centerWindow());
+                    viewport = workspace != null ? ContentViewport.forWorkspace(workspace, options.centerWindow())
+                            : ContentViewport.forBusiness(business, options.centerWindow());
                 }
                 center = new CenterFrameRenderer(surface, viewport, options.mode() == CaptureOptions.Mode.CROP);
                 captureSurface = center.inputSurface();
@@ -202,7 +205,7 @@ public final class ShellScreenCapture {
                     ProjectionEntryRouter.Selection entry = selection;
                     if (center == null) { throw new IOException("MIRROR_CONTENT_RENDERER_REQUIRED"); }
                     remote = new MirrorAppSession(captureSurface, entry.getEntry(), logicalWidth, logicalHeight,
-                            mirrorTicket, center, business.getDensity());
+                            mirrorTicket, center, workspace != null ? workspace.getDensity() : business.getDensity());
                 } else {
                     remote = new RemoteDisplaySession(captureSurface, target, logicalWidth, logicalHeight, options);
                 }

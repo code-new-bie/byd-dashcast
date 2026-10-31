@@ -1,2 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources><item name="mirror_surface" type="id" /></resources>
+<resources>
+    <item name="mirror_surface" type="id" />
+    <item name="workspace_controls" type="id" />
+    <item name="workspace_status" type="id" />
+    <item name="workspace_retry" type="id" />
+</resources>

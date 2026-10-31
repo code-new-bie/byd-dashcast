@@ -72,7 +72,7 @@ class ProductActivity : Activity() {
         settings = ProductSettings(this)
         control = ProductController.get(this)
         apps = ProductAppCatalog.load(this)
-        page = savedInstanceState?.getInt("page")?.coerceIn(0, 3) ?: 0
+        page = savedInstanceState?.getInt("page")?.coerceIn(0, 2) ?: intent.getIntExtra("page", 0).coerceIn(0, 2)
         query = savedInstanceState?.getString("query").orEmpty()
         favoritesOnly = savedInstanceState?.getBoolean("favorites") ?: false
         advancedPicture = savedInstanceState?.getBoolean("advanced_picture") ?: false
@@ -86,6 +86,10 @@ class ProductActivity : Activity() {
         main.post(refresh)
     }
     override fun onPause() { main.removeCallbacks(refresh); super.onPause() }
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent); setIntent(intent)
+        page = intent.getIntExtra("page", 0).coerceIn(0, 2); build()
+    }
     override fun onSaveInstanceState(outState: Bundle) {
         outState.putInt("page", page)
         outState.putString("query", query)
@@ -115,14 +119,14 @@ class ProductActivity : Activity() {
         root.addView(header)
         val shell = LinearLayout(this).apply { orientation = if (wide) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL }
         val nav = LinearLayout(this).apply { orientation = if (wide) LinearLayout.VERTICAL else LinearLayout.HORIZONTAL }
-        listOf("投屏", "应用", "设置", "帮助").forEachIndexed { index, label ->
+        listOf("投屏", "应用", "设置").forEachIndexed { index, label ->
             nav.addView(button(label, index == page) { navigate(index) }.apply {
                 id = intArrayOf(R.id.product_tab_home, R.id.product_tab_apps,
                     R.id.product_tab_settings, R.id.product_tab_help)[index]
                 isSelected = index == page
                 contentDescription = "$label${if (index == page) "，当前页面" else ""}"
             }, if (wide) LinearLayout.LayoutParams(-1, navigationHeight(58)).apply { bottomMargin = dp(12) }
-                else LinearLayout.LayoutParams(0, navigationHeight(52), 1f).apply { marginEnd = if (index == 3) 0 else dp(8) })
+                else LinearLayout.LayoutParams(0, navigationHeight(52), 1f).apply { marginEnd = if (index == 2) 0 else dp(8) })
         }
         shell.addView(nav, if (wide) LinearLayout.LayoutParams(dp(144), -1).apply { marginEnd = dp(20) }
             else LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) })
@@ -131,7 +135,7 @@ class ProductActivity : Activity() {
         scroll!!.addView(body)
         shell.addView(scroll, if (wide) LinearLayout.LayoutParams(0, -1, 1f) else LinearLayout.LayoutParams(-1, 0, 1f))
         root.addView(shell, LinearLayout.LayoutParams(-1, 0, 1f))
-        when (page) { 0 -> home(); 1 -> applications(); 2 -> preferences(); else -> help() }
+        when (page) { 0 -> home(); 1 -> applications(); else -> preferences() }
         if (page == 0) { homeActions(root) }
         renderedPage = page
         setContentView(root)
@@ -155,7 +159,7 @@ class ProductActivity : Activity() {
             addView(text(selected?.let { ProductUiModel.appSummary(it.capability) }
                 ?: "选择一个应用，画面就能显示到仪表。", 16))
             addView(text("仪表画面：${if (settings.underlay) "全屏" else "小窗"}", 16))
-            mirror = button("打开正在投屏的应用") { MirrorBridge.open(this@ProductActivity) }.also {
+            mirror = button("继续操作") { MirrorBridge.open(this@ProductActivity) }.also {
                 it.id = R.id.product_open_app; addView(it)
             }
         }
@@ -201,7 +205,7 @@ class ProductActivity : Activity() {
             ProductPresentation.Action.STOP -> control.stop()
             ProductPresentation.Action.CHOOSE -> navigate(1)
             ProductPresentation.Action.SETUP -> firstRun()
-            ProductPresentation.Action.START -> app?.let { control.start(it.target()) }
+            ProductPresentation.Action.START -> app?.let { control.startWorkspace(it.target()) }
             ProductPresentation.Action.NONE -> Unit
         }
         updateStatus()
@@ -210,7 +214,6 @@ class ProductActivity : Activity() {
     private fun applications() {
         body.addView(text("选择投屏应用", 27, true))
         body.addView(text("一次投屏一个应用。更换时会先结束当前投屏，原应用的数据和任务会保留。", 16))
-        externalAccessCard()
         val utilities = row()
         utilities.addView(button("刷新列表") { apps = ProductAppCatalog.load(this); build() },
             LinearLayout.LayoutParams(0, -2, 1f).apply { marginEnd = dp(12) })
@@ -307,16 +310,15 @@ class ProductActivity : Activity() {
                 settings.underlay = it == 0; build()
             }
             addView(text("全屏扩大显示范围；小窗保留周围仪表布局。车速、挡位和续航等信息由仪表正常显示。", 16))
-            addView(text(if (settings.crop) "当前按原比例填满仪表区域，边缘内容可能被裁掉。车机操作画面保持完整。"
-                else "当前完整显示应用画面，比例不同时仪表周围会留边。可在更多画面选项中改为填满。", 16))
-            addView(button(if (advancedPicture) "收起更多画面选项" else "更多画面选项") {
+            addView(text("应用会按所选画面布局。车机操作窗口按相同比例尽量放大，两端均从高清画面生成。", 16))
+            addView(button(if (advancedPicture) "收起其他接入选项" else "其他接入的画面选项") {
                 advancedPicture = !advancedPicture; build()
             }.apply { id = R.id.product_picture_more })
             if (advancedPicture) {
                 choices(this, "画面比例", listOf("完整显示", "填满区域"), if (settings.crop) 1 else 0) {
                     settings.crop = it == 1; build()
                 }
-                addView(text("填满区域：保持原比例并裁去多出的边缘。完整显示：保留全部内容，比例不同时会留边。只影响仪表，车机操作画面保持完整。", 15))
+                addView(text("仅用于地图内按钮、按名称等其他接入方式。从本应用选择并开始的操作窗口会自动适配，不受此项影响。完整显示保留内容；填满区域会裁去多出的边缘。", 15))
             }
         }
         addCard {
@@ -335,32 +337,14 @@ class ProductActivity : Activity() {
             })
             addView(text("此功能只响应投屏应用的打开操作和地图投屏按钮，不读取输入的文字或密码。", 15))
         }
-    }
-
-    private fun help() {
-        body.addView(text("帮助与反馈", 27, true))
         addCard {
-            headline = text("", 23, true).also { addView(it) }
-            connection = text("", 16).also { addView(it) }
-            detail = text("", 16).also { it.id = R.id.product_feedback; addView(it) }
-            addView(button("重新连接车机") { control.connect(); updateStatus() })
-            export = button("导出日志到下载目录", true) { control.exportLogs(); updateStatus() }.also {
+            addView(text("帮助与反馈", 21, true))
+            export = button("导出日志到下载目录") { control.exportLogs(); updateStatus() }.also {
                 it.id = R.id.product_export_logs; addView(it)
             }
-            addView(text("日志仅保存到车机下载目录，你可以自行选择是否分享。", 15))
-        }
-        addCard {
-            addView(text("使用说明", 21, true))
             addView(button("连接与首次使用") { connectionHelp() })
-            addView(button("投屏后如何操作应用") {
-                info("投屏后如何操作", "点击原应用图标继续操作，回到桌面不会结束投屏。\n\n更换应用会先结束原投屏。主动停止后，应用任务保留在车机；导航是否继续以地图应用自身行为为准。\n\n部分地图使用自带的仪表画面，两屏的布局可能不同。受保护的视频或不支持投屏的应用可能无法显示。")
-            })
-            addView(text("投屏没有定时结束限制。请在不影响驾驶时操作应用和设置；原生仪表信息异常时及时停止投屏。", 15))
-        }
-        addCard {
-            addView(text("关于 Dashcast", 21, true))
-            addView(text("应用版本 ${BuildConfig.VERSION_NAME}\n配套仪表包为 1.17.0，本次背景更新需要同步更新仪表。", 16))
-            addView(button("查看技术详情") { info("技术详情", control.diagnosticText().takeLast(20000)) })
+            addView(button("技术详情") { info("技术详情", control.diagnosticText().takeLast(20000)) })
+            addView(text("本应用 ${BuildConfig.VERSION_NAME}。仪表沿用1.17.0配套包；操作窗口与高清采样更新无需重复刷仪表。", 15))
         }
     }
 
@@ -382,7 +366,7 @@ class ProductActivity : Activity() {
             }.also { line.addView(it,LinearLayout.LayoutParams(dp(64),dp(48)).apply { marginStart=dp(16) }) }
             addView(line)
             addView(text("开启后，可在支持投屏的应用中填写屏幕名发送画面。开关不改变仪表，关闭也不打断当前投屏。",16))
-            addView(text("定制地图缺少原按钮时，启用应用的无障碍服务即可显示地图投屏入口。切到其他应用后自动隐藏。",15))
+            addView(text("开启后管理定制地图的投屏入口，切到其他应用后隐藏。与从原图标继续操作分别管理。",15))
             accessState = text(ExternalDisplayAccess.message,15).also { addView(it) }
             copyScreenName = button("复制屏幕名") {
                 if (!ExternalDisplayAccess.ready()) {
@@ -437,7 +421,11 @@ class ProductActivity : Activity() {
         val active = state == ProjectionSessionController.State.STARTING || state == ProjectionSessionController.State.STREAMING
         sourceLabel?.text = if (active) control.activeSourceLabel() ?: "正在准备应用"
             else ProductAppCatalog.select(apps, settings.target)?.label ?: "还未选择应用"
-        mirror?.visibility = if (active && MirrorBridge.current()?.endpoint != null) View.VISIBLE else View.GONE
+        val workspace = MirrorWorkspace.current()
+        val pendingWindow = workspace?.stage == MirrorWorkspace.Stage.PREPARING ||
+            workspace?.stage == MirrorWorkspace.Stage.STARTING
+        mirror?.visibility = if (active && MirrorBridge.current()?.endpoint != null || pendingWindow) View.VISIBLE else View.GONE
+        mirror?.text = if (pendingWindow) "查看启动进度" else "继续操作"
         reflectingRole = true
         try {
             if (!control.busy) { roleSwitch?.isChecked = usb.observed }

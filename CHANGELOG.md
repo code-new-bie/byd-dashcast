@@ -1,5 +1,13 @@
 # 改动摘要
 
+## 1.18.0
+
+- Open the operation workspace immediately, including cold launch, waiting, retry and cancellation.
+- Render one hosted task at two supersampled source profiles, then independently fit the primary mirror and existing instrument carrier.
+- Keep source geometry stable across consumer attach, pause, resume and keyboard changes; preserve inverse touch mapping and original-icon routing.
+- Consolidate management into three tabs and keep external map/named-display paths intact. Reuse the exact 1.17.0 instrument firmware.
+- [交互、升级和验证范围](docs/PRODUCT_1.18.0.md)。
+
 ## 1.17.0
 
 - Fix native Image2D content scaling so supplied background RGB/alpha cover the intended area.
