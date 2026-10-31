@@ -20,8 +20,8 @@ internal object MirrorWorkspace {
     }
 
     fun open(context: Context) {
-        context.startActivity(Intent(context, MirrorActivity::class.java).addFlags(
-            Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+        context.startActivity(Intent(context, ProductActivity::class.java).putExtra("page", 0).addFlags(
+            Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),
             ActivityOptions.makeBasic().setLaunchDisplayId(0).toBundle())
     }
 

@@ -1,5 +1,13 @@
 # 改动摘要
 
+## 1.19.0
+
+- Embed the same-task operation window in the cast tab, with top navigation and one bottom action area.
+- Preserve complete source aspect, inverse input mapping, keyboard resizing and both supersampled profiles.
+- Route original icons to the existing cast tab; keep background readiness from stealing focus or switching tabs.
+- Keep application browsing separate from confirmed replacement; remove the duplicate full/small preference from settings.
+- Reuse the exact complete 1.17.0 instrument firmware. [交互与升级](docs/PRODUCT_1.19.0.md)。
+
 ## 1.18.0
 
 - Open the operation workspace immediately, including cold launch, waiting, retry and cancellation.

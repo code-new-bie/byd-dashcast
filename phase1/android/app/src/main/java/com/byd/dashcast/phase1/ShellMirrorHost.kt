@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * @date 2026/10/25
  */
 internal class ShellMirrorHost(private val ticket: String, private val appUid: Int, private val displayId: Int,
-    private var width: Int, private var height: Int) : Binder(), AutoCloseable {
+    private var width: Int, private var height: Int, private val focusInput: () -> Unit = {}) : Binder(), AutoCloseable {
     val sinks = MirrorSinkMailbox()
     private var callback: IBinder? = null
     private val closed = AtomicBoolean()
@@ -122,7 +122,11 @@ internal class ShellMirrorHost(private val ticket: String, private val appUid: I
                 return
             }
         }
-        if (event.actionMasked == MotionEvent.ACTION_DOWN) { touchDown = true }
+        if (event.actionMasked == MotionEvent.ACTION_DOWN) {
+            val identity = clearCallingIdentity()
+            try { focusInput() } finally { restoreCallingIdentity(identity) }
+            touchDown = true
+        }
         if (!touchDown) { return }
         if (event.actionMasked !in setOf(MotionEvent.ACTION_DOWN, MotionEvent.ACTION_UP, MotionEvent.ACTION_MOVE,
                 MotionEvent.ACTION_CANCEL, MotionEvent.ACTION_POINTER_DOWN, MotionEvent.ACTION_POINTER_UP)) { return }

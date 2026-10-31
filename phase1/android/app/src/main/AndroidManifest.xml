@@ -40,6 +40,8 @@
             android:name=".MirrorActivity"
             android:exported="true"
             android:permission="android.permission.DUMP"
+            android:theme="@android:style/Theme.NoDisplay"
+            android:noHistory="true"
             android:launchMode="singleTop"
             android:configChanges="orientation|screenSize|keyboardHidden" />
         <service
@@ -57,6 +59,8 @@
             android:foregroundServiceType="connectedDevice" />
         <activity
             android:name=".ProductActivity"
+            android:launchMode="singleTop"
+            android:configChanges="orientation|screenSize|keyboardHidden"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

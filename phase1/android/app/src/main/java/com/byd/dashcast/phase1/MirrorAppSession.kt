@@ -80,7 +80,9 @@ internal class MirrorAppSession @JvmOverloads constructor(surface: Surface, entr
             if (task == null || task.display != displayId) { throw IOException("MIRROR_APP_START_UNCONFIRMED") }
             val appUid = context.packageManager.getApplicationInfo(BuildConfig.APPLICATION_ID, 0).uid
             if (appUid / 100000 != user) { throw IOException("MIRROR_ACTIVE_USER_CHANGED") }
-            host = ShellMirrorHost(ticket, appUid, displayId, width, height).also { it.announce(context) }
+            host = ShellMirrorHost(ticket, appUid, displayId, width, height) {
+                access.focusInput(owner.taskId, displayId, entry.packageName, user)
+            }.also { it.announce(context) }
             launches = MirrorLaunchObserver(entry.packageName, user, appUid,
                 context.packageManager.getApplicationInfo(entry.packageName, 0).uid)
             fence.changed(System.nanoTime())
@@ -138,11 +140,10 @@ internal class MirrorAppSession @JvmOverloads constructor(surface: Surface, entr
             if ((icon != null || pendingLaunch) && task != null && now - lastRoute >= 500_000_000L) {
                 if (icon != null && owner.disposableIconTask(icon)) { exact.removeMirrorIconTask(icon, owner) }
                 endpoint.notifyApp(MirrorWire.SHOW)
-                // Shell-started, DUMP-protected activity also works when Android 10 blocks a
-                // background application start. This is fixed to our own mirror component.
+                // Only a verified original-icon action brings the cast tab to the foreground.
                 RemoteDisplaySession.launch(listOf("/system/bin/am", "start-activity", "--display", "0",
-                    "--user", user.toString(), "-n", BuildConfig.APPLICATION_ID + "/" + MirrorActivity::class.java.name,
-                    "-f", "0x30020000"))
+                    "--user", user.toString(), "-n", BuildConfig.APPLICATION_ID + "/" + ProductActivity::class.java.name,
+                    "-f", "0x34000000", "--ei", "page", "0"))
                 lastRoute = now
                 pendingLaunch = false
                 System.err.println("SHELL_MIRROR_ICON_ROUTED source=verified_task_or_fresh_launcher; no_raw_intent_logged=true")

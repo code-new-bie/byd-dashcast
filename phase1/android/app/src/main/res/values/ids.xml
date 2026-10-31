@@ -4,4 +4,9 @@
     <item name="workspace_controls" type="id" />
     <item name="workspace_status" type="id" />
     <item name="workspace_retry" type="id" />
+    <item name="embedded_cast_window" type="id" />
+    <item name="product_app_back" type="id" />
+    <item name="product_mode_full" type="id" />
+    <item name="product_mode_small" type="id" />
+    <item name="product_mode_note" type="id" />
 </resources>

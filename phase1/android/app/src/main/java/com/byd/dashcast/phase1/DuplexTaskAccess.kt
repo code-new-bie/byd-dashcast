@@ -14,6 +14,13 @@ internal class DuplexTaskAccess {
     fun user(): Int = access.currentUser()
     fun tasks(): List<AppTaskPolicy.Task> = access.projectionTasks()
 
+    /** Only a live user gesture may focus the exact hosted task, without moving it to display 0. */
+    fun focusInput(taskId: Int, display: Int, packageName: String, user: Int) {
+        val current = requireTask(taskId, packageName, user) ?: throw IOException("MIRROR_INPUT_TASK_LOST")
+        if (display <= 0 || current.display != display) { throw IOException("MIRROR_INPUT_DISPLAY_CHANGED") }
+        call("setFocusedTask", arrayOf(Int::class.javaPrimitiveType!!), current.id)
+    }
+
     fun host(task: AppTaskPolicy.Task, display: Int, packageName: String, user: Int) {
         val current = requireTask(task.id, packageName, user) ?: throw IOException("APP_DUPLEX_TASK_LOST")
         if (current.display == display) { return }

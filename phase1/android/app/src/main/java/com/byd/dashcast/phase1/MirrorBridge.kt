@@ -1,7 +1,6 @@
 package com.byd.dashcast.phase1
 
 import android.content.BroadcastReceiver
-import android.app.ActivityOptions
 import android.content.Context
 import android.content.Intent
 import android.os.Binder
@@ -120,9 +119,7 @@ internal object MirrorBridge {
             return
         }
         try {
-            context.startActivity(Intent(context, MirrorActivity::class.java)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or
-                    Intent.FLAG_ACTIVITY_SINGLE_TOP), ActivityOptions.makeBasic().setLaunchDisplayId(0).toBundle())
+            MirrorWorkspace.open(context)
         } catch (error: RuntimeException) { message = "镜像页面未能打开，请查看诊断"; logFailure(error) }
     }
 

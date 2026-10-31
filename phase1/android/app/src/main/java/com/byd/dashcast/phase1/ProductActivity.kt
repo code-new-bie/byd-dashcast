@@ -17,6 +17,9 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
+import android.view.WindowManager
+import android.view.inputmethod.InputMethodManager
 import android.view.accessibility.AccessibilityManager
 import android.widget.Button
 import android.widget.EditText
@@ -39,7 +42,12 @@ class ProductActivity : Activity() {
     private var sourceLabel: TextView? = null
     private var primary: Button? = null
     private var chooseApp: Button? = null
-    private var mirror: Button? = null
+    private lateinit var embedded: EmbeddedCastView
+    private var consumerResumed = false
+    private var appBack: Button? = null
+    private var fullMode: Button? = null
+    private var smallMode: Button? = null
+    private var modeNote: TextView? = null
     private var export: Button? = null
     private var roleSwitch: Switch? = null
     private var roleState: TextView? = null
@@ -71,6 +79,7 @@ class ProductActivity : Activity() {
         super.onCreate(savedInstanceState)
         settings = ProductSettings(this)
         control = ProductController.get(this)
+        embedded = EmbeddedCastView(this)
         apps = ProductAppCatalog.load(this)
         page = savedInstanceState?.getInt("page")?.coerceIn(0, 2) ?: intent.getIntExtra("page", 0).coerceIn(0, 2)
         query = savedInstanceState?.getString("query").orEmpty()
@@ -82,13 +91,20 @@ class ProductActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        consumerResumed = true
+        embedded.setConsumerVisible(page == 0)
         main.removeCallbacks(refresh)
         main.post(refresh)
     }
-    override fun onPause() { main.removeCallbacks(refresh); super.onPause() }
+    override fun onPause() {
+        consumerResumed = false; embedded.setConsumerVisible(false)
+        main.removeCallbacks(refresh); super.onPause()
+    }
+    override fun onDestroy() { embedded.setConsumerVisible(false); super.onDestroy() }
     override fun onNewIntent(intent: android.content.Intent) {
         super.onNewIntent(intent); setIntent(intent)
-        page = intent.getIntExtra("page", 0).coerceIn(0, 2); build()
+        val next = intent.getIntExtra("page", 0).coerceIn(0, 2)
+        if (page != next) { navigate(next) } else { updateStatus() }
     }
     override fun onSaveInstanceState(outState: Bundle) {
         outState.putInt("page", page)
@@ -99,76 +115,82 @@ class ProductActivity : Activity() {
     }
     @Deprecated("Vehicle runs Android 10 legacy back dispatch")
     override fun onBackPressed() {
-        if (page != 0) { navigate(0) } else { super.onBackPressed() }
+        if (page != 0) { navigate(0) } else if (!embedded.applicationBack()) { super.onBackPressed() }
     }
-    private fun navigate(next: Int) { page = next; build() }
+    private fun navigate(next: Int) { if (page != next) { page = next; build() } }
 
     private fun build() {
         val oldY = if (renderedPage == page) scroll?.scrollY ?: 0 else 0
+        (currentFocus as? EditText)?.let {
+            (getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager).hideSoftInputFromWindow(it.windowToken, 0)
+            it.clearFocus()
+        }
+        embedded.setConsumerVisible(false)
+        (embedded.parent as? ViewGroup)?.removeView(embedded)
         headline = null; connection = null; detail = null; sourceLabel = null
-        primary = null; chooseApp = null; mirror = null; export = null
+        primary = null; chooseApp = null; appBack = null; export = null
+        fullMode = null; smallMode = null; modeNote = null; scroll = null
         roleSwitch = null; roleState = null
         accessSwitch = null; accessState = null; copyScreenName = null
         window.statusBarColor = canvas
         window.navigationBarColor = canvas
+        window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         window.decorView.systemUiVisibility = if (light) View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR else 0
-        val root = column().apply { setBackgroundColor(canvas); setPadding(dp(18), dp(10), dp(18), dp(10)) }
+        val root = column().apply {
+            setBackgroundColor(canvas); setPadding(dp(18), dp(10), dp(18), dp(10))
+            isFocusableInTouchMode = true; requestFocus()
+        }
         val header = row()
-        header.addView(text("Dashcast", 27, true).apply { minHeight = dp(52) }, LinearLayout.LayoutParams(0, -2, 1f))
-        header.addView(text("仪表投屏", 16))
-        root.addView(header)
-        val shell = LinearLayout(this).apply { orientation = if (wide) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL }
-        val nav = LinearLayout(this).apply { orientation = if (wide) LinearLayout.VERTICAL else LinearLayout.HORIZONTAL }
+        header.addView(text("Dashcast", 23, true).apply { minHeight = dp(52) }, LinearLayout.LayoutParams(0, -2, 1f))
+        val nav = row()
         listOf("投屏", "应用", "设置").forEachIndexed { index, label ->
             nav.addView(button(label, index == page) { navigate(index) }.apply {
                 id = intArrayOf(R.id.product_tab_home, R.id.product_tab_apps,
                     R.id.product_tab_settings, R.id.product_tab_help)[index]
                 isSelected = index == page
                 contentDescription = "$label${if (index == page) "，当前页面" else ""}"
-            }, if (wide) LinearLayout.LayoutParams(-1, navigationHeight(58)).apply { bottomMargin = dp(12) }
-                else LinearLayout.LayoutParams(0, navigationHeight(52), 1f).apply { marginEnd = if (index == 2) 0 else dp(8) })
+            }, LinearLayout.LayoutParams(0, navigationHeight(52), 1f).apply { marginEnd = if (index == 2) 0 else dp(12) })
         }
-        shell.addView(nav, if (wide) LinearLayout.LayoutParams(dp(144), -1).apply { marginEnd = dp(20) }
-            else LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) })
-        scroll = ScrollView(this).apply { isFillViewport = true; id = R.id.product_scroll }
-        body = column().apply { setPadding(0, dp(2), 0, dp(14)) }
-        scroll!!.addView(body)
-        shell.addView(scroll, if (wide) LinearLayout.LayoutParams(0, -1, 1f) else LinearLayout.LayoutParams(-1, 0, 1f))
-        root.addView(shell, LinearLayout.LayoutParams(-1, 0, 1f))
-        when (page) { 0 -> home(); 1 -> applications(); else -> preferences() }
-        if (page == 0) { homeActions(root) }
+        if (wide) { header.addView(nav, LinearLayout.LayoutParams(dp(340), -2)) }
+        connection = text("", 15).apply { gravity = Gravity.END; maxLines = 2 }
+        header.addView(connection, LinearLayout.LayoutParams(0, -2, 1f).apply { marginStart = dp(12) })
+        root.addView(header)
+        if (!wide) { root.addView(nav, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) }) }
+        if (page == 0) { home(root) }
+        else {
+            scroll = ScrollView(this).apply { isFillViewport = true; id = R.id.product_scroll }
+            body = column().apply { setPadding(0, dp(2), 0, dp(14)) }
+            scroll!!.addView(body)
+            root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
+            if (page == 1) { applications() } else { preferences() }
+        }
         renderedPage = page
         setContentView(root)
-        scroll!!.post { scroll?.scrollTo(0, oldY) }
+        scroll?.post { scroll?.scrollTo(0, oldY) }
         updateStatus()
+        embedded.setConsumerVisible(consumerResumed && page == 0)
     }
 
-    private fun home() {
-        addCard {
-            headline = text("", 27, true).also { it.id = R.id.product_status; addView(it) }
-            connection = text("", 16).also { addView(it) }
-            detail = text("", 16).also { it.id = R.id.product_feedback; addView(it) }
+    private fun home(root: LinearLayout) {
+        val heading = row()
+        sourceLabel = text("", 22, true).apply { maxLines = 1 }
+        headline = text("", 17).apply { id = R.id.product_status; gravity = Gravity.END; maxLines = 1 }
+        heading.addView(sourceLabel, LinearLayout.LayoutParams(0, -2, 1f))
+        heading.addView(headline, LinearLayout.LayoutParams(0, -2, 1f))
+        detail = text("", 15).apply { id = R.id.product_feedback; maxLines = 2 }
+        val actions = column()
+        val buttons = row()
+        primary = button("开始投屏", true) { primaryAction() }.apply { id = R.id.product_primary }
+        chooseApp = button("更换应用") { navigate(1) }.apply { id = R.id.product_choose_app }
+        appBack = button("应用返回") { embedded.applicationBack() }.apply { id = R.id.product_app_back }
+        for (value in listOf(primary, chooseApp, appBack)) {
+            buttons.addView(value, LinearLayout.LayoutParams(0, -2, 1f).apply {
+                if (value != appBack) marginEnd = dp(12)
+            })
         }
-        val panels = LinearLayout(this).apply {
-            orientation = if (wide) LinearLayout.HORIZONTAL else LinearLayout.VERTICAL
-        }
-        val selected = ProductAppCatalog.select(apps, settings.target)
-        val appPanel = card {
-            addView(text("投屏应用", 16))
-            sourceLabel = text(selected?.label ?: "还未选择应用", 27, true).also { addView(it) }
-            addView(text(selected?.let { ProductUiModel.appSummary(it.capability) }
-                ?: "选择一个应用，画面就能显示到仪表。", 16))
-            addView(text("仪表画面：${if (settings.underlay) "全屏" else "小窗"}", 16))
-            mirror = button("继续操作") { MirrorBridge.open(this@ProductActivity) }.also {
-                it.id = R.id.product_open_app; addView(it)
-            }
-        }
-        panels.addView(appPanel, if (wide) LinearLayout.LayoutParams(0, -2, 1.35f).apply { marginEnd = dp(14) }
-            else LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(14) })
-        val connectPanel = card {
-            addView(text("仪表投屏连接", 21, true))
-            val line = row()
-            roleState = text("", 17).also { line.addView(it, LinearLayout.LayoutParams(0, -2, 1f)) }
+        val options = row()
+        val line = row().apply { setPadding(dp(8), 0, dp(8), 0) }
+        line.addView(text("仪表连接", 16), LinearLayout.LayoutParams(0, -2, 1f))
             roleSwitch = makeSwitch(control.connectionState().observed).apply {
                 id = R.id.product_mode_switch
                 contentDescription = "仪表投屏连接，开启用于投屏，关闭请求恢复U盘"
@@ -181,22 +203,34 @@ class ProductActivity : Activity() {
                 }
             }
             line.addView(roleSwitch, LinearLayout.LayoutParams(dp(76), dp(52)))
-            addView(line)
-            addView(text("开启后可投屏；关闭会请求恢复仪表U盘使用，请以仪表提示为准。数据线无需拔插。", 15))
-            addView(button("连接帮助") { connectionHelp() })
+        options.addView(line, LinearLayout.LayoutParams(0, -2, 1f).apply { marginEnd = dp(12) })
+        val modes = column()
+        val modeRow = row()
+        fullMode = button("全屏") { selectMode(true) }.apply { id = R.id.product_mode_full }
+        smallMode = button("小窗") { selectMode(false) }.apply { id = R.id.product_mode_small }
+        modeRow.addView(fullMode, LinearLayout.LayoutParams(0, -2, 1f).apply { marginEnd = dp(12) })
+        modeRow.addView(smallMode, LinearLayout.LayoutParams(0, -2, 1f))
+        modes.addView(modeRow)
+        modeNote = text("", 13).apply { id = R.id.product_mode_note; gravity = Gravity.END }
+        modes.addView(modeNote)
+        options.addView(modes, LinearLayout.LayoutParams(0, -2, 1f))
+        if (wide) {
+            val strip = row()
+            strip.addView(buttons, LinearLayout.LayoutParams(0, -2, 1f).apply { marginEnd = dp(24) })
+            strip.addView(options, LinearLayout.LayoutParams(0, -2, 1f))
+            actions.addView(strip)
+        } else {
+            actions.addView(buttons); actions.addView(options)
         }
-        panels.addView(connectPanel, if (wide) LinearLayout.LayoutParams(0, -2, 1f) else LinearLayout.LayoutParams(-1, -2))
-        body.addView(panels)
+        embedded.palette(surface, ink)
+        embedded.refresh(settings.underlay)
+        root.addView(CastWorkspaceLayout(this, heading, embedded, actions, detail!!),
+            LinearLayout.LayoutParams(-1, 0, 1f))
     }
 
-    private fun homeActions(root: LinearLayout) {
-        // Keep cancel/stop reachable even on short displays, with large text, or after scrolling.
-        val actions = row()
-        chooseApp = button("更换应用") { navigate(1) }.also { it.id = R.id.product_choose_app }
-        actions.addView(chooseApp, LinearLayout.LayoutParams(0, -2, 1f).apply { marginEnd = dp(12) })
-        primary = button("开始投屏", true) { primaryAction() }.also { it.id = R.id.product_primary }
-        actions.addView(primary, LinearLayout.LayoutParams(0, -2, 1.3f))
-        root.addView(actions, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(12) })
+    private fun selectMode(full: Boolean) {
+        settings.underlay = full
+        updateStatus()
     }
 
     private fun primaryAction() {
@@ -285,15 +319,25 @@ class ProductActivity : Activity() {
         actions.addView(button(if (app.component in favorites) "已收藏" else "收藏") {
             settings.toggleFavorite(app.component); redraw()
         }, LinearLayout.LayoutParams(if (wide) dp(90) else 0, -2, if (wide) 0f else 1f).apply { marginEnd = dp(12) })
-        val selection = if (!app.capability.allowed) "查看说明" else if (settings.target == app.component) "已选择" else "选择"
+        val current = MirrorWorkspace.current()
+        val sameTask = current?.target?.component() == app.component &&
+            current.stage == MirrorWorkspace.Stage.RUNNING && MirrorBridge.current()?.endpoint != null
+        val selection = when {
+            !app.capability.allowed -> "查看说明"
+            sameTask -> "返回投屏"
+            ProjectionService.active() -> "更换并投屏"
+            else -> "选择并开始"
+        }
         actions.addView(button(selection, app.capability.allowed) {
             if (!app.capability.allowed) {
                 control.recordAppCapability(app)
                 AlertDialog.Builder(this@ProductActivity).setTitle(app.label)
                     .setMessage(ProductUiModel.appIssue(app.capability)).setPositiveButton("知道了", null).show()
             } else if (presentation(app).canChooseApp) {
-                if (settings.target != app.component) { control.changingTarget() }
                 settings.target = app.component; navigate(0)
+                if (sameTask) { updateStatus() }
+                else if (!settings.setupComplete) { firstRun() }
+                else { control.startWorkspace(app.target()) }
             } else { Toast.makeText(this@ProductActivity, "请等当前操作结束后再更换应用。", Toast.LENGTH_SHORT).show() }
         }, LinearLayout.LayoutParams(if (wide) dp(100) else 0, -2, if (wide) 0f else 1f))
         content.addView(actions, LinearLayout.LayoutParams(if (wide) -2 else -1, -2).apply { if (!wide) topMargin = dp(8) })
@@ -302,15 +346,9 @@ class ProductActivity : Activity() {
 
     private fun preferences() {
         body.addView(text("投屏设置", 27, true))
-        body.addView(text("画面设置在下次投屏时生效。", 16))
         externalAccessCard()
         addCard {
-            addView(text("仪表画面", 21, true))
-            choices(this, "画面大小", listOf("全屏", "小窗"), if (settings.underlay) 0 else 1) {
-                settings.underlay = it == 0; build()
-            }
-            addView(text("全屏扩大显示范围；小窗保留周围仪表布局。车速、挡位和续航等信息由仪表正常显示。", 16))
-            addView(text("应用会按所选画面布局。车机操作窗口按相同比例尽量放大，两端均从高清画面生成。", 16))
+            addView(text("其他接入的画面", 21, true))
             addView(button(if (advancedPicture) "收起其他接入选项" else "其他接入的画面选项") {
                 advancedPicture = !advancedPicture; build()
             }.apply { id = R.id.product_picture_more })
@@ -352,7 +390,7 @@ class ProductActivity : Activity() {
         addCard {
             val line = row().apply { gravity = Gravity.CENTER_VERTICAL }
             line.addView(text("应用内投屏接入",21,true),LinearLayout.LayoutParams(0,-2,1f))
-            accessSwitch = Switch(this@ProductActivity).apply {
+            accessSwitch = makeSwitch(ExternalDisplayAccess.enabled()).apply {
                 id = R.id.product_external_access
                 textOn = ""; textOff = ""; showText = false
                 isChecked = ExternalDisplayAccess.enabled()
@@ -363,7 +401,7 @@ class ProductActivity : Activity() {
                         else { ExternalDisplayService.setEnabled(this@ProductActivity,checked) }
                     }
                 }
-            }.also { line.addView(it,LinearLayout.LayoutParams(dp(64),dp(48)).apply { marginStart=dp(16) }) }
+            }.also { line.addView(it,LinearLayout.LayoutParams(dp(76),dp(52)).apply { marginStart=dp(16) }) }
             addView(line)
             addView(text("开启后，可在支持投屏的应用中填写屏幕名发送画面。开关不改变仪表，关闭也不打断当前投屏。",16))
             addView(text("开启后管理定制地图的投屏入口，切到其他应用后隐藏。与从原图标继续操作分别管理。",15))
@@ -422,10 +460,18 @@ class ProductActivity : Activity() {
         sourceLabel?.text = if (active) control.activeSourceLabel() ?: "正在准备应用"
             else ProductAppCatalog.select(apps, settings.target)?.label ?: "还未选择应用"
         val workspace = MirrorWorkspace.current()
-        val pendingWindow = workspace?.stage == MirrorWorkspace.Stage.PREPARING ||
-            workspace?.stage == MirrorWorkspace.Stage.STARTING
-        mirror?.visibility = if (active && MirrorBridge.current()?.endpoint != null || pendingWindow) View.VISIBLE else View.GONE
-        mirror?.text = if (pendingWindow) "查看启动进度" else "继续操作"
+        if (workspace?.stage == MirrorWorkspace.Stage.STOPPING && !control.busy &&
+            ProjectionService.readyForNewService() && MirrorBridge.current() == null) { MirrorWorkspace.stopped() }
+        if (page == 0) { embedded.refresh(settings.underlay) }
+        appBack?.isEnabled = MirrorBridge.current()?.endpoint != null
+        listOf(fullMode, smallMode).forEachIndexed { index, value ->
+            val selected = settings.underlay == (index == 0)
+            value?.isSelected = selected
+            value?.isEnabled = !control.busy
+            value?.setTextColor(if (selected) Color.WHITE else ink)
+            value?.background = shape(if (selected) accent else surface, if (selected) accent else border)
+        }
+        modeNote?.text = "${if (active || control.busy) "下次使用" else "仪表画面"}${if (settings.underlay) "全屏" else "小窗"}"
         reflectingRole = true
         try {
             if (!control.busy) { roleSwitch?.isChecked = usb.observed }
@@ -437,6 +483,7 @@ class ProductActivity : Activity() {
         reflectingAccess = true
         try {
             accessSwitch?.isChecked = ExternalDisplayAccess.enabled()
+            accessSwitch?.trackDrawable?.setTint(if (accessSwitch?.isChecked == true) accent else border)
             accessState?.text = ExternalDisplayAccess.message
             copyScreenName?.visibility = if (ExternalDisplayAccess.enabled()) View.VISIBLE else View.GONE
             copyScreenName?.isEnabled = ExternalDisplayAccess.ready()
