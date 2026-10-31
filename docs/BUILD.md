@@ -1,14 +1,14 @@
 # 构建与复现
 
-## 当前1.16.0：所有者背景与显示屏共存
+## 当前1.17.0：原生图片布局、完整内容与地图按钮
 
-APK code66，既有JDK/SDK/Gradle工具链不变。仪表组件使用：
+APK code67，既有JDK/SDK/Gradle工具链不变。仪表组件使用：
 
 ```text
-python tools/build_user_background_components.py --hmi ORIGINAL_HMI --kzb ORIGINAL_KZB --scene ORIGINAL_3DSCREEN_KZB --toc ORIGINAL_TOC --receiver RECEIVER_120 --backgrounds assets/backgrounds --output NEW_DIRECTORY
+python tools/build_projection_fit_components.py --hmi ORIGINAL_HMI --kzb ORIGINAL_KZB --scene ORIGINAL_3DSCREEN_KZB --toc ORIGINAL_TOC --receiver RECEIVER_120 --backgrounds assets/backgrounds --output NEW_DIRECTORY
 ```
 
-背景四原图随源码提供，属于所有者新设计；其精确哈希受检查，PNG作为二进制复制，不经过文本换行转换。不得用成品补丁文件代替精确原始组件。输出仍为四组件，不是可刷ZIP；原MCU/参考OS/Boot不在该工具中修改。背景采用两个1920×720共用Alpha和两个8×3底色纹理，使用原有绘制模式，不改HMI可执行程序/启动布局。原厂资源保留供停止恢复，活动时完整还原新背景的RGB和Alpha。[用法与边界](PRODUCT_1.16.0.md)。
+背景四原图随源码提供，属于所有者新设计；其精确哈希受检查，PNG作为二进制复制，不经过文本换行转换。不得用成品补丁文件代替精确原始组件。输出仍为四组件，不是可刷ZIP；原MCU/参考OS/Boot不在该工具中修改。背景采用两个1920×720共用Alpha和两个8×3底色纹理，使用原有绘制模式，只修改StartupPrefab中四个图片节点的内容伸缩，不改HMI可执行程序或Boot。原厂资源保留供停止恢复，活动时完整还原新背景的RGB和Alpha。[用法与边界](PRODUCT_1.17.0.md)。
 
 ## 1.15.0：四边背景蒙版与屏幕名接入（历史）
 

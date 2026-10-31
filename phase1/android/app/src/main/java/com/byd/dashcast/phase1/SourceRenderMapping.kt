@@ -13,6 +13,21 @@ internal data class SourceRenderMapping(val content: FloatArray, val source: Flo
             val targetAspect = viewport.physicalAspect
             val sourceAspect = viewport.sourceWidth.toFloat() / viewport.sourceHeight
             val source = floatArrayOf(0f, 0f, 1f, 1f)
+            if (!crop) {
+                val fitted=viewport.readableCandidates().map { area ->
+                    val candidate=area.copyOf()
+                    val aspect=targetAspect*(area[2]/content[2])/(area[3]/content[3])
+                    if (sourceAspect>aspect) {
+                        val h=area[3]*aspect/sourceAspect
+                        candidate[1]+=(area[3]-h)/2;candidate[3]=h
+                    } else {
+                        val w=area[2]*sourceAspect/aspect
+                        candidate[0]+=(area[2]-w)/2;candidate[2]=w
+                    }
+                    candidate
+                }.maxBy { it[2]*it[3] }
+                return SourceRenderMapping(fitted,source)
+            }
             if (crop) {
                 if (sourceAspect > targetAspect) {
                     source[2] = targetAspect / sourceAspect; source[0] = (1f - source[2]) / 2

@@ -1,6 +1,6 @@
 package com.byd.dashcast.phase1
 
-import android.accessibilityservice.AccessibilityService
+import android.content.Context
 import android.graphics.Color
 import android.graphics.PixelFormat
 import android.graphics.drawable.GradientDrawable
@@ -11,19 +11,21 @@ import android.widget.TextView
 /** A map-only fallback when the OEM vehicle-capability gate hides its original button.
  * It never changes the OEM map, vehicle capability, global input focus or Activity controller.
  */
-internal class MapEntryOverlay(private val service: AccessibilityService) {
+internal class MapEntryOverlay(private val service: Context) {
     private var button: TextView? = null
     private val windows = service.getSystemService(WindowManager::class.java)
 
     fun refresh() {
         if (!ExternalDisplayAccess.mapEntryVisible()) { close(); return }
-        val root = service.rootInActiveWindow ?: run { close(); return }
-        val originalVisible = try {
-            if (root.packageName?.toString() != "com.byd.automap") { close(); return }
-            MapButtonPolicy.ids.any { id ->
-                val nodes = root.findAccessibilityNodeInfosByViewId(id)
-                try { nodes.any { it.isVisibleToUser } }
-                finally { @Suppress("DEPRECATION") for (node in nodes) { node.recycle() } }
+        if (!android.provider.Settings.canDrawOverlays(service)) { close(); return }
+        val root = MirrorIconService.mapRoot()
+        val originalVisible = if (root == null) false else try {
+            if (root.packageName?.toString() != "com.byd.automap") { false } else {
+                MapButtonPolicy.ids.any { id ->
+                    val nodes = root.findAccessibilityNodeInfosByViewId(id)
+                    try { nodes.any { it.isVisibleToUser } }
+                    finally { @Suppress("DEPRECATION") for (node in nodes) { node.recycle() } }
+                }
             }
         } finally { @Suppress("DEPRECATION") root.recycle() }
         if (originalVisible) { close(); return }
@@ -38,13 +40,16 @@ internal class MapEntryOverlay(private val service: AccessibilityService) {
                 elevation = dp(4).toFloat()
                 setOnClickListener { MirrorIconService.mapClick(service,false) }
             }
-            val layout = WindowManager.LayoutParams(-2,-2,WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
+            val layout = WindowManager.LayoutParams(-2,-2,WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
                 PixelFormat.TRANSLUCENT).apply {
-                gravity = Gravity.END or Gravity.CENTER_VERTICAL; x=dp(16)
+                gravity = Gravity.START or Gravity.BOTTOM; x=dp(20); y=dp(100)
                 title = "Dashcast map projection entry"
             }
-            try { windows.addView(view,layout); button=view }
+            try {
+                windows.addView(view,layout); button=view
+                ProductController.get(service).recordExternal("MAP_ENTRY_VISIBLE source=owned_overlay position=bottom_left")
+            }
             catch (error: Exception) {
                 ProductController.get(service).recordExternal("MAP_ENTRY_ADD_FAILED type=${error.javaClass.simpleName}")
                 return

@@ -1,5 +1,12 @@
 # 改动摘要
 
+## 1.17.0
+
+- Fix native Image2D content scaling so supplied background RGB/alpha cover the intended area.
+- Preserve complete instrument content within the clear aperture without resizing the primary task.
+- Show a usable bottom-left map shortcut from external access without requiring accessibility.
+
+
 ## 1.16.0 / code66 — 新背景完整合成及显示屏共存（2026-10-30）
 
 - 使用所有者新做的深浅背景，完整1920×720透明度不缩放，底色在视频上方合成；旧背景阴影不再作为活动边缘的颜色来源。停止后恢复原厂背景，原生信息仍在上层。

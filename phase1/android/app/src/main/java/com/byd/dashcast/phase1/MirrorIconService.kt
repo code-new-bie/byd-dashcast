@@ -11,10 +11,9 @@ import java.lang.ref.WeakReference
  */
 class MirrorIconService : AccessibilityService() {
     private var lastMapClick = -1000L
-    private val mapEntry by lazy { MapEntryOverlay(this) }
-    override fun onServiceConnected() { active = WeakReference(this); configure(); mapEntry.refresh() }
+    override fun onServiceConnected() { active = WeakReference(this); configure(); ExternalDisplayService.refreshMapEntry() }
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        mapEntry.refresh()
+        ExternalDisplayService.refreshMapEntry()
         if (event?.eventType == AccessibilityEvent.TYPE_VIEW_CLICKED &&
             event.packageName?.toString() == "com.byd.automap") {
             var node = event.source
@@ -40,8 +39,8 @@ class MirrorIconService : AccessibilityService() {
         val selected = MirrorBridge.current() ?: return
         if (event.packageName?.toString() == selected.packageName) { MirrorBridge.route(selected.packageName) }
     }
-    override fun onInterrupt() { mapEntry.close() }
-    override fun onDestroy() { mapEntry.close(); active = null; super.onDestroy() }
+    override fun onInterrupt() { ExternalDisplayService.refreshMapEntry() }
+    override fun onDestroy() { active = null; ExternalDisplayService.refreshMapEntry(); super.onDestroy() }
 
     private fun configure() {
         val info = serviceInfo ?: return
@@ -55,6 +54,8 @@ class MirrorIconService : AccessibilityService() {
 
     companion object {
         @Volatile private var active: WeakReference<MirrorIconService>? = null
+        fun mapRoot() = active?.get()?.rootInActiveWindow
+        fun connected(): Boolean = active?.get()!=null
         fun mapClick(context: android.content.Context, original: Boolean) {
             val controller = ProductController.get(context)
             controller.recordExternal("MAP_ENTRY_CLICK source=${if (original) "oem" else "fallback"}")
@@ -68,9 +69,10 @@ class MirrorIconService : AccessibilityService() {
                 }
             },1500)
         }
-        fun refresh() { active?.get()?.let { service ->
-            android.os.Handler(service.mainLooper).post { service.configure(); service.mapEntry.refresh() }
-        } }
+        fun refresh() {
+            active?.get()?.let { service -> android.os.Handler(service.mainLooper).post { service.configure() } }
+            ExternalDisplayService.refreshMapEntry()
+        }
     }
 }
 

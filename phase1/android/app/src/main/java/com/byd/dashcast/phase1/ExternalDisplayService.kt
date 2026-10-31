@@ -13,6 +13,10 @@ import android.os.IBinder
 /** User-controlled foreground lifetime for application-name discovery; not a projection session. */
 class ExternalDisplayService : Service() {
     private var generation = 0L
+    private var destroyed = false
+    private val mapEntry by lazy { MapEntryOverlay(this) }
+    private val ui = Handler(android.os.Looper.getMainLooper())
+    override fun onCreate() { super.onCreate(); active=java.lang.ref.WeakReference(this) }
     override fun onBind(intent: Intent?): IBinder? = null
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val enabled = intent?.getBooleanExtra("enabled",false) == true
@@ -30,10 +34,15 @@ class ExternalDisplayService : Service() {
         return START_NOT_STICKY
     }
     override fun onDestroy() {
+        destroyed=true;mapEntry.close(); active=null
         ExternalDisplayAccess.serviceDestroyed()
         super.onDestroy()
     }
     companion object {
+        @Volatile private var active: java.lang.ref.WeakReference<ExternalDisplayService>? = null
+        fun refreshMapEntry() {
+            active?.get()?.let { service -> service.ui.post { if(!service.destroyed) { service.mapEntry.refresh() } } }
+        }
         fun setEnabled(context: Context, enabled: Boolean) {
             context.startForegroundService(Intent(context,ExternalDisplayService::class.java).putExtra("enabled",enabled))
         }

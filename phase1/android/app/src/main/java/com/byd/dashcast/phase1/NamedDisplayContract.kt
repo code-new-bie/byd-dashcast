@@ -70,7 +70,7 @@ internal object NamedWindowPolicy {
     private val uid = Regex("\\bmOwnerUid=(\\d+)")
     private val visibility = Regex("\\bmViewVisibility=(0x[0-9a-fA-F]+|\\d+)")
     private val windowHeader = Regex("^\\s*Window #\\d+ Window\\{.*")
-    private val displaySection = Regex("^\\s*Display: mDisplayId=(\\d+)\\s*$")
+    private val displaySection = Regex("^\\s*Display: mDisplayId=(\\d+)(?:\\s+.*)?$")
     /** Match focus inside the physical display section, not a MeterActivity on a secondary display. */
     fun mainMapFocused(text: String, user: Int): Boolean {
         require(text.length <= MAX_BYTES && user >= 0)

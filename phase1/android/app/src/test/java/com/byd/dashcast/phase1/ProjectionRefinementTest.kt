@@ -85,7 +85,11 @@ class ProjectionRefinementTest {
         for (viewport in listOf(ContentViewport.full(), ContentViewport.center())) {
             for (crop in listOf(false, true)) {
                 val mapping = SourceRenderMapping.create(viewport, crop)
-                assertArrayEquals(viewport.normalized(), mapping.content, .0001f)
+                if(crop) { assertArrayEquals(viewport.normalized(), mapping.content, .0001f) }
+                else {
+                    assertTrue(mapping.content[2]<viewport.normalized()[2])
+                    assertTrue(mapping.content[3]<viewport.normalized()[3])
+                }
                 assertArrayEquals(floatArrayOf(0f, 0f, 1f, 1f), mapping.source, .0001f)
             }
         }

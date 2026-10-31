@@ -69,12 +69,11 @@ class Product1120Test {
                 assertEquals(width, viewport.sourceWidth)
                 assertEquals(height, viewport.sourceHeight)
                 val mapping = SourceRenderMapping.create(viewport, ProductSettings.DEFAULT_CROP)
-                assertArrayEquals(viewport.normalized(), mapping.content, 1e-6f)
-                val physicalAspect=if(small)768f/432f else 1696f/456f
-                assertEquals(physicalAspect,width*mapping.source[2]/(height*mapping.source[3]),.00001f)
-                if(small && width==1920 && height==1080) {
-                    assertArrayEquals(floatArrayOf(0f,0f,1f,1f),mapping.source,0f)
-                }
+                assertFalse(ProductSettings.DEFAULT_CROP)
+                assertArrayEquals(floatArrayOf(0f,0f,1f,1f),mapping.source,0f)
+                val physicalAspect=mapping.content[2]*1920f/(mapping.content[3]*720f)*
+                    (if(small) .4f/.6f else 1f)
+                assertEquals(width.toFloat()/height,physicalAspect,.00001f)
                 // Main control always fits the complete source to its own client
                 // area; the instrument's crop does not modify either dimension.
                 val mirror = MirrorGeometry.fit(width, height, width, height)

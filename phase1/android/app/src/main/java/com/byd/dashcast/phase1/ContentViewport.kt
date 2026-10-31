@@ -28,6 +28,19 @@ internal data class ContentViewport @JvmOverloads constructor(
 
     fun withSourceSize(width: Int, height: Int): ContentViewport = copy(sourceWidth=width,sourceHeight=height)
 
+    /** Complete content stays within the supplied aperture; the main task is unchanged. */
+    fun readableCandidates(): List<FloatArray> {
+        fun box(x: Float,y: Float,w: Float,h: Float) =
+            floatArrayOf(x/1920f,(720f-y-h)/720f,w/1920f,h/720f)
+        return when {
+            encodedLeft==112 && encodedTop==112 && encodedWidth==1696 && encodedHeight==456 -> listOf(
+                box(420f,140f,1080f,396f),box(260f,159f,1400f,375f))
+            encodedLeft==0 && encodedTop==0 && encodedWidth==1920 && encodedHeight==720 -> listOf(
+                box(60f,40f,1800f,640f))
+            else -> listOf(normalized())
+        }
+    }
+
     companion object {
         @JvmStatic fun full(): ContentViewport = ContentViewport(1696, 456, 112, 112, 1696, 456)
         /** Historical carrier fixture sizes; live generic apps use forBusiness instead. */

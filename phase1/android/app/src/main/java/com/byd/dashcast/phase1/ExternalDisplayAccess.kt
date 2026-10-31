@@ -198,9 +198,12 @@ internal object ExternalDisplayAccess {
         val oldOwners = owners
         healthy = snapshot.first; owners = snapshot.second; mainMapFocused = snapshot.third
         if (oldHealthy != healthy || oldOwners != owners) {
-            record("EXTERNAL_DISPLAY_OBSERVATION display=$observedDisplayId healthy=$healthy applications=${owners.size}")
+            record("EXTERNAL_DISPLAY_OBSERVATION display=$observedDisplayId healthy=$healthy applications=${owners.size} map_focused=$mainMapFocused")
         }
-        if (hadMapEntry != mapEntryVisible()) { MirrorIconService.refresh() }
+        if (hadMapEntry != mapEntryVisible()) {
+            record("MAP_ENTRY_ELIGIBILITY focused=$mainMapFocused ready=$healthy enabled=$desired overlay_permission=${android.provider.Settings.canDrawOverlays(checkNotNull(context))} accessibility=${MirrorIconService.connected()}")
+            MirrorIconService.refresh()
+        }
         if (!desired && captureTicket == null && owners.isEmpty()) {
             ExternalDisplayWire.command(host,ticket,ExternalDisplayWire.RELEASE)
             hostStop?.set(true)

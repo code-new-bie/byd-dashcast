@@ -105,6 +105,23 @@ internal class ExternalHostEndpoint(private val ticket: String) : Binder(), Auto
     }
 
     fun announce() {
+        // The map shortcut belongs to the enabled access service. It must not
+        // depend on an unrelated accessibility service already being enabled.
+        try {
+            check(Process.myUid()==2000)
+            val packageName=BuildConfig.APPLICATION_ID
+            check(packageName.matches(Regex("com\\.byd\\.dashcast\\.phase1(?:\\.debug)?")))
+            val request=ProcessBuilder("/system/bin/appops","set","--user",user.toString(),
+                packageName,"SYSTEM_ALERT_WINDOW","allow").redirectErrorStream(true).start()
+            try {
+                BoundedProcessOutput.read(request,2500,8192,true)
+                if (request.exitValue()!=0) { throw IOException("MAP_ENTRY_PERMISSION_REJECTED") }
+                System.err.println("MAP_ENTRY_PERMISSION_REQUEST completed=true own_application_only=true")
+            } finally { if (request.isAlive) { request.destroyForcibly() } }
+        } catch (error: Exception) {
+            if (error is InterruptedException) { Thread.currentThread().interrupt() }
+            System.err.println("MAP_ENTRY_PERMISSION_REQUEST completed=false type=${error.javaClass.simpleName}")
+        }
         val control = Bundle().apply { putBinder("endpoint", this@ExternalHostEndpoint) }
         context.sendBroadcast(Intent().setClassName(BuildConfig.APPLICATION_ID, ExternalDisplayReceiver::class.java.name)
             .putExtra("kind", "host").putExtra("ticket", ticket).putExtra("control", control))
