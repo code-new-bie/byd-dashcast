@@ -1,10 +1,11 @@
 {
   "snapshot_version": "1.19.0",
-  "snapshot_date": "2026-10-30",
+  "snapshot_date": "2026-11-01",
+  "instrument_component_version": "1.19.1",
   "ncm_original_author_confirmed": true,
   "project_license": "NOT_SELECTED_BY_OWNER",
   "original_runtime_java_semantics_changed": true,
-  "runtime_changes": "1.17.0 explicitly fills the saved Kanzi image-node content, preserving supplied RGBA while fixing tiny backings and cropped mask UVs. Complete-content instrument mapping protects controls inside the actual aperture without resizing primary business tasks. The owned map button is bottom-left, belongs to enabled external access, and does not require accessibility to be enabled. No complete target QNX or vehicle certification.",
+  "runtime_changes": "APK 1.19.0 retains its embedded cast-tab mirror and supersampled source profiles unchanged. Instrument component 1.19.1 moves the premultiplied-alpha declaration from early window creation to common realization after USAGE and before buffers. Supplied RGBA, KZB, mode 5, geometry, receiver and version files are preserved. No complete target QNX or vehicle certification.",
   "excluded_test_files": [
     "AdbVideoOfflineCheck.java",
     "ReferenceRenderEvidence.java",
@@ -62,8 +63,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "bytes": 38789,
-      "sha256": "e35ff6b192eaff357db2f4387e56fd7694df5718ad841e5ebd7dc16da57f3e06",
+      "bytes": 39544,
+      "sha256": "c4d152ebb3c0f7bab3d4f693f949219ed707f0c49a55b93878c445aa035d2944",
       "origin": "publication/template/CHANGELOG.md",
       "transformations": [
         "CRLF_TO_LF"
@@ -85,8 +86,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 4775,
-      "sha256": "b5448c2edaf4452f87c08d1e29dafaa5b5d285cd2a512c8aaf5dc6208bf5911d",
+      "bytes": 4797,
+      "sha256": "b27a8bf39910d27c1305ecc3830beba5423d3fcd1b25913b8904c4fde0edefb3",
       "origin": "publication/template/README.md",
       "transformations": [
         "CRLF_TO_LF"
@@ -274,6 +275,13 @@
       "transformations": []
     },
     {
+      "path": "analysis/native_usage_alpha.py",
+      "bytes": 3552,
+      "sha256": "0503ab5153a5dcef0a782110ce8822bf1727de797cc7ea97c6b61a0b209158b0",
+      "origin": "analysis/native_usage_alpha.py",
+      "transformations": []
+    },
+    {
       "path": "analysis/navigation_layout.py",
       "bytes": 12217,
       "sha256": "df14939e749b0acafcef87a4775165018d875a3c1f91e6d0d765b315f3e27b9c",
@@ -417,8 +425,8 @@
     },
     {
       "path": "docs/BUILD.md",
-      "bytes": 15524,
-      "sha256": "ca885d8aaec2f94a072471df2eb0d4356d9def01823cfc1cd3667349ccc77638",
+      "bytes": 16386,
+      "sha256": "2ed72ed7b658ef23c901c07c0bddd1706cf91d6e8940baf29bcacd75c693585d",
       "origin": "publication/template/docs/BUILD.md",
       "transformations": [
         "CRLF_TO_LF"
@@ -623,6 +631,13 @@
       "transformations": []
     },
     {
+      "path": "docs/PRODUCT_1.19.1.md",
+      "bytes": 1615,
+      "sha256": "85afb9ba288a3d418c1974dc91720e5d0750d7654e8ca76946cc4fd55ede96fd",
+      "origin": "publication/template/docs/PRODUCT_1.19.1.md",
+      "transformations": []
+    },
+    {
       "path": "docs/PRODUCT_1.2.0.md",
       "bytes": 2876,
       "sha256": "155d916a1c95c21ebdcec22968c2af3190a278abcfa402f8779358d0c40991cf",
@@ -820,8 +835,8 @@
     },
     {
       "path": "docs/USAGE.md",
-      "bytes": 17489,
-      "sha256": "250d81c8b05dbdc806d2033e8c2c86e098e6cd359efa4994fb8ab1c0aa42d81f",
+      "bytes": 17518,
+      "sha256": "ce950ef8563c4e84ae630d9b9ea5b0749b7afadf34d8f362a8984f4268977163",
       "origin": "publication/template/docs/USAGE.md",
       "transformations": [
         "CRLF_TO_LF"
@@ -2960,6 +2975,13 @@
       "transformations": []
     },
     {
+      "path": "tools/patch_window_alpha_usage.py",
+      "bytes": 1702,
+      "sha256": "a870feac40db22422e750e5dac9bd64777e0faacfde6adba1718b3a224f88d23",
+      "origin": "publication/template/tools/patch_window_alpha_usage.py",
+      "transformations": []
+    },
+    {
       "path": "tools/test_native_background.py",
       "bytes": 3215,
       "sha256": "7fc24820cf3388cf901fd25e6ce23a5a0cda804e41b3becdc3be12fa14dddf0d",
@@ -3143,6 +3165,13 @@
       "bytes": 2069,
       "sha256": "27bd012bb4789b7670b28acb051bd662f16d4e9e535ab81b1886aee4fa60dd6c",
       "origin": "publication/template/tools/tests/test_unlimited_overlay_cli.py",
+      "transformations": []
+    },
+    {
+      "path": "tools/tests/test_usage_alpha_cli.py",
+      "bytes": 2143,
+      "sha256": "f8440ba87a13f44465f8472e2daf533997114fb6571ecb89b43db32d48e3a569",
+      "origin": "publication/template/tools/tests/test_usage_alpha_cli.py",
       "transformations": []
     },
     {

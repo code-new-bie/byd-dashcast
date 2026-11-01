@@ -1,5 +1,12 @@
 # 改动摘要
 
+## 仪表1.19.1 / APK1.19.0（2026-11-01）
+
+- Move the HMI premultiplied-alpha declaration from the early create-only hook to common native realization, after USAGE and before buffer creation.
+- Reuse the owned prefix slot and preserve the original USAGE result and factory functions. Keep destination-in mode 5, supplied PNGs, KZB, display geometry and version files unchanged.
+- Reuse the exact 1.19.0 APK. The full instrument package changes only rc_hmi.exe inside app.sv; MCU, reference OS and Boot remain identical.
+- Validate ARM ABI/error paths, the original loader and display lease/filter behavior, plus exact saved-mask GLES pixels and translucent foreground. Vehicle confirmation remains pending. [升级与范围](docs/PRODUCT_1.19.1.md)。
+
 ## 1.19.0
 
 - Embed the same-task operation window in the cast tab, with top navigation and one bottom action area.

@@ -1,5 +1,15 @@
 # 构建与复现
 
+## 当前仪表1.19.1：统一Realize窗口透明度声明，APK仍为1.19.0
+
+先用下列1.17组件CLI复现四组件，再仅对它生成的HMI应用新补丁：
+
+```text
+python tools/patch_window_alpha_usage.py --hmi COMPONENT_DIRECTORY/rc_hmi.exe --output NEW_ALPHA_DIRECTORY
+```
+
+新入口只接受SHA为`5dfef87a7786c3b6af5866b44572c795156473001f0ffa29e7a0f2d3d966b9a2`的精确HMI，拒绝未知、重复补丁和已有输出。输出HMI与报告，不是刷机ZIP；其余三组件沿用。既有32字节自有桩槽改为USAGE之后设置预乘，移除早期create-only钩子，保留原USAGE返回结果；不覆盖原厂菜单函数，不修改BlendMode 5或KZB/背景/版本文件。不能叠加其他“只乘alpha”混合补丁。APK没有源或版本改动，不需要为本次修复重新构建。[升级与验证范围](PRODUCT_1.19.1.md)。
+
 ## 当前1.19.0：投屏页内操作窗口与两档高清采样
 
 APK code69，按既有Android命令构建。ProductActivity持有可挂卸的EmbeddedCastView，真实剩余高宽由CastWorkspaceLayout测量。产品页与窗口使用Kotlin；保留JDK21、SDK35及AGP9.3内置Kotlin。仪表与1.17.0逐字节相同，继续用下列1.17组件CLI复现；不新增MCU、OS、Boot或用户背景改动。[交互与范围](PRODUCT_1.19.0.md)。
