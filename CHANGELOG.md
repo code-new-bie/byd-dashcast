@@ -1,5 +1,12 @@
 # 改动摘要
 
+## 仪表1.19.2 / APK1.19.0（2026-11-01）
+
+- Field feedback still showed a light-theme ring after 1.19.1 A; do not count that version as a vehicle fix.
+- Rebuild B2 from the exact 1.19.0 baseline: three HMI bytes set mode5 to ZERO/SRC_COLOR/ZERO/SRC_ALPHA; replace only two PNGs with white RGB at positive alpha and zero RGB at zero alpha.
+- Keep every aperture alpha byte, curve, theme backing, scene, receiver, native layout and original version file. Reuse the exact APK; keep original MCU/reference OS/Boot.
+- Publish matching source, Thumb assembly, exact masks and a paired component CLI. Native/GLES and reconstruction checks are offline evidence; physical acceptance remains pending. [升级与范围](docs/PRODUCT_1.19.2.md)。
+
 ## 仪表1.19.1 / APK1.19.0（2026-11-01）
 
 - Move the HMI premultiplied-alpha declaration from the early create-only hook to common native realization, after USAGE and before buffer creation.

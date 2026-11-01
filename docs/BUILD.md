@@ -1,6 +1,16 @@
 # 构建与复现
 
-## 当前仪表1.19.1：统一Realize窗口透明度声明，APK仍为1.19.0
+## 当前仪表1.19.2：B2配对组件，APK仍为1.19.0
+
+先用下列1.17组件CLI生成精确基线，再将其中HMI和KZB一起输入：
+
+```text
+python tools/build_b2_matte_components.py --hmi COMPONENT_DIRECTORY/rc_hmi.exe --kzb COMPONENT_DIRECTORY/bic_byd_stha.kzb --masks phase1/qnx/assets/b2 --output NEW_B2_DIRECTORY
+```
+
+入口同时校验HMI、KZB与两张遮罩哈希，拒绝错误基线、1.19.1 A、重复补丁和已有输出；全部验证成功才写入配对组件和报告。HMI只改3字节，KZB只换两资源，保存全部原Alpha、曲线与其他资源。不要把乘数PNG再预乘，不能只换一个组件。输出不是刷机ZIP，原scene/receiver/版本文件不动。[升级与范围](PRODUCT_1.19.2.md)。
+
+## 仪表1.19.1：统一Realize窗口透明度声明（历史，实车未消除暗圈）
 
 先用下列1.17组件CLI复现四组件，再仅对它生成的HMI应用新补丁：
 

@@ -1,11 +1,11 @@
 {
   "snapshot_version": "1.19.0",
   "snapshot_date": "2026-11-01",
-  "instrument_component_version": "1.19.1",
+  "instrument_component_version": "1.19.2",
   "ncm_original_author_confirmed": true,
   "project_license": "NOT_SELECTED_BY_OWNER",
   "original_runtime_java_semantics_changed": true,
-  "runtime_changes": "APK 1.19.0 retains its embedded cast-tab mirror and supersampled source profiles unchanged. Instrument component 1.19.1 moves the premultiplied-alpha declaration from early window creation to common realization after USAGE and before buffers. Supplied RGBA, KZB, mode 5, geometry, receiver and version files are preserved. No complete target QNX or vehicle certification.",
+  "runtime_changes": "APK 1.19.0 remains byte-identical. Instrument 1.19.2 B2 is rebuilt from the exact 1.19.0 pair, not stacked over 1.19.1 A. Mode 5 uses ZERO/SRC_COLOR/ZERO/SRC_ALPHA and two exact white-RGB multiplier PNGs preserve the original aperture alpha and geometry. Original scene, receiver, reference OS, MCU and version files remain. Driver composition is statically analyzed and desktop GLES tested, not vehicle-certified.",
   "excluded_test_files": [
     "AdbVideoOfflineCheck.java",
     "ReferenceRenderEvidence.java",
@@ -63,8 +63,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "bytes": 39544,
-      "sha256": "c4d152ebb3c0f7bab3d4f693f949219ed707f0c49a55b93878c445aa035d2944",
+      "bytes": 40284,
+      "sha256": "a4bd2178062b7edf1cac1fb80066c6d35280331ab3c9f93e5c2c1298f811bb11",
       "origin": "publication/template/CHANGELOG.md",
       "transformations": [
         "CRLF_TO_LF"
@@ -86,8 +86,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 4797,
-      "sha256": "b27a8bf39910d27c1305ecc3830beba5423d3fcd1b25913b8904c4fde0edefb3",
+      "bytes": 4798,
+      "sha256": "afb5bf4270aa0622a2d82622a836295ecf43dab81a451f8ed6b7a0960bcff8e8",
       "origin": "publication/template/README.md",
       "transformations": [
         "CRLF_TO_LF"
@@ -137,6 +137,13 @@
       "bytes": 5703,
       "sha256": "0da54ac5a9c64e9f7d519ab76634a3bc82c76fcf22d786513486cfd367b41feb",
       "origin": "analysis/axes_rim_layout.py",
+      "transformations": []
+    },
+    {
+      "path": "analysis/b2_matte.py",
+      "bytes": 8131,
+      "sha256": "f9a5ae60feccb7b225a59dda19f579283d9c742028e1bc6ac37cb3c8d6a4de8e",
+      "origin": "analysis/b2_matte.py",
       "transformations": []
     },
     {
@@ -425,8 +432,8 @@
     },
     {
       "path": "docs/BUILD.md",
-      "bytes": 16386,
-      "sha256": "2ed72ed7b658ef23c901c07c0bddd1706cf91d6e8940baf29bcacd75c693585d",
+      "bytes": 17142,
+      "sha256": "cb2d5e72a90936b644708cb672ba3899f6b00c107ac8756874dee0718ae6409a",
       "origin": "publication/template/docs/BUILD.md",
       "transformations": [
         "CRLF_TO_LF"
@@ -638,6 +645,13 @@
       "transformations": []
     },
     {
+      "path": "docs/PRODUCT_1.19.2.md",
+      "bytes": 2210,
+      "sha256": "afa310cb6a211c7098f79a2a518b5c3652c492005761521872d358190403f65e",
+      "origin": "publication/template/docs/PRODUCT_1.19.2.md",
+      "transformations": []
+    },
+    {
       "path": "docs/PRODUCT_1.2.0.md",
       "bytes": 2876,
       "sha256": "155d916a1c95c21ebdcec22968c2af3190a278abcfa402f8779358d0c40991cf",
@@ -835,8 +849,8 @@
     },
     {
       "path": "docs/USAGE.md",
-      "bytes": 17518,
-      "sha256": "ce950ef8563c4e84ae630d9b9ea5b0749b7afadf34d8f362a8984f4268977163",
+      "bytes": 17577,
+      "sha256": "7a4813354e4f29b26b8291ee680c4064a3211a3416822c13bf45f9b4be1697c4",
       "origin": "publication/template/docs/USAGE.md",
       "transformations": [
         "CRLF_TO_LF"
@@ -2535,10 +2549,31 @@
       "transformations": []
     },
     {
+      "path": "phase1/qnx/assets/b2/DXCenterDark.png",
+      "bytes": 8362,
+      "sha256": "eb34697ca949808502749f11b591d24f1c7a5346f02695b0104a68a13aabc7de",
+      "origin": "phase1/qnx/assets/b2/DXCenterDark.png",
+      "transformations": []
+    },
+    {
+      "path": "phase1/qnx/assets/b2/DXFullDark.png",
+      "bytes": 22508,
+      "sha256": "b36b53392adb3cbf5cbbff9c558086f9c9219e804e66009ea9eae2a41947cbfe",
+      "origin": "phase1/qnx/assets/b2/DXFullDark.png",
+      "transformations": []
+    },
+    {
       "path": "phase1/qnx/native-hmi/README.md",
       "bytes": 9034,
       "sha256": "328e72e4a6e2d65b6ca7c289a9c55ee529153fcd200a3b1b180d2423f87c7475",
       "origin": "phase1/qnx/native-hmi/README.md",
+      "transformations": []
+    },
+    {
+      "path": "phase1/qnx/native-hmi/background-b2.thumb",
+      "bytes": 234,
+      "sha256": "95129fac18f66632113545591e09857529ac4902865191d320f4f9591738fd9e",
+      "origin": "phase1/qnx/native-hmi/background-b2.thumb",
       "transformations": []
     },
     {
@@ -2773,6 +2808,13 @@
       "transformations": []
     },
     {
+      "path": "tools/build_b2_matte_components.py",
+      "bytes": 2054,
+      "sha256": "4dbeb5092c710269a1765e12f87ccf2990eeeeb5e0926eaa15a61532c9e7fbc4",
+      "origin": "publication/template/tools/build_b2_matte_components.py",
+      "transformations": []
+    },
+    {
       "path": "tools/build_background_mask_components.py",
       "bytes": 2429,
       "sha256": "13bfcc675cce717ebe1c816dd4341199ab9de645b159b7cddd7235b3464e31d4",
@@ -2969,8 +3011,8 @@
     },
     {
       "path": "tools/check_public_tree.py",
-      "bytes": 8502,
-      "sha256": "4e8350301d41cd64dd19f5d29b0f327cca5dc84e71c9b167390e0f27ef4c63f7",
+      "bytes": 8726,
+      "sha256": "f1841a46aa675005c324e509228835830ae43690ef481ecf8db09ee0a9df6ece",
       "origin": "publication/template/tools/check_public_tree.py",
       "transformations": []
     },
@@ -2993,6 +3035,13 @@
       "bytes": 1476,
       "sha256": "6a1e260e8e850155d1195148faca370cd2944c586e0c705d68493c63336af524",
       "origin": "publication/template/tools/tests/test_axes_rim_cli.py",
+      "transformations": []
+    },
+    {
+      "path": "tools/tests/test_b2_matte_cli.py",
+      "bytes": 2216,
+      "sha256": "2304693e58ed0865fcb48690c5e70af0d33b47c852beb9ecffa9d0c23d905569",
+      "origin": "publication/template/tools/tests/test_b2_matte_cli.py",
       "transformations": []
     },
     {
