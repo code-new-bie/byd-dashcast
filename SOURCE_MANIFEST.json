@@ -5,7 +5,7 @@
   "ncm_original_author_confirmed": true,
   "project_license": "NOT_SELECTED_BY_OWNER",
   "original_runtime_java_semantics_changed": true,
-  "runtime_changes": "APK 1.20.2 saves connection/access intents, starts native map entries in their instrument UI, adapts the cast page between stacked and side layouts, gives export feedback, returns to the cast tab after a cold-start host, and creates the named standby display at the selected full/small size. Instrument 1.19.3 keeps the 1.19.2 B2 HMI and full mask and only sets the small DXCenterDark multiplier to RGB=A, because field photos show the small layout composited as premultiplied alpha. Original scene, receiver, reference OS, MCU and version files remain. Neither version is vehicle-certified yet.",
+  "runtime_changes": "APK 1.20.2 saves connection/access intents, starts native map entries in their instrument UI, adapts the cast page between stacked and side layouts, gives export feedback, returns to the cast tab after a cold-start host, and creates the named standby display at the selected full/small size. Instrument 1.19.3 keeps the 1.19.2 B2 HMI and full mask and only sets the small DXCenterDark multiplier to RGB=A, because field photos show the small layout composited as premultiplied alpha. Original scene, receiver, reference OS, MCU and version files remain. Neither version is vehicle-certified yet. The public tree keeps only the current build chain; retired version notes and component tools remain in Git history.",
   "excluded_test_files": [
     "AdbVideoOfflineCheck.java",
     "ReferenceRenderEvidence.java",
@@ -63,17 +63,15 @@
     },
     {
       "path": "CHANGELOG.md",
-      "bytes": 41412,
-      "sha256": "9acd2f85cd6a7326c4528260dbeb9053f8015d9300bc42afddb7366b8e454804",
+      "bytes": 40500,
+      "sha256": "385e4fc3c5cd85304338794bb748451b5b992f3c7c282fa90ddb978f8babc7f3",
       "origin": "publication/template/CHANGELOG.md",
-      "transformations": [
-        "CRLF_TO_LF"
-      ]
+      "transformations": []
     },
     {
       "path": "CONTRIBUTING.md",
-      "bytes": 1039,
-      "sha256": "36b16bd72e4e9478961f9d7e9bc734ec63fef5db6d02dd17799e601ff84c39a0",
+      "bytes": 992,
+      "sha256": "4da4c8870ecf7b74b65ff58bd00e50a21fdfcb22493b98b7303e98786e008463",
       "origin": "publication/template/CONTRIBUTING.md",
       "transformations": []
     },
@@ -86,24 +84,22 @@
     },
     {
       "path": "README.md",
-      "bytes": 4926,
-      "sha256": "3196a56096061df230834172043ae9a01f88f5b910ab48e0f279940cc86e5f65",
+      "bytes": 3167,
+      "sha256": "b2083f1c3ddd3499038ea3a2fe7ef8123275e0ea74dd337bb9e3d9cb8b620614",
       "origin": "publication/template/README.md",
-      "transformations": [
-        "CRLF_TO_LF"
-      ]
+      "transformations": []
     },
     {
       "path": "SECURITY.md",
-      "bytes": 1131,
-      "sha256": "89ce8160870b3a6b08d81dcd81188e1619ed221a1622f7bddc8f609562d3c3e2",
+      "bytes": 1034,
+      "sha256": "907df83883ac8b250b419ec546353c7d3fdc7ab6e1cc92fa6b23117d2b09c8a2",
       "origin": "publication/template/SECURITY.md",
       "transformations": []
     },
     {
       "path": "THIRD_PARTY_NOTICES.md",
-      "bytes": 1409,
-      "sha256": "e8cbfa70fe4435e8c09317dd2cddf9f3e867bdcac742718d6816ebeaf241b03f",
+      "bytes": 1400,
+      "sha256": "2b399c5ef22c154d370d2925c956309cd566da7481cf5714de5d076eda99c449",
       "origin": "publication/template/THIRD_PARTY_NOTICES.md",
       "transformations": []
     },
@@ -175,13 +171,6 @@
       "transformations": []
     },
     {
-      "path": "analysis/composition_native.py",
-      "bytes": 2974,
-      "sha256": "17b32b934472a1cb5eed429c328d2ee89ce6caa5a5330e83c4ea680f9afa6eca",
-      "origin": "analysis/composition_native.py",
-      "transformations": []
-    },
-    {
       "path": "analysis/content_viewport.py",
       "bytes": 612,
       "sha256": "c651e1d531672a5b2c28191b7c91664023eac513caab8af80e422380caeaefa5",
@@ -229,15 +218,6 @@
       "sha256": "bb0261e27fd3c89923caece40c5936c87ea4588899c7af19045130730ada1257",
       "origin": "analysis/expanded_rim_layout.py",
       "transformations": []
-    },
-    {
-      "path": "analysis/f1_display_probe_native.py",
-      "bytes": 4025,
-      "sha256": "cbb27c0652f12b29b83712ba5b98db9a41fe05e2b074cd37f1c83e2bbbb8ef28",
-      "origin": "analysis/f1_display_probe_native.py",
-      "transformations": [
-        "EXTRACT_PURE_F1_OVERLAY_NO_PRIVATE_INPUT_ACCESS"
-      ]
     },
     {
       "path": "analysis/inner_ring_refinement.py",
@@ -289,13 +269,6 @@
       "transformations": []
     },
     {
-      "path": "analysis/native_usage_alpha.py",
-      "bytes": 3552,
-      "sha256": "0503ab5153a5dcef0a782110ce8822bf1727de797cc7ea97c6b61a0b209158b0",
-      "origin": "analysis/native_usage_alpha.py",
-      "transformations": []
-    },
-    {
       "path": "analysis/navigation_layout.py",
       "bytes": 12217,
       "sha256": "df14939e749b0acafcef87a4775165018d875a3c1f91e6d0d765b315f3e27b9c",
@@ -321,13 +294,6 @@
       "bytes": 6492,
       "sha256": "c1bb83edf1c6a64d8285f831276da01a060f762d4f53f45ad6ddff91922f9303",
       "origin": "analysis/product_boot_layout.py",
-      "transformations": []
-    },
-    {
-      "path": "analysis/product_native.py",
-      "bytes": 3888,
-      "sha256": "92bcac7e641845adf4baf190986b36f19716208adade5917bd790bf9ba8a7764",
-      "origin": "analysis/product_native.py",
       "transformations": []
     },
     {
@@ -432,244 +398,23 @@
     },
     {
       "path": "docs/ARCHITECTURE.md",
-      "bytes": 11965,
-      "sha256": "9ca55c2d1b2560295f4981f103e786f59b9a20ede79f7ab9794b334f1e169b58",
+      "bytes": 4052,
+      "sha256": "d9d769cf244a2fe2882f89049e8f853cc794901e7e63a8f29e6536f25c2f2e0c",
       "origin": "publication/template/docs/ARCHITECTURE.md",
       "transformations": []
     },
     {
       "path": "docs/BUILD.md",
-      "bytes": 17912,
-      "sha256": "7432197876048844d422c27a7f7b76f343a2f22c27957f6dc9e4c37241d4cee5",
+      "bytes": 8754,
+      "sha256": "99091c784fe78de68cdc7bee189f38f275b162f4146248e3b838287a02e9b637",
       "origin": "publication/template/docs/BUILD.md",
-      "transformations": [
-        "CRLF_TO_LF"
-      ]
-    },
-    {
-      "path": "docs/INCIDENT_1.14.0_BOOT.md",
-      "bytes": 2106,
-      "sha256": "dc6af3373e6e43d55585a3b3ed195c1d177351be015cd75d2d53ea62b8da0ab7",
-      "origin": "publication/template/docs/INCIDENT_1.14.0_BOOT.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/MIRROR_PROJECTION.md",
-      "bytes": 4069,
-      "sha256": "072480d819e7be109e2a283b63a8875255023927cb9f4c673942cadc2b4ea44c",
-      "origin": "publication/template/docs/MIRROR_PROJECTION.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/PRODUCT_1.0.1.md",
-      "bytes": 2610,
-      "sha256": "8495f830bf5eeb180a42cc6a6f08a641b155a8e0bb868c0b8e19b35538b81ebb",
-      "origin": "publication/template/docs/PRODUCT_1.0.1.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/PRODUCT_1.0.md",
-      "bytes": 4300,
-      "sha256": "17cde31815a58545864854ffa63b29bad124fc0bf5dccc2f50a4e3af1407c5db",
-      "origin": "publication/template/docs/PRODUCT_1.0.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/PRODUCT_1.1.0.md",
-      "bytes": 3570,
-      "sha256": "5d1ba95baee21b885a18972679c82e1035c781bd02b862a03ad79b5ecd0e9d7a",
-      "origin": "publication/template/docs/PRODUCT_1.1.0.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/PRODUCT_1.1.1.md",
-      "bytes": 3799,
-      "sha256": "bba39a91734926da1e02ea438259e4958e502f0c8f79e9b15466b553a6e4f806",
-      "origin": "publication/template/docs/PRODUCT_1.1.1.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/PRODUCT_1.1.2.md",
-      "bytes": 3680,
-      "sha256": "577cc2081758915bdac6a7bba96a77179dc59abb3ca7af85e09ebe8f4e243417",
-      "origin": "publication/template/docs/PRODUCT_1.1.2.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/PRODUCT_1.10.0.md",
-      "bytes": 4378,
-      "sha256": "2d8f1001d90e0b7c5b6ef329de13288a51b03b8efd862e9acf81c97f59da6215",
-      "origin": "publication/template/docs/PRODUCT_1.10.0.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/PRODUCT_1.11.0.md",
-      "bytes": 2691,
-      "sha256": "853ca59163d3ceee6ffc43bf410581f2e7265e96f59be9ab800cae7abf378005",
-      "origin": "publication/template/docs/PRODUCT_1.11.0.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/PRODUCT_1.12.0.md",
-      "bytes": 3146,
-      "sha256": "9f4e73f47d6f8933ef453b9b51be21ea3c9bca4f79c237f18c954afe9474d6c1",
-      "origin": "publication/template/docs/PRODUCT_1.12.0.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/PRODUCT_1.12.1.md",
-      "bytes": 1697,
-      "sha256": "cdb9a7f099b2b4fb5348463d1e331d1467db51907f79500d9cd4da8616aeda15",
-      "origin": "publication/template/docs/PRODUCT_1.12.1.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/PRODUCT_1.12.2.md",
-      "bytes": 1585,
-      "sha256": "3a03c5f6af61cfac116f64266da8abc74c339fea8e9dc0b5aca3f4256afdc0ce",
-      "origin": "publication/template/docs/PRODUCT_1.12.2.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/PRODUCT_1.12.3.md",
-      "bytes": 3427,
-      "sha256": "c992798a6490411d7ee5faec987f35f3f48bd301a38166092205422ebaf0780c",
-      "origin": "publication/template/docs/PRODUCT_1.12.3.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/PRODUCT_1.12.4.md",
-      "bytes": 1890,
-      "sha256": "7d2941ea747a06fb7ded8b20554004712a5d72b60c20779e382100cf4358949d",
-      "origin": "publication/template/docs/PRODUCT_1.12.4.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/PRODUCT_1.12.5.md",
-      "bytes": 1114,
-      "sha256": "ae93b5329adb499b9b9dff93c3b2a6c7179e6d942aaa5da30968661654206586",
-      "origin": "publication/template/docs/PRODUCT_1.12.5.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/PRODUCT_1.12.6.md",
-      "bytes": 987,
-      "sha256": "db81b0c79b89a5cc989928e1562e7a023054c2d4eefb964697ceae818cb38822",
-      "origin": "publication/template/docs/PRODUCT_1.12.6.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/PRODUCT_1.13.0.md",
-      "bytes": 4586,
-      "sha256": "0ca4f991c10aec3304d4a8f8a2b1f0a5a46f44c7c39fc30ec9a32091617ef240",
-      "origin": "publication/template/docs/PRODUCT_1.13.0.md",
-      "transformations": [
-        "CRLF_TO_LF"
-      ]
-    },
-    {
-      "path": "docs/PRODUCT_1.14.0.md",
-      "bytes": 4930,
-      "sha256": "8849f21bd2d0ab9bf73f8593da1b40217724059a6b91ae437f3786e737d8d360",
-      "origin": "publication/template/docs/PRODUCT_1.14.0.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/PRODUCT_1.14.1.md",
-      "bytes": 2401,
-      "sha256": "f5918211a6ed7f90bbba881045720f46a2be2cb00171731035756007e8da5766",
-      "origin": "publication/template/docs/PRODUCT_1.14.1.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/PRODUCT_1.14.2.md",
-      "bytes": 2818,
-      "sha256": "a5a4cd7286414991b591ecb1099f7bfaf3579bf886375f46f180f15b3de98c24",
-      "origin": "publication/template/docs/PRODUCT_1.14.2.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/PRODUCT_1.14.3.md",
-      "bytes": 2987,
-      "sha256": "2bac25fded4ff5e6346c751aede39801629d4f2d4fe603d5ca17a6f809addb8b",
-      "origin": "publication/template/docs/PRODUCT_1.14.3.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/PRODUCT_1.14.4.md",
-      "bytes": 1553,
-      "sha256": "40e12b71abf5631f3113ec43011f07373d174cb870f5ec5e3a039269d8c765b2",
-      "origin": "publication/template/docs/PRODUCT_1.14.4.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/PRODUCT_1.14.5.md",
-      "bytes": 2410,
-      "sha256": "e7f22cbc2897c48488a867083a08d4f4b32da4f80190a556afb6c5bb15f96478",
-      "origin": "publication/template/docs/PRODUCT_1.14.5.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/PRODUCT_1.15.0.md",
-      "bytes": 2650,
-      "sha256": "b3834b0650ebf627c2006df7977e4fab1b456a137a4c9673f408cb7b20d97d45",
-      "origin": "publication/template/docs/PRODUCT_1.15.0.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/PRODUCT_1.16.0.md",
-      "bytes": 2306,
-      "sha256": "83b1335fb1d09797b834f22ab5be1e138de10cbf8f4a929aba0ae769cdf66efd",
-      "origin": "publication/template/docs/PRODUCT_1.16.0.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/PRODUCT_1.17.0.md",
-      "bytes": 2283,
-      "sha256": "5b820b641ca3dc98843678dd229bab7d983ce8ec286502285f5bc8018f30720f",
-      "origin": "publication/template/docs/PRODUCT_1.17.0.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/PRODUCT_1.18.0.md",
-      "bytes": 2730,
-      "sha256": "ebb99eeafcce7081071a05d33a0abc1800987d67356a63b89112fbc5b7dedd45",
-      "origin": "publication/template/docs/PRODUCT_1.18.0.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/PRODUCT_1.19.0.md",
-      "bytes": 1776,
-      "sha256": "a969a489d8a57a6d7aff32b45b8efabcbd6ca9b6f8e4ab5d79f15570a3107738",
-      "origin": "publication/template/docs/PRODUCT_1.19.0.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/PRODUCT_1.19.1.md",
-      "bytes": 1615,
-      "sha256": "85afb9ba288a3d418c1974dc91720e5d0750d7654e8ca76946cc4fd55ede96fd",
-      "origin": "publication/template/docs/PRODUCT_1.19.1.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/PRODUCT_1.19.2.md",
-      "bytes": 2210,
-      "sha256": "afa310cb6a211c7098f79a2a518b5c3652c492005761521872d358190403f65e",
-      "origin": "publication/template/docs/PRODUCT_1.19.2.md",
       "transformations": []
     },
     {
       "path": "docs/PRODUCT_1.19.3.md",
-      "bytes": 2059,
-      "sha256": "804ec2646e7a37c4d10dc5efcbd7848be212f849e95f758a8cefcdfa38c13967",
+      "bytes": 2054,
+      "sha256": "2319fa7db8b29366933dbabfa2309310e79d5c741bf679a174bec53b26aaef3b",
       "origin": "publication/template/docs/PRODUCT_1.19.3.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/PRODUCT_1.2.0.md",
-      "bytes": 2876,
-      "sha256": "155d916a1c95c21ebdcec22968c2af3190a278abcfa402f8779358d0c40991cf",
-      "origin": "publication/template/docs/PRODUCT_1.2.0.md",
       "transformations": []
     },
     {
@@ -680,207 +425,23 @@
       "transformations": []
     },
     {
-      "path": "docs/PRODUCT_1.3.0.md",
-      "bytes": 4027,
-      "sha256": "e6ff2415055656cc754b79c2070d56451d1a38fb7263c0f0d9be687bd953b4f6",
-      "origin": "publication/template/docs/PRODUCT_1.3.0.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/PRODUCT_1.4.0.md",
-      "bytes": 3750,
-      "sha256": "e41248e0b3ab788145741f2a0d7d6d1bb5c81a191fbf8302d9cc3539e404d502",
-      "origin": "publication/template/docs/PRODUCT_1.4.0.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/PRODUCT_1.6.0.md",
-      "bytes": 3018,
-      "sha256": "491e386fdcbf34377d89d8ff6f774bbb9e37bb511975ba9810f0515bd4d3e0fd",
-      "origin": "publication/template/docs/PRODUCT_1.6.0.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/PRODUCT_1.7.0.md",
-      "bytes": 4066,
-      "sha256": "184a445a4b1698a82d120c3fd35da60421d38616983eeddfe2f0ab1c73b97dcf",
-      "origin": "publication/template/docs/PRODUCT_1.7.0.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/PRODUCT_1.7.1.md",
-      "bytes": 2775,
-      "sha256": "1cd7851f168f370c62412424ba93f576e5447f7fa9c12855e45333a024cc4980",
-      "origin": "publication/template/docs/PRODUCT_1.7.1.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/PRODUCT_1.7.2.md",
-      "bytes": 3548,
-      "sha256": "544dee452b188ae555e3787d23f0bbd69e48a934712477a69a92d74246c9e9aa",
-      "origin": "publication/template/docs/PRODUCT_1.7.2.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/PRODUCT_1.7.3.md",
-      "bytes": 3727,
-      "sha256": "aa08709f985db4831c046ba60e77013e8ac3e0a01711879f8441039230629605",
-      "origin": "publication/template/docs/PRODUCT_1.7.3.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/PRODUCT_1.8.0.md",
-      "bytes": 4424,
-      "sha256": "ef26c5d6699e57c59a8db3fea848e6108a1640cf2c5a04723c76db9140e4b6dc",
-      "origin": "publication/template/docs/PRODUCT_1.8.0.md",
-      "transformations": []
-    },
-    {
       "path": "docs/PUBLISHING.md",
-      "bytes": 3422,
-      "sha256": "2819d9a4a5954ce1b94750b572b90a7187986615290cd8cbafec2da85f4562fa",
+      "bytes": 1113,
+      "sha256": "a8f0912b685da965feef7b0a1a7e6d1c05f36e0ee00b8d742448818a9aabc8c5",
       "origin": "publication/template/docs/PUBLISHING.md",
       "transformations": []
     },
     {
-      "path": "docs/TASKS_0.10.0.md",
-      "bytes": 4689,
-      "sha256": "78c4c8636bcd42444168dcbadd6b3fc923da5adbd8d0465372148954863f1740",
-      "origin": "publication/template/docs/TASKS_0.10.0.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/TASKS_0.5.0.md",
-      "bytes": 6223,
-      "sha256": "63c0eccf75ea96f8ae56d66444da38f0f5beccc7deb64751b0cce057a48a9366",
-      "origin": "publication/template/docs/TASKS_0.5.0.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/TASKS_0.6.0.md",
-      "bytes": 2606,
-      "sha256": "febe5e66a699603e9f82ccf2cd1b7496857b5f2a839aa08a0f64dabe6c2cd6d5",
-      "origin": "publication/template/docs/TASKS_0.6.0.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/TASKS_0.7.0.md",
-      "bytes": 1314,
-      "sha256": "fa783bf0fb50b902724792852f208d450c176b8b32fc6a5a8137375e79b8c98d",
-      "origin": "publication/template/docs/TASKS_0.7.0.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/TASKS_0.7.1.md",
-      "bytes": 1441,
-      "sha256": "b09edbf51e2d981106cb990a5a39a974111ca184ce7068a220c1ade1f185b692",
-      "origin": "publication/template/docs/TASKS_0.7.1.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/TASKS_0.7.2.md",
-      "bytes": 1543,
-      "sha256": "eeeda3eeebfa1e6b3d5741f4e34e7806617d970b1edb14defedf442bec3066a8",
-      "origin": "publication/template/docs/TASKS_0.7.2.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/TASKS_0.7.3.md",
-      "bytes": 1481,
-      "sha256": "2c88ee85307a02e26da833b11082840ae9f8d07fa77ddb4af62e6590dde245f6",
-      "origin": "publication/template/docs/TASKS_0.7.3.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/TASKS_0.7.4.md",
-      "bytes": 1485,
-      "sha256": "8d4e93c2bde0a46eebcf3eda2d432f39b060268473d86c5b711e63cda0366f06",
-      "origin": "publication/template/docs/TASKS_0.7.4.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/TASKS_0.7.5.md",
-      "bytes": 1430,
-      "sha256": "c26fc1e9d0a80bfede9bd918868ad9b69486391d7416bd7610f3e9bdd3f0af77",
-      "origin": "publication/template/docs/TASKS_0.7.5.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/TASKS_0.7.6.md",
-      "bytes": 1539,
-      "sha256": "6153ebb0fc9afe865b2b5d38be0c3501c7ff45d4b4d3f36e6febbb992de54deb",
-      "origin": "publication/template/docs/TASKS_0.7.6.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/TASKS_0.7.7.md",
-      "bytes": 1456,
-      "sha256": "4f4394670e426e6cf8b8863381ded998d0fd3ea47ed8105a18e88a128dbdebe7",
-      "origin": "publication/template/docs/TASKS_0.7.7.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/TASKS_0.7.8.md",
-      "bytes": 1326,
-      "sha256": "9e9de43ce31e2b09431d3485f12f87443631b9d5bc020dc7bf3f305910c528f4",
-      "origin": "publication/template/docs/TASKS_0.7.8.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/TASKS_0.7.9.md",
-      "bytes": 1459,
-      "sha256": "4136cca03ab44dde86cc04f323ffd3b68eed3c776a927cc142b62425c3fdef0f",
-      "origin": "publication/template/docs/TASKS_0.7.9.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/TASKS_0.8.0.md",
-      "bytes": 1922,
-      "sha256": "ffc969f494d6331b9ba2b5cbe18f278862b758de7e423caffab582d00947d922",
-      "origin": "publication/template/docs/TASKS_0.8.0.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/TASKS_0.8.1.md",
-      "bytes": 1464,
-      "sha256": "4ae752656ee1dfe58886fd67c1ffa034d83c120c782c24e0f4aa0133da61599b",
-      "origin": "publication/template/docs/TASKS_0.8.1.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/TASKS_0.8.2.md",
-      "bytes": 1289,
-      "sha256": "c60a94530ab30a9dc26142c14ac75fe04a52d2578404af64541ca7c7e787ab1e",
-      "origin": "publication/template/docs/TASKS_0.8.2.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/TASKS_0.9.0.md",
-      "bytes": 2581,
-      "sha256": "d7e9622ad2f70d9dee384013a6a72addd56e02349921e99579da54d0163bcf95",
-      "origin": "publication/template/docs/TASKS_0.9.0.md",
-      "transformations": []
-    },
-    {
-      "path": "docs/TASKS_0.9.1.md",
-      "bytes": 2914,
-      "sha256": "6e616d301899c70561761fe5367f8d098f701e7b9cb7e396f82d5755328aad4f",
-      "origin": "publication/template/docs/TASKS_0.9.1.md",
-      "transformations": []
-    },
-    {
       "path": "docs/USAGE.md",
-      "bytes": 17873,
-      "sha256": "cc2ab574d1b440ade8fb9543047b72f37d3b47bbd451b90d9416b957684a318c",
+      "bytes": 3398,
+      "sha256": "afbd1585ba36bb47e01765275dbaea33f7f7eeb4be523cb1fedff11060861f04",
       "origin": "publication/template/docs/USAGE.md",
-      "transformations": [
-        "CRLF_TO_LF"
-      ]
+      "transformations": []
     },
     {
       "path": "docs/VALIDATION.md",
-      "bytes": 16323,
-      "sha256": "c6e94b3f49fa6fd4f311e06ba5b69fbd26e27c3ea18be8a9acfc2f173c30ceac",
+      "bytes": 1799,
+      "sha256": "a2e8b61fc5b37f3032cff263a0c5fe285da51549cfa234629840accd0a4a5b89",
       "origin": "publication/template/docs/VALIDATION.md",
       "transformations": []
     },
@@ -2584,6 +2145,13 @@
       "transformations": []
     },
     {
+      "path": "phase1/qnx/README.md",
+      "bytes": 1472,
+      "sha256": "c8c24cd1204cf686df2093325aa0d0221ea14a8fa9e54bd30bc7c57b0147b6bc",
+      "origin": "publication/template/phase1/qnx/README.md",
+      "transformations": []
+    },
+    {
       "path": "phase1/qnx/assets/b2/DXCenterDark.png",
       "bytes": 8362,
       "sha256": "eb34697ca949808502749f11b591d24f1c7a5346f02695b0104a68a13aabc7de",
@@ -2605,13 +2173,6 @@
       "transformations": []
     },
     {
-      "path": "phase1/qnx/native-hmi/README.md",
-      "bytes": 9034,
-      "sha256": "328e72e4a6e2d65b6ca7c289a9c55ee529153fcd200a3b1b180d2423f87c7475",
-      "origin": "phase1/qnx/native-hmi/README.md",
-      "transformations": []
-    },
-    {
       "path": "phase1/qnx/native-hmi/background-b2.thumb",
       "bytes": 234,
       "sha256": "95129fac18f66632113545591e09857529ac4902865191d320f4f9591738fd9e",
@@ -2623,13 +2184,6 @@
       "bytes": 8029,
       "sha256": "aaa5ed51e0bf067c84a7cd81782dae9adc88a0edf95c5a3698c8c2c13a9e19af",
       "origin": "phase1/qnx/native-hmi/background-poc.thumb",
-      "transformations": []
-    },
-    {
-      "path": "phase1/qnx/native-hmi/background-product.thumb",
-      "bytes": 8366,
-      "sha256": "12bd7964e2403ae70f2afc6810c95be798741faf0e2ddc109208425aed6aa6b6",
-      "origin": "phase1/qnx/native-hmi/background-product.thumb",
       "transformations": []
     },
     {
@@ -2703,24 +2257,10 @@
       "transformations": []
     },
     {
-      "path": "phase1/qnx/ref2-noauth/receiver-composition.arm",
-      "bytes": 1731,
-      "sha256": "a8b2455ea3cfc7afc2136738bbd4ada3d7df80730798a8a63c046784e528d4f1",
-      "origin": "phase1/qnx/ref2-noauth/receiver-composition.arm",
-      "transformations": []
-    },
-    {
       "path": "phase1/qnx/ref2-noauth/receiver-dcv1-hd-window.arm",
       "bytes": 8265,
       "sha256": "41dd846ad247c42afc8c1a501a916d9cc17259e51c6980b1d5ad62d9308ec85c",
       "origin": "phase1/qnx/ref2-noauth/receiver-dcv1-hd-window.arm",
-      "transformations": []
-    },
-    {
-      "path": "phase1/qnx/ref2-noauth/receiver-dcv1-hd.arm",
-      "bytes": 8227,
-      "sha256": "a49bf6d2634462a9e6645f190befc75cccf1ff05a542299c32f0a84fdd5fa4dd",
-      "origin": "phase1/qnx/ref2-noauth/receiver-dcv1-hd.arm",
       "transformations": []
     },
     {
@@ -2738,20 +2278,6 @@
       "transformations": []
     },
     {
-      "path": "phase1/qnx/ref2-noauth/receiver-display-probe.arm",
-      "bytes": 6311,
-      "sha256": "4147f0395d942e8f2ac983edf2e83c07538f65db53caf0fa5f0cc610c93f0f39",
-      "origin": "phase1/qnx/ref2-noauth/receiver-display-probe.arm",
-      "transformations": []
-    },
-    {
-      "path": "phase1/qnx/ref2-noauth/receiver-product.arm",
-      "bytes": 6732,
-      "sha256": "6e16fb4acb878cb7ff993b67b13b45ecaefdb0c89345de9163c645127faefc02",
-      "origin": "phase1/qnx/ref2-noauth/receiver-product.arm",
-      "transformations": []
-    },
-    {
       "path": "phase1/qnx/ref2-noauth/receiver-unlimited.arm",
       "bytes": 7607,
       "sha256": "dbe4ac3f88a01144aad76b7c07a89147410bd99a972e00fa94fa2224519dbb8b",
@@ -2766,17 +2292,10 @@
       "transformations": []
     },
     {
-      "path": "phase1/qnx/ref2-noauth/startup-background-poc.ksh",
+      "path": "phase1/qnx/ref2-noauth/startup.ksh",
       "bytes": 1664,
       "sha256": "10af0bacfa4b797f57b4b88f986114a79ddceb029f87da0a322e80ae92f2fd9b",
       "origin": "phase1/qnx/ref2-noauth/startup-background-poc.ksh",
-      "transformations": []
-    },
-    {
-      "path": "phase1/qnx/ref2-noauth/startup.ksh",
-      "bytes": 1268,
-      "sha256": "dcc08669bdef4077196019df5956a45f7b29abc70860e40f71f8c2c81079a6f4",
-      "origin": "phase1/qnx/ref2-noauth/startup.ksh",
       "transformations": []
     },
     {
@@ -2823,8 +2342,8 @@
     },
     {
       "path": "requirements-native.txt",
-      "bytes": 155,
-      "sha256": "962bb8de9278027f9a88d8efd7e5305e809db6bcda02d562c824fe6310308cde",
+      "bytes": 171,
+      "sha256": "6f957172e6bdf3cc407ac09095c16f3a019c61c97d46aa1d658626d872dc9ca2",
       "origin": "publication/template/requirements-native.txt",
       "transformations": []
     },
@@ -2836,38 +2355,10 @@
       "transformations": []
     },
     {
-      "path": "tools/apply_f1_display_overlay.py",
-      "bytes": 1810,
-      "sha256": "17bdb9e0639cf93a311af11bf2296fcf0c95f162c2ec947ce5a956d8373d3c14",
-      "origin": "publication/template/tools/apply_f1_display_overlay.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/build_axes_rim_components.py",
-      "bytes": 2471,
-      "sha256": "b83463a12cae4592504c9c2074c623d3d9371c90d2e01353520f65ead2845c1e",
-      "origin": "publication/template/tools/build_axes_rim_components.py",
-      "transformations": []
-    },
-    {
       "path": "tools/build_b2_matte_components.py",
       "bytes": 2054,
       "sha256": "4dbeb5092c710269a1765e12f87ccf2990eeeeb5e0926eaa15a61532c9e7fbc4",
       "origin": "publication/template/tools/build_b2_matte_components.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/build_background_mask_components.py",
-      "bytes": 2429,
-      "sha256": "13bfcc675cce717ebe1c816dd4341199ab9de645b159b7cddd7235b3464e31d4",
-      "origin": "publication/template/tools/build_background_mask_components.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/build_background_poc_components.py",
-      "bytes": 2198,
-      "sha256": "768f3a9fd8898680d715b50fd749dad390f9c8322c5b75db5066bab0ba915210",
-      "origin": "publication/template/tools/build_background_poc_components.py",
       "transformations": []
     },
     {
@@ -2878,184 +2369,17 @@
       "transformations": []
     },
     {
-      "path": "tools/build_cleanup_recovery_components.py",
-      "bytes": 1815,
-      "sha256": "8614b6f141fe6ab3572860958e05f0305a5b73c49623da32116cb1c814ab56a3",
-      "origin": "publication/template/tools/build_cleanup_recovery_components.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/build_compact_info_components.py",
-      "bytes": 1742,
-      "sha256": "1c7237b288b6ff36e22e74110afa3e3599b58141ea61c6569487d13717db5eb0",
-      "origin": "publication/template/tools/build_compact_info_components.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/build_composition_components.py",
-      "bytes": 2329,
-      "sha256": "807633ad2aa3d1c1f3454258e824cab3c84e1c599c4daaa0ce308b83f6466e0f",
-      "origin": "publication/template/tools/build_composition_components.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/build_contour_components.py",
-      "bytes": 1904,
-      "sha256": "4081feca5f255a12d3fcf15b0a445eb9c1cae4c84225c809057daa7172b56e94",
-      "origin": "publication/template/tools/build_contour_components.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/build_curved_scene_components.py",
-      "bytes": 2861,
-      "sha256": "c26bf39bf9e5318d464abc6286e3bca9b2cdd1407237e4f91adafb03b10aad35",
-      "origin": "publication/template/tools/build_curved_scene_components.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/build_display_fusion_components.py",
-      "bytes": 2095,
-      "sha256": "10df5834a7227a76173104e487098e7a6031b5384204fc8666639d01d2f710c7",
-      "origin": "publication/template/tools/build_display_fusion_components.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/build_edge_rim_components.py",
-      "bytes": 2471,
-      "sha256": "d9119f56938afd47510a42f627b15b9ee0b925594b15887a5334164301b2039e",
-      "origin": "publication/template/tools/build_edge_rim_components.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/build_expanded_rim_components.py",
-      "bytes": 2499,
-      "sha256": "bf0db7cace158e8cf87643e25771b02db6f6a32309ac1f5f086ae8c2ae68230d",
-      "origin": "publication/template/tools/build_expanded_rim_components.py",
-      "transformations": [
-        "CRLF_TO_LF"
-      ]
-    },
-    {
-      "path": "tools/build_inner_ring_components.py",
-      "bytes": 2193,
-      "sha256": "923767b1951efd483e9baf37a685cdd46c38498737117e4b8cdb6261f2f326cc",
-      "origin": "publication/template/tools/build_inner_ring_components.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/build_instrument_app.py",
-      "bytes": 7139,
-      "sha256": "07b6eba506f3a5db8663ed635ca1b996dd362c6dac3e91ef163b389b90afe90c",
-      "origin": "publication/template/tools/build_instrument_app.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/build_integrated_components.py",
-      "bytes": 1697,
-      "sha256": "adf99c2c5cdf3c88f2a226ce49a95ad82db9d820d64810197623618bbf64c586",
-      "origin": "publication/template/tools/build_integrated_components.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/build_native_background_components.py",
-      "bytes": 2558,
-      "sha256": "99fa3938e2e316d9c74c37761505e06067dcceaaf0f10d0a5bb4be23ca66a89c",
-      "origin": "publication/template/tools/build_native_background_components.py",
-      "transformations": [
-        "CRLF_TO_LF"
-      ]
-    },
-    {
-      "path": "tools/build_native_clear_components.py",
-      "bytes": 2392,
-      "sha256": "565557af09f5761017f42307825d90bddbfcb987d56f2e527457f3e528ad64a7",
-      "origin": "publication/template/tools/build_native_clear_components.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/build_navigation_components.py",
-      "bytes": 2335,
-      "sha256": "e1cc5fa4c45436ac946556e5592554ff7e900350923c07717ffbcaffbbf7a56c",
-      "origin": "publication/template/tools/build_navigation_components.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/build_product_boot_components.py",
-      "bytes": 2442,
-      "sha256": "e1e787a32dc709520a0bf2a0fdc7805587150b1585e93ac18b8dafc7d63ca27f",
-      "origin": "publication/template/tools/build_product_boot_components.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/build_product_components.py",
-      "bytes": 2405,
-      "sha256": "aef5106db5293da07c4c715e0ce6935c49caa60c7a2fd106dc1bba76d73e335e",
-      "origin": "publication/template/tools/build_product_components.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/build_product_runtime_components.py",
-      "bytes": 595,
-      "sha256": "1ed99473747729a37d79d0b1583cfaf360f4ef16f6e1e3182d16c14bb1ef3df7",
-      "origin": "publication/template/tools/build_product_runtime_components.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/build_product_scene_components.py",
-      "bytes": 2141,
-      "sha256": "d77023d1601962748f3263d9a123103c707c87f15d034f0dccb9d6590e795760",
-      "origin": "publication/template/tools/build_product_scene_components.py",
+      "path": "tools/build_instrument_components.py",
+      "bytes": 4956,
+      "sha256": "b15efe0fbaf5bc8e256fcff76bcb3ed4fa05e07cb048c2b9e5cb457b6ea2984e",
+      "origin": "publication/template/tools/build_instrument_components.py",
       "transformations": []
     },
     {
       "path": "tools/build_projection_fit_components.py",
-      "bytes": 2841,
-      "sha256": "e2ba0a6fa93b40503eb31526fe2868f7267e29365ad584b154d52a019fbaf1fe",
+      "bytes": 3160,
+      "sha256": "0122615c6d46e609cf85eeb87178813283f8c8089bc428cd997dce5d4a451b34",
       "origin": "publication/template/tools/build_projection_fit_components.py",
-      "transformations": [
-        "CRLF_TO_LF"
-      ]
-    },
-    {
-      "path": "tools/build_sharp_inner_components.py",
-      "bytes": 2263,
-      "sha256": "f24fe34f6c79c92a85c2e14dff0bcd4c5287a55545f948872abe7dfc991903d6",
-      "origin": "publication/template/tools/build_sharp_inner_components.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/build_soft_edge_components.py",
-      "bytes": 1787,
-      "sha256": "84b86740b953a3a25c90530c4b1c4b9d2a7528c81208742c5c035841908f724a",
-      "origin": "publication/template/tools/build_soft_edge_components.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/build_unlimited_components.py",
-      "bytes": 2455,
-      "sha256": "cf8275c288b77a60926b51eeaa8b4f5d22344014c377357bc3b9ac70951526d6",
-      "origin": "publication/template/tools/build_unlimited_components.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/build_user_background_components.py",
-      "bytes": 2840,
-      "sha256": "59a20f8ca630c22d279d5d01359924fcec02278668d10b5711d20da5d4e06d0f",
-      "origin": "publication/template/tools/build_user_background_components.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/build_viewport_components.py",
-      "bytes": 1658,
-      "sha256": "a4c7c4b137f6016193ef886a47ef016299008730f0620d031982861104f00807",
-      "origin": "publication/template/tools/build_viewport_components.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/build_window_alpha_components.py",
-      "bytes": 2423,
-      "sha256": "bcf727af7f88b7748583f4d92092f35deb5a27de2f43af66e0e999a22bcb1ed5",
-      "origin": "publication/template/tools/build_window_alpha_components.py",
       "transformations": []
     },
     {
@@ -3066,10 +2390,10 @@
       "transformations": []
     },
     {
-      "path": "tools/patch_window_alpha_usage.py",
-      "bytes": 1702,
-      "sha256": "a870feac40db22422e750e5dac9bd64777e0faacfde6adba1718b3a224f88d23",
-      "origin": "publication/template/tools/patch_window_alpha_usage.py",
+      "path": "tools/component_inputs.py",
+      "bytes": 1943,
+      "sha256": "901ce8cdd52dd62663a0d3567ea02b43f7645ad857866d416352f7af454ca1e6",
+      "origin": "publication/template/tools/component_inputs.py",
       "transformations": []
     },
     {
@@ -3080,31 +2404,10 @@
       "transformations": []
     },
     {
-      "path": "tools/tests/test_axes_rim_cli.py",
-      "bytes": 1476,
-      "sha256": "6a1e260e8e850155d1195148faca370cd2944c586e0c705d68493c63336af524",
-      "origin": "publication/template/tools/tests/test_axes_rim_cli.py",
-      "transformations": []
-    },
-    {
       "path": "tools/tests/test_b2_matte_cli.py",
       "bytes": 2216,
       "sha256": "2304693e58ed0865fcb48690c5e70af0d33b47c852beb9ecffa9d0c23d905569",
       "origin": "publication/template/tools/tests/test_b2_matte_cli.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/tests/test_background_mask_cli.py",
-      "bytes": 1463,
-      "sha256": "2c1a2a4fb1bb644b9a382875bdf9b975308aec5d3d683c8f195ebb12f3bf6fde",
-      "origin": "publication/template/tools/tests/test_background_mask_cli.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/tests/test_background_overlay_cli.py",
-      "bytes": 2031,
-      "sha256": "4764f33a02616d2e7c4eac619627685e8897a6ea07ee7fe460b4d9bd1232c135",
-      "origin": "publication/template/tools/tests/test_background_overlay_cli.py",
       "transformations": []
     },
     {
@@ -3115,131 +2418,10 @@
       "transformations": []
     },
     {
-      "path": "tools/tests/test_cleanup_recovery_cli.py",
-      "bytes": 2019,
-      "sha256": "14009aabf1fabc70e4046b79e93d06501e169efbb02a31a27150ed22997d0288",
-      "origin": "publication/template/tools/tests/test_cleanup_recovery_cli.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/tests/test_compact_info_cli.py",
-      "bytes": 1934,
-      "sha256": "943e7d54490926146867c3c9a0462a199d7b70a5366921e28fb8f9d3706acf01",
-      "origin": "publication/template/tools/tests/test_compact_info_cli.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/tests/test_composition_overlay_cli.py",
-      "bytes": 2291,
-      "sha256": "0fbeae586c505ccd412add53976d09e02c986dcbe0e18c47fdb21881e0dd7c06",
-      "origin": "publication/template/tools/tests/test_composition_overlay_cli.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/tests/test_contour_cli.py",
-      "bytes": 2576,
-      "sha256": "f715389181a5f03ffcd98b36e30e573e77ab684a9e21c7536505faa1f713b978",
-      "origin": "publication/template/tools/tests/test_contour_cli.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/tests/test_curved_scene_cli.py",
-      "bytes": 2739,
-      "sha256": "a4b590e45c210546d56222346a63b3b3c4bfb0164a85bc36c89fca626f71fbca",
-      "origin": "publication/template/tools/tests/test_curved_scene_cli.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/tests/test_display_fusion_cli.py",
-      "bytes": 1630,
-      "sha256": "e898eba08c09611bbcf336fbfcdfaa79361eae2792e5841634e375be963aae55",
-      "origin": "publication/template/tools/tests/test_display_fusion_cli.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/tests/test_edge_rim_cli.py",
-      "bytes": 1511,
-      "sha256": "c33b5610505522e578bd84af4b95caaeafed6a316d2ec13cdc927fb8e4ad4e22",
-      "origin": "publication/template/tools/tests/test_edge_rim_cli.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/tests/test_expanded_rim_cli.py",
-      "bytes": 1488,
-      "sha256": "b9a0b19712ed37b4841d8738c6e751f53d8132e6807d61f99e3b0b59f22bcab2",
-      "origin": "publication/template/tools/tests/test_expanded_rim_cli.py",
-      "transformations": [
-        "CRLF_TO_LF"
-      ]
-    },
-    {
-      "path": "tools/tests/test_f1_overlay_cli.py",
-      "bytes": 2479,
-      "sha256": "f34f527700f53faf3aeae7a34934dfb68b162b50ae17fa7a3a0dc9a182ddbf30",
-      "origin": "publication/template/tools/tests/test_f1_overlay_cli.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/tests/test_inner_ring_cli.py",
-      "bytes": 1487,
-      "sha256": "abeb9e944c9435d9f951b5d463a0fffcca56ad9dd2c1e838c859a30fe8a882b1",
-      "origin": "publication/template/tools/tests/test_inner_ring_cli.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/tests/test_integrated_cli.py",
-      "bytes": 2023,
-      "sha256": "b6661f50e539502406011aeaca96924cdb7fc5c78bf99de3c2c75f38d6ee0401",
-      "origin": "publication/template/tools/tests/test_integrated_cli.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/tests/test_native_background_cli.py",
-      "bytes": 1503,
-      "sha256": "e3d64c139c3d7c16a683477a1bb2aed2e2fa8fb2f4308e132efa42a3de9937af",
-      "origin": "publication/template/tools/tests/test_native_background_cli.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/tests/test_native_clear_cli.py",
-      "bytes": 1451,
-      "sha256": "1d617285792f4cade39646a5eda823178d6c84d40f7e073563b893c6fde03e19",
-      "origin": "publication/template/tools/tests/test_native_clear_cli.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/tests/test_navigation_overlay_cli.py",
-      "bytes": 1638,
-      "sha256": "917af8dce0736441256681ff9e05c1d4719897e068b798a76ffe48ef4d07aae2",
-      "origin": "publication/template/tools/tests/test_navigation_overlay_cli.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/tests/test_product_boot_cli.py",
-      "bytes": 1509,
-      "sha256": "af76dcb7ffc60f7bdf660d25ab15a2aff97ac1163fe4c32251764a5de42d564f",
-      "origin": "publication/template/tools/tests/test_product_boot_cli.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/tests/test_product_overlay_cli.py",
-      "bytes": 2062,
-      "sha256": "ae774422be3660e759a20129f99c5ac54188673df7328a9cb89b0b32343e6e5f",
-      "origin": "publication/template/tools/tests/test_product_overlay_cli.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/tests/test_product_runtime_cli.py",
-      "bytes": 1588,
-      "sha256": "d7dcb8f634162dc86764356b3977f65f7b02a67285d3d581608809df9a44662d",
-      "origin": "publication/template/tools/tests/test_product_runtime_cli.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/tests/test_product_scene_cli.py",
-      "bytes": 1101,
-      "sha256": "0a5e1f84b3c2a22d5493afaede0a69e35d7526fd7f0da4b52af12cbcdcaf12c1",
-      "origin": "publication/template/tools/tests/test_product_scene_cli.py",
+      "path": "tools/tests/test_instrument_components_cli.py",
+      "bytes": 2464,
+      "sha256": "6121ffb0f45e7a5c7265624df0ae1a6546ed8add5522252591a61725002436de",
+      "origin": "publication/template/tools/tests/test_instrument_components_cli.py",
       "transformations": []
     },
     {
@@ -3256,48 +2438,6 @@
       "bytes": 7837,
       "sha256": "6e4431320ebfb2514a2693e9789aa66a00433d199b27d3703281a7aef4c932a9",
       "origin": "publication/template/tools/tests/test_public_tools.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/tests/test_soft_edge_cli.py",
-      "bytes": 2118,
-      "sha256": "89ad792a056320184c1608d592677272e4436dfea75946b36f17d52e57ad6a4c",
-      "origin": "publication/template/tools/tests/test_soft_edge_cli.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/tests/test_unlimited_overlay_cli.py",
-      "bytes": 2069,
-      "sha256": "27bd012bb4789b7670b28acb051bd662f16d4e9e535ab81b1886aee4fa60dd6c",
-      "origin": "publication/template/tools/tests/test_unlimited_overlay_cli.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/tests/test_usage_alpha_cli.py",
-      "bytes": 2143,
-      "sha256": "f8440ba87a13f44465f8472e2daf533997114fb6571ecb89b43db32d48e3a569",
-      "origin": "publication/template/tools/tests/test_usage_alpha_cli.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/tests/test_user_background_cli.py",
-      "bytes": 1075,
-      "sha256": "99d771267b320f543548dff5f923f72b99ad63541cd231157027fcc4d1187a8c",
-      "origin": "publication/template/tools/tests/test_user_background_cli.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/tests/test_viewport_cli.py",
-      "bytes": 2351,
-      "sha256": "83c4b297b0537969d48aca422e01d86f2a5f5753fc2c20388eccbeaadc6f72b4",
-      "origin": "publication/template/tools/tests/test_viewport_cli.py",
-      "transformations": []
-    },
-    {
-      "path": "tools/tests/test_window_alpha_cli.py",
-      "bytes": 1473,
-      "sha256": "6a7b6e49ee99272b278f419039ac46838b5c83041e4ba10c0ee93a2ddf3b52e4",
-      "origin": "publication/template/tools/tests/test_window_alpha_cli.py",
       "transformations": []
     }
   ]

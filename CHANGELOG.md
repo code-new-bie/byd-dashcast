@@ -1,26 +1,29 @@
 # 改动摘要
 
+较早版本的详细说明文档已从仓库移除，需要时可在 Git 历史中查看（例如提交 `ba358c3` 及更早的 `docs/PRODUCT_*.md`、`docs/TASKS_*.md`）。
+
 ## APK1.20.2 / 仪表1.19.3（2026-11-02）
 
 - APK 1.20.0: remember the instrument-connection and in-app access switches and restore them once per process; start native map entries in their instrument UI; choose stacked or side cast layout by the larger fitted window; add press, disabled and export feedback in help.
 - APK 1.20.1: after a cold-start app is hosted from the primary display, return to the cast tab, because Android 10 raises the home stack during that move.
 - APK 1.20.2: create the named standby display at the selected size (full 1696×456, small 1280×720, 160dpi), resize it when idle, and capture at the standby display's actual mode. Known issue: a mode change while access is still starting can be lost.
 - Instrument 1.19.3: field photos show the small layout composited as premultiplied alpha; set only DXCenterDark RGB to its alpha. The 1.19.2 HMI, full mask and every alpha byte stay unchanged. Add the matching component CLI.
-- Offline unit, emulator and reconstruction checks only; vehicle acceptance of both versions is pending. [APK](docs/PRODUCT_1.20.2.md) · [仪表](docs/PRODUCT_1.19.3.md)。
+- Instrument 1.19.3 was tried on the car on 2026-11-02 and reported fine (verbal feedback). APK 1.20.2 has offline unit and emulator checks only; vehicle acceptance is pending. [APK](docs/PRODUCT_1.20.2.md) · [仪表](docs/PRODUCT_1.19.3.md)。
+- Repository tidy: keep only the current build chain and current documents; add `tools/build_instrument_components.py` (originals to every changed 1.19.3 App file in one run, each output hash-checked) and rewrite the build, packaging and usage documents. Retired version notes and component tools remain in Git history.
 
 ## 仪表1.19.2 / APK1.19.0（2026-11-01）
 
 - Field feedback still showed a light-theme ring after 1.19.1 A; do not count that version as a vehicle fix.
 - Rebuild B2 from the exact 1.19.0 baseline: three HMI bytes set mode5 to ZERO/SRC_COLOR/ZERO/SRC_ALPHA; replace only two PNGs with white RGB at positive alpha and zero RGB at zero alpha.
 - Keep every aperture alpha byte, curve, theme backing, scene, receiver, native layout and original version file. Reuse the exact APK; keep original MCU/reference OS/Boot.
-- Publish matching source, Thumb assembly, exact masks and a paired component CLI. Native/GLES and reconstruction checks are offline evidence; physical acceptance remains pending. [升级与范围](docs/PRODUCT_1.19.2.md)。
+- Publish matching source, Thumb assembly, exact masks and a paired component CLI. Native/GLES and reconstruction checks are offline evidence; physical acceptance remains pending.
 
 ## 仪表1.19.1 / APK1.19.0（2026-11-01）
 
 - Move the HMI premultiplied-alpha declaration from the early create-only hook to common native realization, after USAGE and before buffer creation.
 - Reuse the owned prefix slot and preserve the original USAGE result and factory functions. Keep destination-in mode 5, supplied PNGs, KZB, display geometry and version files unchanged.
 - Reuse the exact 1.19.0 APK. The full instrument package changes only rc_hmi.exe inside app.sv; MCU, reference OS and Boot remain identical.
-- Validate ARM ABI/error paths, the original loader and display lease/filter behavior, plus exact saved-mask GLES pixels and translucent foreground. Vehicle confirmation remains pending. [升级与范围](docs/PRODUCT_1.19.1.md)。
+- Validate ARM ABI/error paths, the original loader and display lease/filter behavior, plus exact saved-mask GLES pixels and translucent foreground. Vehicle confirmation remains pending.
 
 ## 1.19.0
 
@@ -28,7 +31,7 @@
 - Preserve complete source aspect, inverse input mapping, keyboard resizing and both supersampled profiles.
 - Route original icons to the existing cast tab; keep background readiness from stealing focus or switching tabs.
 - Keep application browsing separate from confirmed replacement; remove the duplicate full/small preference from settings.
-- Reuse the exact complete 1.17.0 instrument firmware. [交互与升级](docs/PRODUCT_1.19.0.md)。
+- Reuse the exact complete 1.17.0 instrument firmware.
 
 ## 1.18.0
 
@@ -36,7 +39,7 @@
 - Render one hosted task at two supersampled source profiles, then independently fit the primary mirror and existing instrument carrier.
 - Keep source geometry stable across consumer attach, pause, resume and keyboard changes; preserve inverse touch mapping and original-icon routing.
 - Consolidate management into three tabs and keep external map/named-display paths intact. Reuse the exact 1.17.0 instrument firmware.
-- [交互、升级和验证范围](docs/PRODUCT_1.18.0.md)。
+-。
 
 ## 1.17.0
 
@@ -51,7 +54,7 @@
 - 小窗清晰视频覆盖整个物理接收窗口，原生窗口尺寸不变，四边透明带下不再使用旧的模糊补边；显式保留物理宽高比，主屏业务源尺寸和操作界面不受影响。
 - 区分SDK按前缀找屏与真正的同名冲突，其他`fission_`或系统叠加屏不再阻断屏名接入和定制地图；不关闭或接管这些屏幕，真正同名仍受保护。
 - 未注册的接收屏宿主退出并回收自有资源，已注册的接收屏/投屏没有新增时限。导出包含有界准入诊断。
-- 仪表可执行程序、接收器、3D场景及原MCU/参考OS/Boot保持。[用法与边界](docs/PRODUCT_1.16.0.md)。
+- 仪表可执行程序、接收器、3D场景及原MCU/参考OS/Boot保持。
 
 ## 1.15.0 / code65 — 四边背景蒙版与屏幕名称接入（2026-10-30）
 
@@ -59,7 +62,7 @@
 - 修正外部接入请求在其他投屏运行时或提交主线程前被提前消耗，等待/忙碌不再让请求永久丢失；仍保持单一视频会话和停止清理约束。
 - 接收屏实际就绪后才允许复制名称，导出日志包含接入状态快照。屏幕名保持`fission_dashcast_meter`。
 - 仪表只替换四张自有Alpha蒙版，原启动修正版HMI、receiver、场景及原MCU/参考OS/Boot保持；需配套更新APK和仪表App。
-- [用法与验证边界](docs/PRODUCT_1.15.0.md)。
+-。
 
 ## 1.14.5 / code64 — 原厂背景蒙版与窗口透明度一致（2026-10-30）
 
@@ -81,88 +84,88 @@
 
 - 撤去投屏时强制清屏Alpha为0的遗留整层透明策略，保留原厂RGBA，只由原曲边遮罩开视频口；仪表HMI仅一条4字节跳转变化。
 - 原启动布局/曲线/资源/原生信息/receiver/OS/MCU保持；APK只更新配套标签，承接1.14.2等比铺满和主屏完整显示。
-- 实际旧HMI清屏反例、原解释器与48项原生、12组GLES透明/部分/完整绘制对照。完整QNX/实车效果待本包确认。[更新、证据与边界](docs/PRODUCT_1.14.3.md)。
+- 实际旧HMI清屏反例、原解释器与48项原生、12组GLES透明/部分/完整绘制对照。完整QNX/实车效果待本包确认。
 
 ## 1.14.2 — 2026-10-29 普通应用等比铺满
 
 - 默认仪表等比填满，升级一次性迁移旧比例；之后手选完整显示仍持久保存。两路分别映射，主屏完整源与触控几何保持。
 - 修正使用历史宽屏源掩盖问题的回归测试；同一冻结测试程序对照真实Android29偏好迁移、五场景双输出及原仪表开口像素。
-- 完整仪表包逐字节沿用1.14.1，已刷者只更新APK。全屏背景补充反馈另查，不宣称已解决。[使用、裁边取舍与证据范围](docs/PRODUCT_1.14.2.md)。
+- 完整仪表包逐字节沿用1.14.1，已刷者只更新APK。全屏背景补充反馈另查，不宣称已解决。
 
 ## 1.14.1 — 2026-10-29 修正QNX仪表启动布局
 
 - 原两段LOAD和文件开头程序头表保留；新增映射RX前缀页，原业务代码/数据/动态导入虚拟地址不动，原notes/解释器/unwind/RELRO保持。
 - 真实原QNX解释器主ELF初始化及完整段解析通过，检查原导入与重定位、RX/RW权限和未投屏原路径；RWVF车模/道路过滤、背景反馈、租约/两种千次循环/停止恢复仍通过。
 - 仪表相对1.14.0只改HMI，receiver/KZB/主题/曲线/原OS/MCU保持。APK仅版本和配套帮助标签更新，原接入与应用操作功能保留。
-- 完整目标QNX及实车启动未冒称通过。[实现、操作与边界](docs/PRODUCT_1.14.1.md)。
+- 完整目标QNX及实车启动未冒称通过。
 
 ## 1.14.0 暂停使用 — 2026-10-29 仪表启动回归
 
 - 实车动画结束后黑屏、刷机流程仍可进入；已提供此前可启动仪表包恢复路径。
 - 用原OS解释器ARM指令复现程序头搬迁反推错误ELF地址，在HMI主业务执行前读取未映射内存；旧版同路径通过。
-- 关闭公开RWVF组件生成命令，默认HMI构建增加实际解释器锚点门禁，保留失败证据。没有新启动修正版，也未将离线回放当作整套QNX启动通过。[详情](docs/INCIDENT_1.14.0_BOOT.md)。
+- 关闭公开RWVF组件生成命令，默认HMI构建增加实际解释器锚点门禁，保留失败证据。没有新启动修正版，也未将离线回放当作整套QNX启动通过。
 
 ## 1.14.0 — 2026-10-29 接入、持续显示与仪表绘制
 
 - 独立接入开关与复制屏幕名，待命不操作仪表，关闭不打断现有视频，内外入口共用单会话。
 - 修复背景续租错误契约、采集完成无正式EXIT及定制地图短暂不可采集断流，未知清理防护保留。
 - RWVF真实绘制路径过滤普通车模/道路；原背景、曲线和信息布局保持。普通应用主屏自然比例及地图备用入口完善。
-- 需配套APK和仪表App。[根因、操作与验证边界](docs/PRODUCT_1.14.0.md)。
+- 需配套APK和仪表App。
 
 ## 1.13.0 — 2026-10-28 应用界面与设置整理
 
 - 四页信息层级、宽窄布局及按钮间隔调整；底部始终可见的开始/取消/停止按钮，未知清理保持阻止。
 - 全屏/小窗、应用深浅改明确选择；比例在更多选项，地图/应用内投屏在其他方式；设置、收藏、授权身份保留。
 - 日常状态与错误改简明中文，详细证据仍留日志；帮助一键导出，技术/开发入口折叠。
-- 仪表整包逐字节沿用1.12.6/RWVE，已刷者只更新APK。[梳理与边界](docs/PRODUCT_1.13.0.md)。
+- 仪表整包逐字节沿用1.12.6/RWVE，已刷者只更新APK。
 
 ## 1.12.6 — 2026-10-28 上下外扩
 
 - 上下开口各外扩8像素，保留左右各32；原弧段平移不缩放、相切连接。承载1696×456、普通源3392×912。
 - 原生信息/续航底板保持原位和前景优先；底部开口被底板覆盖的部分不显示地图。小窗/原背景/USB及清理保持。
-- RWVE配套。[范围与实测边界](docs/PRODUCT_1.12.6.md)。
+- RWVE配套。
 
 ## 1.12.5 — 2026-10-28 弧边外扩
 
 - 全屏左右各外扩32原生像素，原曲率/顶部/底板保持；承载同步1696×440、普通业务源3392×880，新增边带使用清晰源。
 - 沿用原背景透出、12/24羽化与小窗；原MCU/OS/Boot和USB/媒体/清理/三入口保持。
-- RWVD配套。[范围与验证边界](docs/PRODUCT_1.12.5.md)。
+- RWVD配套。
 
 ## 1.12.4 — 2026-10-27 原生背景透出
 
 - 纠正1.12.3用渐变/底色替代完整原背景的问题。原背景正常绘制，只在视频曲线内打开Alpha窗口，跟随原主题与场景。
 - 原曲线及窄边保持，旧混合模式保持，新增精确固件绑定的私有destination-in模式；停止/失联撤销遮罩。
-- 配套RWVC；MCU/OS/Boot/USB/媒体清理与named修复保留。旧五秒整层抑制入口停用。[范围与验证边界](docs/PRODUCT_1.12.4.md)。
+- 配套RWVC；MCU/OS/Boot/USB/媒体清理与named修复保留。旧五秒整层抑制入口停用。
 
 ## 1.12.3 — 2026-10-27 原曲线窄边与修复审查
 
 - 原曲线/承载区不变，左右羽化24→12，上下24；常规原厂背景资产融合，增加7384清晰设计像素。
 - 修正误把 DCADASPanel 衬底当作车模父节点的候选规则，直接处理普通图片，保留原告警。
 - 承接超宽托管源与被动镜像、模式开关卡片和浅水印；补轨道固定尺寸及切换刷新。普通应用主屏原比例仍有边界。
-- RWVB 配套；三入口及 MCU/OS/Boot/USB/媒体清理策略保持。[使用与实测边界](docs/PRODUCT_1.12.3.md)。
+- RWVB 配套；三入口及 MCU/OS/Boot/USB/媒体清理策略保持。
 - 补充日志修复：按名接入遗漏几何参数起点导致0帧退出并隔离；新增实际命令回环反例及资源/控制全部关闭后的退出证明，未知退出仍隔离。
 
 ## 1.12.2 — 2026-10-27 全内圈清晰画面
 
 - 撤回1.12.1候选的“安全框内清晰、其余模糊”错误。清晰源覆盖全部内圈，安全框不裁视频，只有真实曲边渐变；全幅装饰圈仍隐藏。
-- RWVA配套，1632×440源/1920×720传输。新增全内圈高清覆盖及安全框外高频像素回归。[适配边界](docs/PRODUCT_1.12.2.md)。
+- RWVA配套，1632×440源/1920×720传输。新增全内圈高清覆盖及安全框外高频像素回归。
 
 ## 1.12.1 — 2026-10-27 全幅内圈边界
 
 - 全幅按内圈曲线裁剪，两侧装饰圈仍隐藏；深浅使用同形曲线和各自原底色，沿用低频填充，不延长高清文字。
-- 1280×336完整源画面放入曲边可读范围，1920×720传输保持；下沿553、原生信息/续航和1.12功能保持。需配套RWV9。[范围与使用](docs/PRODUCT_1.12.1.md)。
+- 1280×336完整源画面放入曲边可读范围，1920×720传输保持；下沿553、原生信息/续航和1.12功能保持。需配套RWV9。
 
 ## 1.12.0 — 2026-10-27 实际2D场景及外部显示接入
 
 - 沿实际2D更新路径传播投屏模式，普通Car/CarSmall及静态路面让位；原告警状态保持，停止恢复。
 - 圆角曲边全幅与续航底板对齐，功率/速度下移、里程右下微调；业务副屏按主屏可用区重排，输入带尺寸代次校验。
-- 首页地图开关、USB模式开关、原地图按钮ID监听、meterDisplay兼容名称及单应用按名接入。[使用和范围](docs/PRODUCT_1.12.0.md)。
+- 首页地图开关、USB模式开关、原地图按钮ID监听、meterDisplay兼容名称及单应用按名接入。
 
 ## 1.11.0 — 曲边梯形与普通场景让位
 
 - 分离1792×432高清视频载体、曲边开口、1408×352保守安全框；不把安全矩形当高清边界，不非线性扭曲视频文字。
 - 补改3dscreen.kzb：全幅/中心窗投屏期间仅隐藏普通ego Car与静态Plane；空闲无覆盖，保留目标车辆、车道信号、雷达、车门和告警资源。
-- 小窗移除ADAS_SmallBG装饰；原生深浅、续航底板、紧凑里程及主屏操作保持。RWV7必须配套APK/仪表App，原MCU/参考OS/Boot/媒体/角色不改。[范围与实车边界](docs/PRODUCT_1.11.0.md)。
+- 小窗移除ADAS_SmallBG装饰；原生深浅、续航底板、紧凑里程及主屏操作保持。RWV7必须配套APK/仪表App，原MCU/参考OS/Boot/媒体/角色不改。
 
 ## 1.10.0 — 2026-10-25 持续输出与异形仪表修复
 
@@ -170,45 +173,45 @@
 - 冷启动仅接纳唯一、新建、稳定的同用户同包主屏转发继任，再精确托管；已绑定身份保护不放松。
 - 普通应用源跟随主屏逻辑分辨率/密度，操作镜像完整；仪表FIT/CROP独立，原生Meter不改成主屏镜像。
 - 无障碍设置缺失/权限拒绝安全降级，不写系统设置、不退出Dashcast；宿主图标路由保持。
-- RWV6原厂遮罩轮廓/原色连续深浅软边、全幅功率单位右置、恢复续航原厂底板；MCU/参考OS/Boot/USB/媒体链不改。[配套升级与边界](docs/PRODUCT_1.10.0.md)。
+- RWV6原厂遮罩轮廓/原色连续深浅软边、全幅功率单位右置、恢复续航原厂底板；MCU/参考OS/Boot/USB/媒体链不改。
 
 ## 1.9.0 — 2026-10-25 同实例双端与原图标接管
 
 - 普通应用托管到无移除即销毁标志的自有VD，同一GL帧分发至原AVC/DCV1与Kotlin主屏镜像；触摸/Back带目标display，离开镜像页不主动停止仪表。
 - 原图标经当前应用的只读启动元数据/结构化任务与可选定向无障碍提示进入镜像；不占全局ActivityController、不改Launcher/ROM。严格UID、会话、页代际与精确任务归属。
 - 停止保留/归还业务任务，原生Meter单独清理；新双入口配置表不限制普通应用类别。RWV5仪表、MCU/参考OS/Boot/USB/有效区均保持原字节。
-- Android10系统软键盘、图标闪现、目标硬编和具体应用副屏限制仍须按设备验证，不把模拟器/离线测试称为全部应用实车通过。[使用与边界](docs/MIRROR_PROJECTION.md)。
+- Android10系统软键盘、图标闪现、目标硬编和具体应用副屏限制仍须按设备验证，不把模拟器/离线测试称为全部应用实车通过。
 
 ## 1.8.0 — 2026-10-24 持续维护与无拉伸柔边
 
 - 修单包批量发帧/节流处理内部缺少HMI维护；普通ADB逐帧读取原已维护，不误归因所有连续帧。媒体心跳不等于背景续租，仍保留五秒失联恢复/确认及所有权保护。
 - 低频32×16底色替代高清边字延展；全幅有效区1536×384与原生176px左右渐变同步，中心/已正常里程不变，原厂深浅配色保持。
-- RWV5及新私有标记防混配，需要APK与仪表App；其他50 App/原MCU/参考OS/Boot/角色保持。真实无独立入口的单任务应用仍不支持，本次无新日志/全部应用实车验收。[范围/升级](docs/PRODUCT_1.8.0.md)。
+- RWV5及新私有标记防混配，需要APK与仪表App；其他50 App/原MCU/参考OS/Boot/角色保持。真实无独立入口的单任务应用仍不支持，本次无新日志/全部应用实车验收。
 
 ## 1.7.3 — 2026-10-24 应用入口与准入误拒绝
 
 - 原车导航按实际Meter/主入口独立能力，不再固定仅一个版本；Meter别名选择与真实主入口比较。
 - 通用入口仅检查同任务域，不被不同affinity的无关页面否决；真正单任务/同域转发/权限等保护保持。
-- 列表显示能力/原因、开始及导出补版本/入口/拒绝上下文，原USB/AVC/任务归属/清理与仪表1.7.2保持。不是所有单任务应用虚拟化，未本版实车。[详情](docs/PRODUCT_1.7.3.md)。
+- 列表显示能力/原因、开始及导出补版本/入口/拒绝上下文，原USB/AVC/任务归属/清理与仪表1.7.2保持。不是所有单任务应用虚拟化，未本版实车。
 
 ## 1.7.2 — 2026-10-24 停止/换应用后受保护恢复
 
 - 本地采集/USB确证退出而仅远端未确认时，进入可读回恢复状态；真实本地未知保留硬隔离，不直接清guard。
 - 接收器新只读marker检查原sticky清理错误；旧OFFER不作成功证明，旧接收器拒绝新marker。原HMI/KZB/布局/媒体/角色/MCU/OS/Boot保持。
-- 后台等待旧finishing Service退出，更换应用先请求停止；有界历史清理原因随日志导出，原ADB身份不改。[范围/操作](docs/PRODUCT_1.7.2.md)。
+- 后台等待旧finishing Service退出，更换应用先请求停止；有界历史清理原因随日志导出，原ADB身份不改。
 
 ## 1.7.1 — 2026-10-23 右下里程与车速紧凑排版
 
 - 修原来数字/单位/里程三行分离且里程框贴底：数字与单位同排、动态数字右对齐，里程上移20px，保留50px逻辑底部余量。
 - 只改自有全幅KZB状态；五种里程、数值/单位/字体、中心/idle、1.7 ADAS/主题保持。HMI/receiver/MCU/OS/Boot/USB代码不变，APK仅code44/版本标题。
-- 原厂字体长值/原三行反例/数字位数和旧1.7资源冻结回归，仍不是物理面板/本版实车认证。[范围/操作](docs/PRODUCT_1.7.1.md)。
+- 原厂字体长值/原三行反例/数字位数和旧1.7资源冻结回归，仍不是物理面板/本版实车认证。
 
 ## 1.7.0 — 2026-10-23 原生呈现与双端可读性
 
 - 真实改动仪表HMI/KZB/receiver，新增可撤销2D ADAS呈现、保留Small主题/全部原警告状态、全幅安全带信息轨。没有隐藏整组ADAS或车门/接管提示。
 - 全幅有效内框1728×384及原厂深浅底板，信息区不再处于渐变透图阶段；地图源按扣除保护区后的比例输出。中心240dpi补偿缩小；四边及ADAS底板软化，原主屏密度不动。
 - RWV4匹配门禁；原MCU/参考OS/Boot/USB角色/媒体和其余50 App成员保持，继承1.6任务/许可/真实PTS，不增会话时限或拔线前提。
-- 原厂Kanzi/目标GPU、全部ADAS/新Meter业务和真实性能未本版实车；不是最终外观认证。[范围/升级](docs/PRODUCT_1.7.0.md)。
+- 原厂Kanzi/目标GPU、全部ADAS/新Meter业务和真实性能未本版实车；不是最终外观认证。
 
 ## 1.6.0 — 2026-10-23 独立应用与质量修复
 
@@ -216,14 +219,14 @@
 - 修1.5候选的新主屏任务误判：首次发现、精确owned ID校验、失败退出清理分开；正常原图标新任务不触发误停或清理隔离。加入销毁内容标记，清理逐步聚合异常而非中途放弃。
 - 重连授权按设备/代际一次性续接恢复和启动，停止取消待授权请求；不绕过正常ADB/USB许可。
 - 保留源PTS，不把慢帧日志伪装成固定30FPS；保留编码参考链、原有2秒断档门禁和五秒恢复。软化只用于内容外填充，缓存GL位置，不裁切地图有效区。
-- 根463 JVM/62套、旧class任务/时间轴反例、新旧真实GLES像素、30AVC/配套ARM回归通过；仪表FULL与1.4原字节一致。实际Meter路线/目标机GPU/真实30FPS/全部告警仍未本版实车。[操作与范围](docs/PRODUCT_1.6.0.md)。
+- 根463 JVM/62套、旧class任务/时间轴反例、新旧真实GLES像素、30AVC/配套ARM回归通过；仪表FULL与1.4原字节一致。实际Meter路线/目标机GPU/真实30FPS/全部告警仍未本版实车。
 
 ## 1.4.0 — 2026-10-23 有效内容区与原生四边融合
 
 - 外框与有效内容区分离；Kotlin副屏按全屏4:1/中心15:8排版，内容先入内框、边缘像素外延，不改变1920×720 AVC传输。
 - 静态原厂ColorBrush及原主题直接目标取代新材质/嵌套赋刷，200叶明确初始画刷；全屏/中心互斥回读，RWV3两端能力拒绝混配。
 - 总里程留位(1393,648)/.70、中心24像素软边及四角联合过渡；原告警/车门/安全带/ADAS保留，原图标同任务和停止归还保持。
-- 425 JVM/59套、27原生/资源、4组真实桌面像素回读及30 AVC帧回归；目标仪表视觉、主题切换/Android EGL仍未实车，不关闭性能/告警边界。[升级与范围](docs/PRODUCT_1.4.0.md)。
+- 425 JVM/59套、27原生/资源、4组真实桌面像素回读及30 AVC帧回归；目标仪表视觉、主题切换/Android EGL仍未实车，不关闭性能/告警边界。
 
 ## 1.3.0 — 2026-10-23 原图标访问与导航任务保持
 
@@ -263,7 +266,7 @@
 - 新DCV1/3及RWN2能力，旧端开始前拒绝；序号/PTS/心跳按uint32模递增，完整时间和累计统计64位。持锁短租只随所属活跃会话续期。
 - 保留5秒HMI失联恢复、15秒心跳、单帧/单操作/缓冲限制；1.0 USB角色脚本、MCU/参考OS/Boot/KZB/前景内容不改。
 - 根374 JVM/53套、39 ARM/Thumb及高清/OEM/成品差分审计通过；新增同连接250001帧、超过500000采集帧/8GiB与12小时假时钟回归。不把离线通过当实车长时、物理合成或道路安全认证。
-- [升级与当前操作](docs/PRODUCT_1.0.1.md)。以下版本为其写作时的冻结历史。
+-。以下版本为其写作时的冻结历史。
 
 ## 1.0.0 · 2026-10-21 Kotlin产品候选
 
@@ -299,7 +302,7 @@
 - APK新增独立原生窗口检查、10秒小窗测试图逐帧采样，结果进入既有下载目录导出；普通主屏/持续副屏默认不发送扩展。
 - 仪表只改接收器，原HMI/OS/MCU/引导/USB角色模块保持；仍是原小窗，全屏和HMI背景控制未启用。
 - 0.8.2短时动态画面、独立副屏及退出已获现场确认；0.9.0本轮仅离线验证，实际合成/alpha/稳定30FPS/长时仍待目标机验证。
-- 详见[本版任务与测试](docs/TASKS_0.9.0.md)。不创建新Release或把离线测试当道路安全认证。
+- 详见。不创建新Release或把离线测试当道路安全认证。
 
 ## 0.8.2 · 2026-10-16 高清解码入口与采集通道修复
 
@@ -405,7 +408,7 @@
 - 正常停止、错误清理与隔离分别报告；过程历史有界且不随Activity重建丢失，一键下载导出不含持续视频。
 - 仪表仅receiver四槽122字节改变；原46个App成员、USB模块/角色脚本、OS/MCU内容不改。本地FULL包仍携带原版OS/MCU，可能再次刷写。
 - 显式EOS及停止顺序保护：在Android采集资源完全拆除前及时STOP仪表视频，保留原视频空闲保护；两端退出确认后才释放USB，不用延长空闲超时掩盖竞争。
-- 本地259 JVM/37套、公开副本227 JVM/34套、28 ARM、35脚本、5原驱动契约/30帧桌面解码通过；真车10/30分钟等验收未执行，参见[任务](docs/TASKS_0.5.0.md)。0.4.4 Release保留，不用新版源码验收冒充旧实测。
+- 本地259 JVM/37套、公开副本227 JVM/34套、28 ARM、35脚本、5原驱动契约/30帧桌面解码通过；真车10/30分钟等验收未执行，参见。0.4.4 Release保留，不用新版源码验收冒充旧实测。
 
 ## 0.4.4 · 2026-10-12修复 / 2026-10-13复测
 

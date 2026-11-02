@@ -1,5 +1,6 @@
-# Optional, local firmware-input adaptation only; not needed for APK/CI unit tests.
+# Instrument component tools only (docs/BUILD.md); not needed for the APK or CI tests.
 keystone-engine==0.9.2
 capstone==5.0.9
 pyelftools==0.33
 Pillow==12.3.0
+numpy==2.5.3

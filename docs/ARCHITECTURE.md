@@ -1,77 +1,37 @@
-# 当前架构（1.8.0 同所有者持续维护与RWV5软边）
+# 架构
 
-FRAME与IDLE都调用同一串行维护器，不新增线程抢写USB；媒体心跳和HMI查询/续租是两套不同操作，后者不能只依靠空闲触发。低频填充独立32×16 FBO，内框高清直取/外框只读低频；全幅1536×384与176px原生侧渐变配对RWV5，中心及紧凑里程保持。[时序/边界](PRODUCT_1.8.0.md)。
-
-应用能力由实际已安装元数据解析，原车比较真实主入口/明确Meter独立域，不按单一版本号授权；通用同任务域检查保留真正单实例保护。目录能力/开始前重查/shell重查/有界诊断一致，不创建用户、不强停原应用、不回退主屏镜像。[范围](PRODUCT_1.7.3.md)。
-
-本地退出证明与远端确认分离：只有前者完整才进入可查询恢复，原生错误位/背景回原态/两次新鲜同代快照均通过才解锁。QUERY op0/hold1不写原HMI、错误位或媒体；老实现不支持即拒绝。正常START仍走原独立会话链，不用恢复创建媒体或强切模式。[状态图与边界](PRODUCT_1.7.2.md)。
-
-1.7.1只替换自有DCLayout全幅的车速/单位/里程呈现，原数值和五模式仍由原生TopBottom/速度模板维护；字符串追加保留原ID，其余原生资源与HMI/receiver字节不变。中心/idle、背景租约与整条视频链沿用。[范围](PRODUCT_1.7.1.md)。
-
-承接1.6独立任务/许可/源PTS。源UI按有效区与VD密度布局，经原1920×720 AVC/DCV1/NCM传输；QNX窗口配置不变。HMI相同本地租约写继承DCLayout，原有2D ADAS/Small/装饰Road/安全带单叶状态组只改呈现。200个原生ColorBrush羽化叶在原厂主题上保护信息区，ADAS底板十级羽化，原警告状态与车辆数据保持。RWV5及DWTop/DWBottom配对码阻止旧几何混用。原厂Kanzi和实际ADAS/导航业务仍需目标机，未把未知3D结构猜成2D。[原生呈现历史](PRODUCT_1.7.0.md)。
-
-## 1.6.0 独立应用与精确归属（历史）
-
-同用户专用VirtualDisplay直接输出Surface/EGL/AVC，主屏原任务与用户数据不搬移/缩放/清除，也没有主屏镜像兜底。原车导航使用核验版本独立Meter入口，通用应用先过多实例能力门禁。启动发现只考虑新自有display；绑定后仅查owned taskId/user/root/display。清理只回收已证明归属的任务并聚合所有步骤失败，VD带DESTROY_CONTENT_ON_REMOVAL，避免清理失败时把剩余内容迁回主屏。
-
-原始编码PTS不重定时；编码前上限与单调FramePacer控制速率，现有帧间隔/租约保护不放宽。USB授权按精确设备地址/操作代际一次性续接，停止使旧授权续接失效。内容内框及RWV3仪表包保持，GL只柔化内框外填充、不裁掉提示，热路径不再反复查询uniform位置。Meter业务状态共享、真实GPU/FPS与所有告警仍需目标机确认。[当前范围](PRODUCT_1.6.0.md)。以下按历史架构保留，不把旧同任务交接误当当前路径。
-
-## 1.4.0 有效内容区与原生融合（历史）
-
-同任务交接沿1.3保留；自有副屏逻辑尺寸按有效内框1920×480或1200×640，Kotlin EGL先将内容映射进编码内框，再按producer矩阵采样，边缘clamp只提供羽化余量。同一1920×720 AVC/NCM/DCV1链 → 原QNX全屏或768×432窗口 → 原生ColorBrush200叶软边/数据承载面 → 原生信息及警告前景。原RootPage.state2直接控制叶画刷，DCLayout只控制全屏/中心互斥与本地位置；五秒所属租约停止/异常撤销，RWV3拒绝旧能力混配。无新增HMI材质/未知ABI或MCU/OS改变。[当前范围](PRODUCT_1.4.0.md)。
-
-## 1.3.0 同任务主屏/副屏交接（保留）
-
-精确采纳已有user/task/root，不重复启动地图。原图标固定事件30003/30005 → 所属任务路由 → 主屏前台共显或自有副屏承接 → 同一个SF token/硬件AVC/DCS1/USB-NCM/DCV1流。副屏使用独有ImageReader持续释放缓冲，SF采集token独占编码输入；不是两个生产者共用Surface。切源按单调PTS门控并等新IDR，主屏只在所选任务前台确认后使用；归属未知即停止，不以其它界面回退。停止先同task归还display0，再release自有VD，不强停地图。初始START待ACK单独识别本请求/旧恢复快照，不放松激活后撤销保护。[当前范围](PRODUCT_1.3.0.md)。下文为各历史阶段。
-
-## 1.2.0 原厂主题与大中心窗
-
-原厂RootPage的state2 → 只供新增材料使用的继承DCTheme → 原生深浅信息区色值及四边/四角遮罩；不写车辆数据/CAN。Content本地DCLayout为0恢复、1全屏紧凑、2中心窗，原getter仍核上下锚点再发布NLC。中心窗口固定768×432、z=-3，Kotlin EGL以1280×720采集后重采样到原1920×720传输，QNX缩放逆转横向重采样；两种模式共用同连接租约、STOP/EXIT/USB恢复保护。[本版机制与边界](PRODUCT_1.2.0.md)。以下1.1.2描述为历史。
-
-1.1.2保持1.1.1 HMI/NLC及底层链，KZB调整相对坐标和衬底内部原生矢量矩形透明度，父锚点仍0/1以供回读。Kotlin续租区分本次请求排队窗口与首次激活年龄，待确认不延长租约，foreign/revoke仍拒绝。[当前机制与操作](PRODUCT_1.1.2.md)。下面1.1.1机制仍适用，历史文档的待实车状态按当时范围理解。
-
-在原DCV1/3持续下层视频之上，原HMI渲染线程按同一所属租约更新 Content 的本地属性；状态管理器与属性同归该节点。APK准备、激活、恢复检查 NLC0/1/0，原生读回上下衬底实际属性，不拿旧 NAV 置位当生效。持续源就绪后才激活，停止/失联撤回，原车数值/告警保持原厂绑定。物理拔线与未知清理分开：前者本地退出完整后 DISCONNECTED，新连接查询同代次、推进帧与恢复状态后才能重启；不强制 Host、不删 guard。接收器/USB角色/OS/MCU保持1.0.1字节不变，[机制与边界](PRODUCT_1.1.1.md)。以下为历史架构。
-
-## 1.0.1 持续产品会话（历史）
-
-Kotlin产品层→所属前台Service→受控shell副屏/硬件AVC→DCV1/3/NCM→QNX receiver/RWN2 HMI桥。正常产品duration=0，无累计时间/帧数/字节数停止，不使用定时重连；uint32模线序号与PTS配合64位源时间/统计。HMI同nonce/PID/epoch按秒续期五秒租约，接收器只检查最近15秒心跳；服务持锁随活跃所属短租续期。停止恢复/EXIT/STOP/ALT0/接口释放与1.0带线工作流保持，未知清理仍隔离。[1.0.1能力与兼容](PRODUCT_1.0.1.md)。
-
-## 1.0 架构（历史）
-
-Kotlin产品Activity/应用目录/配置 → 应用级协调器与真实Service状态 → 已授权原厂导航角色中继/前台投屏Service → 原Java副屏采集/硬编/DCV1/NCM → QNX receiver/HMI背景桥。单一最长两小时连接，RWN1能力匹配后同nonce/PID/epoch/序号按秒续租五秒背景期限；不靠循环重连。停止先恢复背景、媒体STOP、采集EXIT、USB ALT0和接口释放，未知清理隔离。带线Host再soft-link-down及私有协议栈正常退出，不强杀共享服务；设备消失不冒充Host成功反馈。导航不每次停车确认，车辆运动输入未接入，不能由软件状态证明物理层/全部告警或道路安全。[产品范围](PRODUCT_1.0.md)。以下保留历史架构。
-
-0.10.0同一DCV1连接准备背景能力、HELLO2/固定全屏START、首帧ACK后一次type10 START；五秒原生恢复后自动停止，提前结束先恢复背景再媒体STOP/USB释放。DCS1 idle只保活不计视频帧；自有父窗口z=-3、子局部z=1，HMI请求8位alpha，不降低原生前景alpha/改pipeline。短远程探针由前台Service持有但不打开USB视频。默认小窗保持；[本版范围](TASKS_0.10.0.md)。下文保留历史阶段架构。
-
-原视频/USB链路保持。新增显式DCV1 type10/BGP1 → 固定RAM记录 → 原厂HMI渲染线程限时桥接；精确校验背景结构，只在5秒租期跳过背景绘制，HMI自己恢复，不改前景数据。没有新增任意命令、路径、地址或视频激活。尚未实车，视频仍小窗、完整全屏未开放，详见[范围](TASKS_0.9.1.md)。下文F1是历史独立诊断子任务，此候选隐藏type9按钮。
-
-F1在既有有序DCV1流增加固定type9读取资源页；单独诊断不创建视频窗口，视频诊断每FRAME ACK后最多读取一页。它不改窗口/管线/背景，不创建第二个窗口管理器。普通投屏默认不发送扩展，旧HELLO1/2及FRAME ACK/STOP保持。没有激活/设备绑定。实际EGL alpha和物理混合仍不能由只读文本证明，HMI受控接入尚未实现，全屏未开放。
-
-0.8.2分别核对SPS编码尺寸1920×720、mm-renderer输入URI的video.width/height=1920/720、push配置1920×720，以及Screen窗口640×240。shell helper将Java stdout重定向到stderr，DCS1/AVC仍直写原始FD1；消费者异常会触发所属stdin STOP和有限退出排空，不发送更多视频，不强杀共享服务。收到完整EXIT及释放标记才确认采集清理，原始失败不会被改成成功。
-
-本项目用于受控台架或停车验证。控制面和视频面分离：控制面通过设备已有的授权通道请求 USB 角色变化；视频面通过本机 ADB 获取屏幕、硬件编码，再经 USB 网络链路发送到仪表侧接收器。
-
-```text
-控制：APK → 已授权的车机服务 → 仪表 USB 角色
-视频主屏：授权 ADB SurfaceControl 镜像 → 硬件 H.264 → USB 网络 → DCV1 接收器 → 仪表媒体/显示
-视频远程副屏：授权 ADB shell → Android VirtualDisplay → 硬件 H.264 → USB 网络 → DCV1 接收器 → 仪表媒体/显示
+```
+车机（Android 10）                                      仪表（QNX，Kanzi HMI）
+┌────────────────────────────────┐   USB 数据线    ┌──────────────────────────────────┐
+│ ProductActivity  投屏/应用/设置 │   NCM 网络     │ dip-instrument/                   │
+│ ProjectionService 前台会话      │ ─────────────▶ │   instrument-receiver  解码 H.264  │
+│ shell 宿主（经本机 adbd）       │  DCV1 视频流   │   usb-mode.ksh 等  USB 模式切换   │
+│   虚拟屏 + 编码器               │                │ rc_hmi.exe + bic_byd_stha.kzb     │
+│ 用户态 USB NCM（ncm/）          │                │   视频窗口在下，原生信息在上       │
+└────────────────────────────────┘                └──────────────────────────────────┘
 ```
 
-远程副屏只在 Android 车机侧创建。它不是把 QNX 仪表注册成 Android `Display`：APK选择一个可启动组件后，shell侧创建1920×720 public/presentation `VirtualDisplay`，把编码器输入Surface作为输出，并调用`am start --display`；主屏SurfaceControl镜像仍作为默认回退路径。VirtualDisplay权限、跨屏启动、具体应用兼容性和QNX实际显示必须单独现场验证。
+## 车机端（`phase1/android`）
 
-## 控制边界
+- **界面与状态**：`ProductActivity` 有投屏、应用、设置三页，投屏页内嵌操作窗口（`EmbeddedCastView`，布局由 `CastWorkspaceLayout` 计算）。`ProductController` 协调开始、停止、更换应用和连接；`ProductSettings` 保存用户选择。
+- **会话**：`ProjectionService` 是前台服务，从开始到停止、断开或出错一直持有同一个会话，不定时重连，通知栏可以停止。
+- **shell 宿主**：应用通过本机 adbd（`AdbShellClient`，RSA 身份存在 Android Keystore）以 shell 身份运行 `app_process` 宿主，由它创建虚拟屏、迁移应用任务和采集画面（`ShellMirrorHost`、`ShellScreenCapture`、`ShellExternalDisplay`）。普通应用的任务放在本应用拥有的虚拟屏上；主屏上的投屏页和仪表看到的是同一帧画面。
+- **视频**：画面经编码器编成 H.264，按 DCV1 协议（`NoAuthVideoProtocol`）通过 TCP 发出。
+- **USB 连接**：`ncm/` 是用户态 USB NCM 实现，车机作为 USB 主机，经数据线和仪表组成网络。仪表 USB 角色（平时做 USB 主机读 U 盘，投屏时做 NCM 网络设备）的切换请求经原厂导航文字通道发给仪表（`NavigationUsbRelay`），由仪表脚本执行。
+- **外部接入**：`ExternalDisplayService` 提供名为 `fission_dashcast_meter` 的屏幕，供支持外部屏幕的应用（如定制版高德地图）直接发送画面。
 
-APK只调用目标设备已有的、经过授权的系统服务，不注入原始总线帧，不修改 MCU，不关闭 ADB 认证，也不自动在后台切换 USB 角色。模式切换的“请求已提交”和“目标设备已完成切换”是两个不同结果；后者必须由设备枚举或实际 Host 设备验证。
+## 仪表端（`phase1/qnx`）
 
-## 视频与时间轴
+- `startup.ksh` 在开机时由仪表的启动管理调用，只在 tmpfs 里准备本模块，开机不切换 USB 角色。
+- `usb-mode.ksh` 在 USB 主机模式和 NCM 设备模式之间切换（仪表地址 192.168.77.1，车机 192.168.77.2），`instrument-usb` 是它使用的辅助程序。
+- `cast-mode.ksh` 启动和停止接收端；`run-cast.ksh` 是接收端的守护包装，记录退出和清理结果，清理没有确认时不允许再次开始。
+- `instrument-receiver` 接收 DCV1 视频并解码，显示在 HMI 下层的窗口里。
+- `rc_hmi.exe` 和 `bic_byd_stha.kzb` 加了投屏布局：空闲、全屏、小窗三种状态。投屏时用自有背景和曲边遮罩，原生的车速、功率、电量、续航和告警仍在最上层；停止或失联后恢复原厂背景。遮罩的混合方式见[仪表 1.19.3](PRODUCT_1.19.3.md)。
+- `3dscreen.kzb` 在投屏时隐藏道路底板和自车模型，安全告警仍优先显示。
 
-0.8.1请求硬件AVC Baseline、1920×720和30FPS，校验实际编码尺寸。START为窗口x/y/宽/高/FPS/flags，固定(640,240,640,240,30,0)；SPS尺寸独立验证1920×720。远程context创建前准备Looper，虚拟屏使用PUBLIC/PRESENTATION/OWN_CONTENT_ONLY。编码前Surface输入限速，编码后保留全部访问单元；FrameRateGate重定时，FramePacer按单调时钟排程写入，同步ACK背压和迟到重锚定保持。OutputFrameRateEvidence只报告实际偏差，不中断有效视频，真实30FPS仍需测量。完整非零EXIT与命令失败分开，资源释放标记或EXIT缺失仍隔离。
+上述改动都是对按哈希固定的原件打补丁（ARM/Thumb 汇编源在 `phase1/qnx/`，Python 构建模块在 `analysis/`），不重新编译 HMI。构建方法见[构建文档](BUILD.md)。
 
-固定 PTS 只证明发送端时间轴，不证明远端解码或显示帧率。真实硬件编码、USB吞吐、远端显示和安全层级必须单独现场验证。
+## 边界
 
-## 会话与清理
-
-连续模式由前台 Service 持有，使用有界采集缓冲、逐帧 ACK 和有限时长。正常结束、用户停止、USB断开和错误清理分别记录状态；如果清理未确认，后续会话保持隔离，避免重复发送模式命令或留下共享资源残留。
-
-## 公开范围
-
-公开仓库只包含可复现的 Android/QNX 接口源码、测试和通用说明，不包含车辆标识、固件原件、固件哈希、设备密钥、原始日志或照片。使用者必须自行提供有权使用的设备和匹配输入，克隆仓库不等于可以直接刷写设备。
+- 车机系统软键盘、禁止副屏显示的应用和部分安全窗口仍有限制。
+- 目标仪表的 GPU、显示控制器和视频硬解只能在实车上验证；离线测试覆盖的范围见[验证状态](VALIDATION.md)。

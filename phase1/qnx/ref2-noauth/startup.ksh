@@ -9,6 +9,16 @@ RUN=/fs/tmpfs/dip-usb
 mkdir -p "$RUN"
 exec > "$RUN/usb.log" 2>&1
 echo DASHCAST_DCV1_STARTUP
+# Optional background PoC RAM record. Never truncate an object mapped by HMI.
+# Failure disables only the PoC; the established USB/video startup continues.
+BG_CTL=/dev/shmem/dashcast-bg1
+if [ ! -e "$BG_CTL" ] && [ ! -L "$BG_CTL" ]; then
+    if /bin/dd if=/dev/zero of="$BG_CTL" bs=4096 count=1; then
+        chmod 600 "$BG_CTL" || :
+    else
+        echo BACKGROUND_POC_RAM_UNAVAILABLE
+    fi
+fi
 for name in instrument-usb usb-mode.ksh; do
     [ -f "$BASE/$name" ] && [ ! -L "$BASE/$name" ] || exit 1
     cp "$BASE/$name" "$RUN/$name"
