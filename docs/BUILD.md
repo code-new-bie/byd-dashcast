@@ -47,9 +47,9 @@ Windows 用 `gradlew.bat`。三个任务分别是单元测试、构建 debug APK
 | `--toc` | `bic_byd_stha.kzb.txt` | 同上 | `402c609076bc539bd552652f00fd63440f59d28e8cc908ca494f249060ad106e` |
 | `--scene` | `3dscreen.kzb` | 同上 | `18d817c89f07e7171a26e67ec4a1f567d76e8ae7b61c6c3383ee92882be8323c` |
 | `--config` | `application.cfg` | 同上 | `f672ed14e92ee2345aaefc5c4192f5d37bb10baf368f9edcca08bc5c7c662538` |
-| `--receiver` | `instrument-receiver` | 1.2.0 配套包 app.sv 的 `base/app/dip-instrument/` | `8b490f2fd8b6b5b8f97f93e2f085122838e12c67670e60fd7770cb455ac63aa6` |
+| `--receiver` | `instrument-receiver-1.2.0` | 本仓库 [Release `receiver-1.2.0-2021-song-plus-dmi`](https://github.com/code-new-bie/byd-dashcast/releases/tag/receiver-1.2.0-2021-song-plus-dmi) 的附件（即 1.2.0 配套包 app.sv 里的 `base/app/dip-instrument/instrument-receiver`） | `8b490f2fd8b6b5b8f97f93e2f085122838e12c67670e60fd7770cb455ac63aa6` |
 
-基础包指本项目所基于的宋 Plus DM-i 仪表升级包（使用原厂 MCU）。每一步都按哈希检查输入，原件不对会直接拒绝，不会产生输出。`--receiver` 不是原厂文件，是本项目 1.2.0 版产出的接收端，它和参考包原始接收端之间还有一段没公开的历史步骤，所以只能取自 1.2.0 配套包。
+基础包指本项目所基于的宋 Plus DM-i 仪表升级包（使用原厂 MCU）。每一步都按哈希检查输入，原件不对会直接拒绝，不会产生输出。`--receiver` 不是原厂文件，是本项目 1.2.0 版产出的接收端。它和参考包原始接收端之间有一段早期修改步骤没有公开工具，所以单独作为 Release 附件提供，直接下载即可。
 
 把原件从 app.sv 里取出来，可以用 `analysis/sv_container.py` 的 `unpack_sv`。
 
@@ -59,7 +59,7 @@ Windows 用 `gradlew.bat`。三个任务分别是单元测试、构建 debug APK
 python tools/build_instrument_components.py \
   --hmi ORIG/rc_hmi.exe --kzb ORIG/bic_byd_stha.kzb --toc ORIG/bic_byd_stha.kzb.txt \
   --scene ORIG/3dscreen.kzb --config ORIG/application.cfg \
-  --receiver RECEIVER_120/instrument-receiver --output OUT
+  --receiver instrument-receiver-1.2.0 --output OUT
 ```
 
 `OUT` 必须是新目录（它的上级目录必须已经存在）。工具在内存里依次做三步，再加上 application.cfg 和四个 QNX 脚本。每个产物都要和审核过的 1.19.3 文件逐字节相同，否则报错，一个文件也不写。

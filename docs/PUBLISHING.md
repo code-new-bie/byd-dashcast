@@ -13,9 +13,10 @@
 3. 用 `git status` 和 `git diff` 逐项审阅改动，确认没有多余文件或软链接。新增 PNG 必须登记到 `check_public_tree.py` 的 `OWNED_BACKGROUNDS`，否则检查会拒绝。
 4. 推送后看 CI 结果，以本次提交的运行为准。
 
-## 不做的事
+## 约定
 
-- 不创建 Release、tag，不上传 APK 或固件；
+- Release 只在项目所有者明确要求时创建，一律标为 Pre-release，附件写明 SHA256。现有两个：`v0.4.4-2021-song-plus-dmi`（0.4.4 完整仪表包与 APK）和 `receiver-1.2.0-2021-song-plus-dmi`（构建用的 1.2.0 接收端）；
+- 普通提交不附带 APK 或固件；
 - 不 force push；
 - 不把 CI 或模拟器结果写成实车结论。
 

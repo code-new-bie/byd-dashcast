@@ -405,8 +405,8 @@
     },
     {
       "path": "docs/BUILD.md",
-      "bytes": 8754,
-      "sha256": "99091c784fe78de68cdc7bee189f38f275b162f4146248e3b838287a02e9b637",
+      "bytes": 8978,
+      "sha256": "ece54cf5905697a124be62f3d1c02e0bcc7aae2c151195ff1a5e0af2567b4944",
       "origin": "publication/template/docs/BUILD.md",
       "transformations": []
     },
@@ -426,8 +426,8 @@
     },
     {
       "path": "docs/PUBLISHING.md",
-      "bytes": 1113,
-      "sha256": "a8f0912b685da965feef7b0a1a7e6d1c05f36e0ee00b8d742448818a9aabc8c5",
+      "bytes": 1350,
+      "sha256": "7aeeca892bfb8127a3908510f0d63185b8169232c7ae35a07754dfe3fd3afadb",
       "origin": "publication/template/docs/PUBLISHING.md",
       "transformations": []
     },
