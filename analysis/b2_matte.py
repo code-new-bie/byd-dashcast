@@ -24,8 +24,8 @@ import aperture_fit_overlay as previous
 from product_runtime_layout import CAPABILITY, RECURSIVE_2D, RENDER_MESH
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT / "phase1/qnx/native-hmi/background-b2.thumb"
-MASKS = ROOT / "phase1/qnx/assets/b2"
+SOURCE = ROOT / "instrument/native-hmi/background-b2.thumb"
+MASKS = ROOT / "instrument/assets/b2"
 HMI_SHA = "5dfef87a7786c3b6af5866b44572c795156473001f0ffa29e7a0f2d3d966b9a2"
 KZB_SHA = "15822ca13bf5b2c8ca07d4c5a64bec6af1a1562117def4211af951bb46da0a63"
 HMI_MD5 = "d87808a04fc74d5ed5ce2fe4c1d2da71"

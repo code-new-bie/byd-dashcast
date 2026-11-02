@@ -19,7 +19,7 @@ from analyze_kzb_hmi import KzbDirectory
 from navigation_layout import digest, repack
 
 ROOT = Path(__file__).resolve().parents[1]
-MASK = ROOT / "phase1/qnx/assets/b3-center/DXCenterDark.png"
+MASK = ROOT / "instrument/assets/b3-center/DXCenterDark.png"
 RESOURCE = "/Resource Files/Images/DXCenterDark.png"
 HMI_SHA = "94afdc93bb641dd2d9e9b7cd62e0ffaf4094ac7be376f605fbb05c9eaa910bc8"
 KZB_SHA = "bc2929b3b061a7ac8399537f6b42810d19de29b127c13036345edf39d21c9713"

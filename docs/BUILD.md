@@ -9,7 +9,7 @@
 | 用途 | 需要 | 说明 |
 |---|---|---|
 | APK | JDK 21 | CI 用 Temurin 21。`JAVA_HOME` 指向它。 |
-| APK | Android SDK：`platforms;android-35`、`build-tools;35.0.1` | 用 `ANDROID_HOME` 或 `phase1/android/local.properties` 里的 `sdk.dir` 指定 SDK 位置（`local.properties` 不要提交）。 |
+| APK | Android SDK：`platforms;android-35`、`build-tools;35.0.1` | 用 `ANDROID_HOME` 或 `android/local.properties` 里的 `sdk.dir` 指定 SDK 位置（`local.properties` 不要提交）。 |
 | APK | Gradle 9.5.0 | 由 `gradlew` / `gradlew.bat` 自动下载，wrapper 已校验分发包 SHA256。AGP 9.3.0，Kotlin 用 AGP 内置的，不另加 Kotlin 插件。 |
 | APK | 网络（仅首次） | 首次构建要下载依赖；缓存好之后可以加 `--offline`。 |
 | 仪表组件 | Python 3.12 或更新版本 | 依赖见 `requirements-native.txt`：`pip install -r requirements-native.txt`。 |
@@ -20,7 +20,7 @@
 ## 二、编译 APK
 
 ```bash
-cd phase1/android
+cd android
 bash gradlew testDebugUnitTest assembleDebug lintDebug --console=plain
 ```
 
@@ -30,9 +30,9 @@ Windows 用 `gradlew.bat`。三个任务分别是单元测试、构建 debug APK
 
 | 文件 | 内容 |
 |---|---|
-| `phase1/android/app/build/outputs/apk/debug/app-debug.apk` | debug APK，包名 `com.byd.dashcast.phase1.debug`，版本 `1.20.2-debug` / code72 |
-| `phase1/android/app/build/test-results/testDebugUnitTest/` | 单元测试结果（XML） |
-| `phase1/android/app/build/reports/lint-results-debug.html` | lint 报告 |
+| `android/app/build/outputs/apk/debug/app-debug.apk` | debug APK，包名 `com.byd.dashcast.phase1.debug`，版本 `1.20.2-debug` / code72 |
+| `android/app/build/test-results/testDebugUnitTest/` | 单元测试结果（XML） |
+| `android/app/build/reports/lint-results-debug.html` | lint 报告 |
 
 **签名**：debug APK 用的是构建机上的 debug 密钥。只有签名与车上已装的 APK 相同，才能覆盖安装；签名不同时只能先卸载，应用数据和 ADB 身份会一并丢失。仓库不包含任何签名密钥。
 
@@ -73,7 +73,7 @@ python tools/build_instrument_components.py \
 | `OUT/base/app/rc_hmi/3dscreen.kzb` | 原 3D 场景，投屏时隐藏道路底板和车模 |
 | `OUT/base/app/rc_hmi/application.cfg` | 原文件末尾加一行 `SurfaceBitsAlpha = 8` |
 | `OUT/base/app/dip-instrument/instrument-receiver` | 1.2.0 接收端 + 1.17 各项改动 |
-| `OUT/base/app/dip-instrument/startup.ksh` 等四个脚本 | 原样复制 `phase1/qnx/ref2-noauth/` |
+| `OUT/base/app/dip-instrument/startup.ksh` 等四个脚本 | 原样复制 `instrument/ref2-noauth/` |
 | `OUT/REPORT.json` | 每个产物的 SHA256 和每一步的检查报告 |
 
 ### 分步构建（排查用）
@@ -86,7 +86,7 @@ python tools/build_b2_matte_components.py --hmi STEP1/rc_hmi.exe --kzb STEP1/bic
 python tools/build_center_mask_components.py --hmi STEP2/rc_hmi.exe --kzb STEP2/bic_byd_stha.kzb --output STEP3    # 1.19.3：小窗遮罩
 ```
 
-第 1 步还会输出 `3dscreen.kzb` 和 `receiver`，后两步不再改动它们。遮罩 PNG（`phase1/qnx/assets/`）的 RGB 是乘数，不是普通图片：不要再预乘，也不要用图片软件重新保存。HMI 和 KZB 必须成对使用，不能和其他版本混用。
+第 1 步还会输出 `3dscreen.kzb` 和 `receiver`，后两步不再改动它们。遮罩 PNG（`instrument/assets/`）的 RGB 是乘数，不是普通图片：不要再预乘，也不要用图片软件重新保存。HMI 和 KZB 必须成对使用，不能和其他版本混用。
 
 ## 四、打包成刷机包
 
@@ -136,7 +136,7 @@ app.sv 中的变化：
 python tools/check_public_tree.py --verify-snapshot
 python -m unittest discover -s tools/tests -p 'test_*.py' -v
 python tools/test_native_background.py --output build/native-background-ci
-cd phase1/android && bash gradlew testDebugUnitTest assembleDebug lintDebug --console=plain
+cd android && bash gradlew testDebugUnitTest assembleDebug lintDebug --console=plain
 ```
 
 `check_public_tree.py` 检查文件清单与 `SOURCE_MANIFEST.json` 是否一致，并拒绝固件、APK、密钥、日志、个人路径等内容。`test_native_background.py` 的输出目录必须是仓库 `build/` 下的新目录。

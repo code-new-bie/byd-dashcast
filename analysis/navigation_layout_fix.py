@@ -10,7 +10,7 @@ from analyze_kzb_hmi import KzbDirectory, node_head, Cursor, custom_types, STAND
 from background_poc_native import apply_hmi_overlay
 from unlimited_native import HMI_SOURCE
 
-SOURCE = ROOT / "phase1/qnx/native-hmi/navigation-layout-local.thumb"
+SOURCE = ROOT / "instrument/native-hmi/navigation-layout-local.thumb"
 MANAGER = "/State Managers/Dashcast_LocalLayout"
 NAV_STATUS = 0x4e4c4300
 RULES = [(owner + ("" if path == "." else "/" + path), key, value)

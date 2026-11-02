@@ -14,7 +14,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--hmi", required=True, type=Path)
     parser.add_argument("--kzb", required=True, type=Path)
-    parser.add_argument("--masks", type=Path, default=ROOT / "phase1/qnx/assets/b2")
+    parser.add_argument("--masks", type=Path, default=ROOT / "instrument/assets/b2")
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args()
     for path in (args.hmi, args.kzb):

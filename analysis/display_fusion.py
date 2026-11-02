@@ -16,8 +16,8 @@ THEME = "DCTheme"
 MANAGER = "/State Managers/DCLayout"
 TOP, BOTTOM = "DCTop", "DCBottom"
 CENTER_RECT = (576, 128, 768, 432)
-SOURCE = ROOT / "phase1/qnx/native-hmi/display-fusion.thumb"
-RECEIVER_SOURCE = ROOT / "phase1/qnx/ref2-noauth/receiver-display-fusion.arm"
+SOURCE = ROOT / "instrument/native-hmi/display-fusion.thumb"
+RECEIVER_SOURCE = ROOT / "instrument/ref2-noauth/receiver-display-fusion.arm"
 RECEIVER_SHA = "7c5e36bfaedafb963dba9ff42619c50254fb0c4a45da378402a560dc4bad08fe"
 FULL_RULES = [(p, k, v) for p, k, v in OLD_RULES
               if p not in (TOP, BOTTOM, "DashcastTopBand", "DashcastBottomBand", TIME + "Line")

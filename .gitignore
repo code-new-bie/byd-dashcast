@@ -49,6 +49,6 @@ local.properties
 
 # Only the checksum-verified Gradle wrapper jar is intentionally versioned.
 *.jar
-!phase1/android/gradle/wrapper/gradle-wrapper.jar
+!android/gradle/wrapper/gradle-wrapper.jar
 Thumbs.db
 .DS_Store

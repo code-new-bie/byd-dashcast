@@ -19,7 +19,7 @@ from inspect_qnx_elf import virtual_bytes
 
 RECEIVER_HASH = "5a657b5d0c0eabaf4161df5a6882846fc0d149d1e5bc093e49b8499073868741"
 USB_HASH = "b86dbcdae3ded35dcf1984ed26eb5cfade52cc69ddb01bd13882b49c2d9fdb20"
-SOURCE = ROOT / "phase1/qnx/ref2-noauth/receiver-dcv1.arm"
+SOURCE = ROOT / "instrument/ref2-noauth/receiver-dcv1.arm"
 NOP = bytes.fromhex("00f020e3")
 
 

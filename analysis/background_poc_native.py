@@ -13,7 +13,7 @@ from ref2_noauth_native import ROOT, digest, Patch, NOP, build_receiver
 from keystone import Ks, KS_ARCH_ARM, KS_MODE_THUMB, KS_MODE_LITTLE_ENDIAN
 from keystone import KS_MODE_ARM
 
-HMI_SOURCE = ROOT / "phase1/qnx/native-hmi/background-poc.thumb"
+HMI_SOURCE = ROOT / "instrument/native-hmi/background-poc.thumb"
 HMI_BASE_SHA = "5fe489555ac7e3cc3cc4f73cfd47fa3cca580d881e570d22e4ac93a6fad07b10"
 CAVE = 0x086a2850
 CAVE_OFFSET = 0x65a850
@@ -24,8 +24,8 @@ LABELS = ("bg_getter", "bg_clear", "bg_render", "bg_brush", "bg_tick", "bg_find"
           "bg_leaf_named", "bg_state_address", "bg_original_literal", "bg_billion",
           "bg_half_billion", "bg_magic", "bg_root_name", "bg_content_name",
           "bg_background_name", "bg_image_name", "bg_sky_name", "bg_path", "bg_done")
-RECEIVER_SOURCE = ROOT / "phase1/qnx/ref2-noauth/receiver-background-poc.arm"
-BASE_SOURCE = ROOT / "phase1/qnx/ref2-noauth/receiver-dcv1-hd-window.arm"
+RECEIVER_SOURCE = ROOT / "instrument/ref2-noauth/receiver-background-poc.arm"
+BASE_SOURCE = ROOT / "instrument/ref2-noauth/receiver-dcv1-hd-window.arm"
 RECEIVER_BASE_SHA = "9c71b0631c5045ae29e2e01092d039a8d193546eb25eed9083c4d5aa112fa563"
 
 

@@ -55,7 +55,7 @@ class PublicCheckTests(unittest.TestCase):
         self.assertIn(('unreviewed.png', 'UNREVIEWED_BINARY'), inspect_files(self.root, proposed_files(self.root)))
 
     def test_kotlin_session_cache_excluded_but_explicit_tracking_refused(self):
-        name = "phase1/android/.kotlin/sessions/synthetic-session"
+        name = "android/.kotlin/sessions/synthetic-session"
         self.put(name, b"synthetic generated cache")
         self.assertNotIn(name, proposed_files(self.root))
         self.assertEqual([(name, "PRIVATE_OR_GENERATED_FILE_TRACKED")], inspect_files(self.root, [name]))
@@ -80,9 +80,9 @@ class PublicCheckTests(unittest.TestCase):
         self.assertIn(("README.md", "BROKEN_OR_EXTERNAL_LOCAL_DOCUMENT_LINK"), inspect_files(self.root, proposed_files(self.root)))
 
     def test_wrong_wrapper_rejected(self):
-        self.put("phase1/android/gradle/wrapper/gradle-wrapper.jar", b"synthetic wrong wrapper")
+        self.put("android/gradle/wrapper/gradle-wrapper.jar", b"synthetic wrong wrapper")
         result = inspect_files(self.root, proposed_files(self.root))
-        self.assertIn(("phase1/android/gradle/wrapper/gradle-wrapper.jar", "UNVERIFIED_GRADLE_WRAPPER"), result)
+        self.assertIn(("android/gradle/wrapper/gradle-wrapper.jar", "UNVERIFIED_GRADLE_WRAPPER"), result)
 
     def test_unexpected_large_file_rejected(self):
         self.put("large.txt", b"0" * (4 * 1024 * 1024 + 1))

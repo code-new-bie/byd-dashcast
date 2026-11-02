@@ -25,7 +25,7 @@ from ref2_noauth_native import Patch
 CAPABILITY = 0x5257563f
 EXTENSION = 0x086f0000
 CODE = EXTENSION + 0x400
-SOURCE = ROOT / 'phase1/qnx/native-hmi/product-runtime.thumb'
+SOURCE = ROOT / 'instrument/native-hmi/product-runtime.thumb'
 ENTRIES = ('runtime_2d', 'runtime_mesh', 'runtime_brush', 'runtime_hide_2d', 'runtime_hide_mesh', 'runtime_name', 'runtime_registered')
 RECURSIVE_2D = 0x081d15fc
 RENDER_MESH = 0x08216184

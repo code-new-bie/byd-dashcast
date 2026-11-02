@@ -35,5 +35,5 @@ jobs:
       - name: Install pinned Android packages using runner SDK configuration
         run: '"$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.1"'
       - name: Test, build and lint
-        working-directory: phase1/android
+        working-directory: android
         run: bash gradlew testDebugUnitTest assembleDebug lintDebug --console=plain

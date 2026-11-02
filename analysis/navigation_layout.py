@@ -10,7 +10,7 @@ from analyze_kzb_hmi import KzbDirectory, Cursor, custom_types, STANDARD_NODE_TY
 from background_poc_native import ROOT, apply_hmi_overlay, digest
 from unlimited_native import HMI_SOURCE
 
-SOURCE = ROOT / "phase1/qnx/native-hmi/navigation-layout.thumb"
+SOURCE = ROOT / "instrument/native-hmi/navigation-layout.thumb"
 PROPERTY = "Dashcast.NavigationLayout"
 KZB_SHA = "4a1938ec7eb6714b8bc116c57ad44447cfb1ec7371931827b886e288c319dc3d"
 NAV_STATUS = 0x4e415600

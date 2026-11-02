@@ -16,7 +16,7 @@ from component_inputs import checked_file, checked_paths
 
 ROOT = Path(__file__).resolve().parents[1]
 STATUS = "INSTRUMENT_1193_APP_FILES_NOT_AN_UPGRADE"
-SCRIPTS = ROOT / "phase1/qnx/ref2-noauth"
+SCRIPTS = ROOT / "instrument/ref2-noauth"
 # Install path inside app.sv -> SHA256 of the reviewed 1.19.3 file.
 EXPECTED = {
     "base/app/rc_hmi/rc_hmi.exe": "94afdc93bb641dd2d9e9b7cd62e0ffaf4094ac7be376f605fbb05c9eaa910bc8",
@@ -44,8 +44,8 @@ def main():
     for name in ("hmi", "kzb", "scene", "toc", "receiver", "config", "output"):
         parser.add_argument("--" + name, type=Path, required=True)
     parser.add_argument("--backgrounds", type=Path, default=ROOT / "assets/backgrounds")
-    parser.add_argument("--b2-masks", type=Path, default=ROOT / "phase1/qnx/assets/b2")
-    parser.add_argument("--center-mask", type=Path, default=ROOT / "phase1/qnx/assets/b3-center/DXCenterDark.png")
+    parser.add_argument("--b2-masks", type=Path, default=ROOT / "instrument/assets/b2")
+    parser.add_argument("--center-mask", type=Path, default=ROOT / "instrument/assets/b3-center/DXCenterDark.png")
     args = parser.parse_args()
     hp, kp, tp, rp, out = checked_paths(args.hmi, args.kzb, args.toc, args.receiver, args.output)
     sp = checked_file(args.scene, out)

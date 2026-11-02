@@ -11,7 +11,7 @@
 └────────────────────────────────┘                └──────────────────────────────────┘
 ```
 
-## 车机端（`phase1/android`）
+## 车机端（`android`）
 
 - **界面与状态**：`ProductActivity` 有投屏、应用、设置三页，投屏页内嵌操作窗口（`EmbeddedCastView`，布局由 `CastWorkspaceLayout` 计算）。`ProductController` 协调开始、停止、更换应用和连接；`ProductSettings` 保存用户选择。
 - **会话**：`ProjectionService` 是前台服务，从开始到停止、断开或出错一直持有同一个会话，不定时重连，通知栏可以停止。
@@ -20,7 +20,7 @@
 - **USB 连接**：`ncm/` 是用户态 USB NCM 实现，车机作为 USB 主机，经数据线和仪表组成网络。仪表 USB 角色（平时做 USB 主机读 U 盘，投屏时做 NCM 网络设备）的切换请求经原厂导航文字通道发给仪表（`NavigationUsbRelay`），由仪表脚本执行。
 - **外部接入**：`ExternalDisplayService` 提供名为 `fission_dashcast_meter` 的屏幕，供支持外部屏幕的应用（如定制版高德地图）直接发送画面。
 
-## 仪表端（`phase1/qnx`）
+## 仪表端（`instrument`）
 
 - `startup.ksh` 在开机时由仪表的启动管理调用，只在 tmpfs 里准备本模块，开机不切换 USB 角色。
 - `usb-mode.ksh` 在 USB 主机模式和 NCM 设备模式之间切换（仪表地址 192.168.77.1，车机 192.168.77.2），`instrument-usb` 是它使用的辅助程序。
@@ -29,7 +29,7 @@
 - `rc_hmi.exe` 和 `bic_byd_stha.kzb` 加了投屏布局：空闲、全屏、小窗三种状态。投屏时用自有背景和曲边遮罩，原生的车速、功率、电量、续航和告警仍在最上层；停止或失联后恢复原厂背景。遮罩的混合方式见[仪表 1.19.3](PRODUCT_1.19.3.md)。
 - `3dscreen.kzb` 在投屏时隐藏道路底板和自车模型，安全告警仍优先显示。
 
-上述改动都是对按哈希固定的原件打补丁（ARM/Thumb 汇编源在 `phase1/qnx/`，Python 构建模块在 `analysis/`），不重新编译 HMI。构建方法见[构建文档](BUILD.md)。
+上述改动都是对按哈希固定的原件打补丁（ARM/Thumb 汇编源在 `instrument/`，Python 构建模块在 `analysis/`），不重新编译 HMI。构建方法见[构建文档](BUILD.md)。
 
 ## 边界
 

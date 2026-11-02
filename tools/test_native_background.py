@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def run(root, output, sanitize=True):
     root = Path(root).resolve()
     output = Path(output).resolve()
-    source = root / "phase1/qnx/native-hmi"
+    source = root / "instrument/native-hmi"
     if not output.is_relative_to(root / "build") or output.exists():
         raise ValueError("Use a NEW directory under this repository's build directory")
     paths = [source / "projection_background_controller.c", source / "projection_background_controller.h",

@@ -29,8 +29,8 @@
 
 | 目录 | 内容 |
 |---|---|
-| `phase1/android/` | 车机 APK 源码（Kotlin/Java）与单元测试 |
-| `phase1/qnx/` | 仪表端：QNX 脚本、接收端和 HMI 的 ARM/Thumb 补丁源码、遮罩图、便携背景控制器，见[说明](phase1/qnx/README.md) |
+| `android/` | 车机 APK 源码（Kotlin/Java）与单元测试 |
+| `instrument/` | 仪表端：QNX 脚本、接收端和 HMI 的 ARM/Thumb 补丁源码、遮罩图、便携背景控制器，见[说明](instrument/README.md) |
 | `analysis/` | 仪表组件构建用的 Python 模块（按哈希固定输入的补丁和资源处理） |
 | `tools/` | 构建仪表组件的命令行工具、公开内容检查、测试 |
 | `assets/backgrounds/` | 投屏背景原图（本项目自行设计） |
@@ -38,7 +38,7 @@
 ## 快速开始
 
 ```bash
-cd phase1/android
+cd android
 bash gradlew testDebugUnitTest assembleDebug lintDebug --console=plain
 ```
 

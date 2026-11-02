@@ -7,8 +7,8 @@ from keystone import Ks, KS_ARCH_ARM, KS_MODE_ARM, KS_MODE_LITTLE_ENDIAN
 from capstone import Cs, CS_ARCH_ARM, CS_MODE_ARM
 
 RECEIVER_SHA = "974ee40f19643370b58e0846ea211ce0da5b6f841b845c03a72b7912253997d7"
-HMI_SOURCE = ROOT / "phase1/qnx/native-hmi/background-unlimited.thumb"
-RECEIVER_SOURCE = ROOT / "phase1/qnx/ref2-noauth/receiver-unlimited.arm"
+HMI_SOURCE = ROOT / "instrument/native-hmi/background-unlimited.thumb"
+RECEIVER_SOURCE = ROOT / "instrument/ref2-noauth/receiver-unlimited.arm"
 CAPABILITY = 0x52574e32
 
 
@@ -67,7 +67,7 @@ def apply_unlimited_receiver(base):
         seen.add(name)
     if seen != set(expected) or any(not 0x108898 <= a < 0x108898 + 3232 for a in labels.values()):
         raise ValueError("Unlimited helper escaped inspected slot")
-    legacy = (ROOT / "phase1/qnx/ref2-noauth/receiver-dcv1-hd-window.arm").read_text("utf-8")
+    legacy = (ROOT / "instrument/ref2-noauth/receiver-dcv1-hd-window.arm").read_text("utf-8")
 
     def slot(name, address, capacity):
         text = legacy.split(f"// SLOT {name} {hex(address)} {capacity}\n", 1)[1].split("// SLOT", 1)[0]
