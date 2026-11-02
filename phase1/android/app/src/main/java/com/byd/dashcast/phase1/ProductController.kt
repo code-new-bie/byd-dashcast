@@ -29,6 +29,7 @@ internal class ProductController private constructor(context: Context) {
     private val history = ProjectionJournal()
     private val main = Handler(Looper.getMainLooper())
     private val startGeneration = AtomicLong()
+    private val restored = AtomicBoolean()
     @Volatile private var requestedTarget: ProjectionTarget? = null
     private val worker = ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, ArrayBlockingQueue(1),
         { job -> Thread(job, "dashcast-product").apply { isDaemon = true } }, ThreadPoolExecutor.AbortPolicy())
@@ -85,6 +86,29 @@ internal class ProductController private constructor(context: Context) {
     }
 
     fun connect() = operation("正在连接车机，如出现调试弹窗请选择允许。", ProductOperation.CONNECT) { authenticate() }
+
+    /** Re-applies the saved switch choices once per process. Before this, both switches only mirrored
+     * live state, so after an app restart the user had to turn them on again. */
+    fun restoreSavedConnections() {
+        if (!settings.setupComplete || !restored.compareAndSet(false, true)) { return }
+        if (settings.externalAccess && !ExternalDisplayAccess.enabled()) {
+            log("PRODUCT_RESTORE_EXTERNAL_ACCESS saved=true")
+            ExternalDisplayService.setEnabled(app, true)
+        }
+        if (settings.instrumentConnection && !ProjectionService.active() && !connectionState().observed) {
+            log("PRODUCT_RESTORE_INSTRUMENT_CONNECTION saved=true")
+            switchRole(InstrumentUsbCommand.NCM)
+        }
+    }
+
+    /** Apps with a verified secondary entry (the custom map's MeterActivity) project that entry and keep
+     * their main-screen task where it is; every other app gets the mirrored operation window. */
+    fun startApp(selected: ProductApp) {
+        if (!selected.capability.nativeSecondary) { startWorkspace(selected.target()); return }
+        if (ProjectionService.active()) { replace(selected.target()) } else { start(selected.target()) }
+    }
+
+    fun projecting(target: ProjectionTarget): Boolean = ProjectionService.active() && requestedTarget == target
 
     fun startWorkspace(target: ProjectionTarget) {
         val next = ProjectionTarget.workspaceComponent(target.component(), target.displayLabel())
@@ -226,7 +250,8 @@ internal class ProductController private constructor(context: Context) {
         }
     }
 
-    fun exportLogs() = operation("正在导出日志到下载目录。", ProductOperation.EXPORT) {
+    fun exportLogs(finished: (String) -> Unit = {}) = operation("正在导出日志到下载目录。", ProductOperation.EXPORT,
+        { main.post { finished(message) } }) {
         val file = DownloadLogExporter.fileName(System.currentTimeMillis())
         val entryDiagnostics = ProductAppCatalog.diagnostics(ProductAppCatalog.load(app))
         DownloadLogExporter.export(MediaStoreDownloadStore(app.contentResolver), file,
@@ -289,9 +314,15 @@ internal class ProductController private constructor(context: Context) {
                     log("PRODUCT_NATIVE_ENTRY_REUSES_OWN_EXTERNAL_DISPLAY; original_application_task_preserved=true")
                     ProjectionTarget.namedDisplay()
                 } else { request.target }
-                ProjectionService.startProduct(app, request.options, displayTarget, request.underlay)
-                message = "正在准备应用画面，连接好后会显示在仪表上。"
-                log("PRODUCT_SESSION_REQUEST target=${request.target} underlay=${request.underlay}")
+                // The standby display keeps the size it had when its app opened; follow it so the
+                // instrument layout and capture match what the app actually laid out for.
+                val standbyCenter = if (displayTarget.isNamed) ExternalDisplayAccess.displayCenter() else null
+                val underlay = standbyCenter?.let { !it } ?: request.underlay
+                val options = standbyCenter?.let { request.options.forContentViewport(it) } ?: request.options
+                ProjectionService.startProduct(app, options, displayTarget, underlay)
+                message = if (underlay != request.underlay) "接入屏上的应用仍按${if (underlay) "全屏" else "小窗"}打开，" +
+                    "本次按此投屏；关闭该应用后新设置生效。" else "正在准备应用画面，连接好后会显示在仪表上。"
+                log("PRODUCT_SESSION_REQUEST target=${request.target} underlay=$underlay selected_underlay=${request.underlay}")
             } catch (error: Exception) {
                 message = ProductErrors.explain(error)
                 MirrorWorkspace.fail(request.generation, message)
@@ -449,7 +480,11 @@ internal class ProductController private constructor(context: Context) {
         catch (error: RuntimeException) { log("CLEANUP_DIAGNOSTIC_SAVE_FAILED $error") }
     }
 
-    private fun operation(status: String, kind: ProductOperation, action: () -> Unit): Boolean {
+    private fun operation(status: String, kind: ProductOperation, action: () -> Unit): Boolean =
+        operation(status, kind, {}, action)
+
+    /** [finished] runs on the worker after the operation is released, whether it succeeded or failed. */
+    private fun operation(status: String, kind: ProductOperation, finished: () -> Unit, action: () -> Unit): Boolean {
         if (!occupied.compareAndSet(false, true)) {
             message = "当前操作尚未完成，请稍候；停止投屏仍可使用"
             return false
@@ -464,7 +499,7 @@ internal class ProductController private constructor(context: Context) {
                     message = ProductErrors.explain(error)
                     if (kind == ProductOperation.START) { MirrorWorkspace.fail(generation, message) }
                     log("PRODUCT_OPERATION_FAILED ${error.javaClass.simpleName}: ${error.message}")
-                } finally { operation = ProductOperation.NONE; occupied.set(false) }
+                } finally { operation = ProductOperation.NONE; occupied.set(false); finished() }
             }
         } catch (error: RejectedExecutionException) {
             occupied.set(false)

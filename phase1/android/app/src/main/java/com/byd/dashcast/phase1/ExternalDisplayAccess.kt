@@ -43,7 +43,21 @@ internal object ExternalDisplayAccess {
         }
     }
 
+    /** The standby display's current mode as last reported by the host; null until the first snapshot. */
+    @Volatile private var hostCenter: Boolean? = null
+
     @JvmStatic fun enabled(): Boolean = desired
+    @JvmStatic fun displayCenter(): Boolean? = if (ready()) hostCenter else null
+
+    /** Asks the host to follow the selected mode; it resizes only once nothing is on the display. */
+    fun modeChanged(underlay: Boolean) {
+        val host = endpoint ?: return
+        val ticket = hostTicket ?: return
+        try {
+            ExternalDisplayWire.command(host, ticket, ExternalDisplayWire.SET_MODE) { it.writeInt(if (underlay) 0 else 1) }
+            record("EXTERNAL_DISPLAY_MODE_REQUESTED center=${!underlay}; applies_when_display_empty=true")
+        } catch (error: Exception) { record("EXTERNAL_DISPLAY_MODE_REQUEST_FAILED type=${error.javaClass.simpleName}") }
+    }
     @JvmStatic fun ready(): Boolean = endpoint?.isBinderAlive == true && healthy
     @JvmStatic fun name(): String = NamedDisplayContract.NAME
     @JvmStatic fun mapEntryVisible(): Boolean = desired && healthy && mainMapFocused
@@ -88,7 +102,8 @@ internal object ExternalDisplayAccess {
         val apk = ownContext.applicationInfo.sourceDir
         // Reuse the installed-path validation/quoting; only replace its fixed main entry point.
         val command = ShellCaptureCommand.create(apk, 1).substringBefore(" com.byd.dashcast.phase1.ShellScreenCapture ") +
-            " com.byd.dashcast.phase1.ShellExternalDisplay " + ticket
+            " com.byd.dashcast.phase1.ShellExternalDisplay " + ticket +
+            if (ProductSettings(ownContext).underlay) " full" else " center"
         Thread({
             var clean = false
             var exit = false
@@ -108,7 +123,7 @@ internal object ExternalDisplayAccess {
             } finally {
                 synchronized(this) {
                     if (hostTicket == ticket) {
-                        desired = false; endpoint = null; healthy = false
+                        desired = false; endpoint = null; healthy = false; hostCenter = null
                         mainMapFocused = false
                         hostTicket = null; hostStop = null; owners = emptySet()
                         handler?.removeCallbacksAndMessages(null)
@@ -191,7 +206,9 @@ internal object ExternalDisplayAccess {
             if (id <= 0 || count !in 0..64) { throw IOException("EXTERNAL_SNAPSHOT_INVALID") }
             observedDisplayId = id
             val windows = (0 until count).map { data.readInt() }.toSet()
-            Triple(available,windows,data.readInt()==1)
+            val focused = data.readInt()==1
+            hostCenter = data.readInt()==1
+            Triple(available,windows,focused)
         }
         val hadMapEntry = mapEntryVisible()
         val oldHealthy = healthy

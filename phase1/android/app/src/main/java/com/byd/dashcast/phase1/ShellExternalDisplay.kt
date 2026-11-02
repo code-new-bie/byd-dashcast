@@ -23,14 +23,14 @@ object ShellExternalDisplay {
         ShellCaptureOutput.isolateFrameworkDiagnostics()
         var status = 1
         try {
-            require(args.size == 1 && DuplexTicket.valid(args[0]))
+            require(args.size in 1..2 && DuplexTicket.valid(args[0]) && args.getOrElse(1) { "full" } in setOf("full", "center"))
             if (Process.myUid() != 2000 || Build.VERSION.SDK_INT != 29) {
                 throw IOException("EXTERNAL_REQUIRES_AUTHORIZED_ANDROID10_SHELL")
             }
             if (Looper.myLooper() == null) { Looper.prepareMainLooper() }
             CaptureStopControl(System.`in`).use { stop ->
                 stop.start()
-                ExternalHostEndpoint(args[0]).use { host ->
+                ExternalHostEndpoint(args[0], args.getOrNull(1) == "center").use { host ->
                     host.announce()
                     var pulse = 0L
                     val output = ShellCaptureOutput.videoStream()
@@ -54,7 +54,10 @@ object ShellExternalDisplay {
     }
 }
 
-internal class ExternalHostEndpoint(private val ticket: String) : Binder(), AutoCloseable {
+internal class ExternalHostEndpoint(private val ticket: String, private var center: Boolean) : Binder(), AutoCloseable {
+    /** A requested mode waiting for the display to be empty; resizing under an app (e.g. the map's
+     * non-resizeable MeterActivity) would leave it laid out for the old size. */
+    private var pendingCenter: Boolean? = null
     private val context = RemoteDisplaySession.shellContext()
     private val appUid = context.packageManager.getApplicationInfo(BuildConfig.APPLICATION_ID, 0).uid
     private val user = appUid / 100000
@@ -80,20 +83,43 @@ internal class ExternalHostEndpoint(private val ticket: String) : Binder(), Auto
             NamedDisplayContract.requireAvailable(context,allowNative=true)
             val frames = HandlerThread("dashcast-standby-frames").apply { start() }
             worker = frames
-            val images = ImageReader.newInstance(ExternalDisplayWire.WIDTH, ExternalDisplayWire.HEIGHT,
-                PixelFormat.RGBA_8888, 2)
-            reader = images
-            images.setOnImageAvailableListener({ source -> source.acquireLatestImage()?.close() }, Handler(frames.looper))
+            val images = standbyReader(center)
             display = RemoteDisplaySession.createVirtualDisplay(context, images.surface,
-                ExternalDisplayWire.WIDTH, ExternalDisplayWire.HEIGHT, 160, 1 or 2 or 8,
-                NamedDisplayContract.NAME)
+                ExternalDisplayWire.width(center), ExternalDisplayWire.height(center), ExternalDisplayWire.DENSITY,
+                1 or 2 or 8, NamedDisplayContract.NAME)
             val id = display?.display?.displayId ?: -1
             if (id <= 0) { throw IOException("EXTERNAL_DISPLAY_NOT_CREATED") }
-            System.err.println("EXTERNAL_DISPLAY_CREATED display=$id; name=${NamedDisplayContract.NAME}")
+            System.err.println("EXTERNAL_DISPLAY_CREATED display=$id; name=${NamedDisplayContract.NAME} " +
+                "size=${ExternalDisplayWire.width(center)}x${ExternalDisplayWire.height(center)}")
         } catch (error: Exception) {
             try { close() } catch (cleanup: Exception) { error.addSuppressed(cleanup) }
             throw error
         }
+    }
+
+    /** Standby frames are drained and dropped; the reader only gives the idle display a sink of its size. */
+    private fun standbyReader(center: Boolean): ImageReader {
+        val images = ImageReader.newInstance(ExternalDisplayWire.width(center), ExternalDisplayWire.height(center),
+            PixelFormat.RGBA_8888, 2)
+        images.setOnImageAvailableListener({ source -> source.acquireLatestImage()?.close() },
+            Handler(checkNotNull(worker).looper))
+        reader = images
+        return images
+    }
+
+    /** Applies a pending mode once no application window or capture is on the display. */
+    @Synchronized private fun applyPendingMode() {
+        val next = pendingCenter ?: return
+        if (captureTicket != null || owners.isNotEmpty() || observed == 0L || observationFailure != null) { return }
+        pendingCenter = null
+        if (next == center) { return }
+        val old = reader
+        val images = standbyReader(next)
+        display!!.resize(ExternalDisplayWire.width(next), ExternalDisplayWire.height(next), ExternalDisplayWire.DENSITY)
+        display!!.surface = images.surface
+        old?.setOnImageAvailableListener(null, null); old?.close()
+        center = next
+        System.err.println("EXTERNAL_DISPLAY_MODE size=${ExternalDisplayWire.width(next)}x${ExternalDisplayWire.height(next)}")
     }
 
     @Synchronized fun requireRegistration() {
@@ -140,6 +166,7 @@ internal class ExternalHostEndpoint(private val ticket: String) : Binder(), Auto
             val next = NamedWindowPolicy.owners(snapshot, id, appUid, user)
             val mapFocused = NamedWindowPolicy.mainMapFocused(snapshot, user)
             synchronized(this) { owners = next; mainMapFocused = mapFocused; observed = System.nanoTime(); observationFailure = null }
+            applyPendingMode()
         } catch (error: Exception) {
             synchronized(this) {
                 if (observationFailure?.message != error.message) {
@@ -170,7 +197,12 @@ internal class ExternalHostEndpoint(private val ticket: String) : Binder(), Auto
                 reply?.writeInt(owners.size)
                 for (uid in owners.sorted()) { reply?.writeInt(uid) }
                 reply?.writeInt(if (mainMapFocused && healthy) 1 else 0)
+                reply?.writeInt(if (center) 1 else 0)
                 return true
+            }
+            ExternalDisplayWire.SET_MODE -> {
+                pendingCenter = data.readInt() == 1
+                applyPendingMode()
             }
             ExternalDisplayWire.ATTACH -> {
                 val nextTicket = data.readString()

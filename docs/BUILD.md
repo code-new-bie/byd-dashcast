@@ -1,6 +1,16 @@
 # 构建与复现
 
-## 当前仪表1.19.2：B2配对组件，APK仍为1.19.0
+## 当前APK1.20.2与仪表1.19.3
+
+APK按下文“构建”一节的Gradle命令生成，单元测试包含投屏页布局计算和待机屏尺寸。仪表1.19.3以下一节生成的1.19.2 B2配对组件为输入：
+
+```text
+python tools/build_center_mask_components.py --hmi NEW_B2_DIRECTORY/rc_hmi.exe --kzb NEW_B2_DIRECTORY/bic_byd_stha.kzb --mask phase1/qnx/assets/b3-center/DXCenterDark.png --output NEW_CENTER_DIRECTORY
+```
+
+入口校验两组件与新遮罩的哈希，拒绝其他基线和已有输出。HMI原样输出；KZB只替换DXCenterDark，要求新图Alpha与原图逐点相同、RGB等于Alpha，结果须与审核的重建逐字节一致。不要把这张乘数图再预乘或重新保存。输出不是刷机ZIP。[升级与范围](PRODUCT_1.19.3.md)。
+
+## 仪表1.19.2：B2配对组件，APK仍为1.19.0
 
 先用下列1.17组件CLI生成精确基线，再将其中HMI和KZB一起输入：
 

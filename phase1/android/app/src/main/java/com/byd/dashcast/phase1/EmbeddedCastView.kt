@@ -36,6 +36,8 @@ internal class EmbeddedCastView(context: Context) : FrameLayout(context), Textur
     private var lastTouch: MotionEvent? = null
     private var sourceWidth = 3392
     private var sourceHeight = 912
+    /** Width / height of what the window currently shows; the page layout picks its arrangement from it. */
+    val sourceAspect: Float get() = sourceWidth.toFloat() / sourceHeight
 
     init {
         id = R.id.embedded_cast_window

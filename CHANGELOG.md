@@ -1,5 +1,13 @@
 # 改动摘要
 
+## APK1.20.2 / 仪表1.19.3（2026-11-02）
+
+- APK 1.20.0: remember the instrument-connection and in-app access switches and restore them once per process; start native map entries in their instrument UI; choose stacked or side cast layout by the larger fitted window; add press, disabled and export feedback in help.
+- APK 1.20.1: after a cold-start app is hosted from the primary display, return to the cast tab, because Android 10 raises the home stack during that move.
+- APK 1.20.2: create the named standby display at the selected size (full 1696×456, small 1280×720, 160dpi), resize it when idle, and capture at the standby display's actual mode. Known issue: a mode change while access is still starting can be lost.
+- Instrument 1.19.3: field photos show the small layout composited as premultiplied alpha; set only DXCenterDark RGB to its alpha. The 1.19.2 HMI, full mask and every alpha byte stay unchanged. Add the matching component CLI.
+- Offline unit, emulator and reconstruction checks only; vehicle acceptance of both versions is pending. [APK](docs/PRODUCT_1.20.2.md) · [仪表](docs/PRODUCT_1.19.3.md)。
+
 ## 仪表1.19.2 / APK1.19.0（2026-11-01）
 
 - Field feedback still showed a light-theme ring after 1.19.1 A; do not count that version as a vehicle fix.

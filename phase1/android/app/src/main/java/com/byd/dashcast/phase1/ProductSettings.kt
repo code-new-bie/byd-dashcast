@@ -39,6 +39,13 @@ internal class ProductSettings(context: Context) {
     var underlay: Boolean
         get() = preferences.getBoolean("underlay", true)
         set(value) { preferences.edit().putBoolean("underlay", value).apply() }
+    // The two switches show live state; these remember what the user asked for so a restart can re-apply it.
+    var instrumentConnection: Boolean
+        get() = preferences.getBoolean("instrument_connection", false)
+        set(value) { preferences.edit().putBoolean("instrument_connection", value).apply() }
+    var externalAccess: Boolean
+        get() = preferences.getBoolean("external_access", false)
+        set(value) { preferences.edit().putBoolean("external_access", value).apply() }
     fun favorites(): Set<String> = preferences.getStringSet("favorites", emptySet())!!.toSet()
     fun toggleFavorite(component: String) {
         val next = favorites().toMutableSet()

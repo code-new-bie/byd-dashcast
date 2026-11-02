@@ -47,11 +47,15 @@ internal class MirrorAppSession @JvmOverloads constructor(surface: Surface, entr
             if (displayId <= 0) { throw IOException("MIRROR_DISPLAY_MISSING") }
             val owner = MirrorTaskPolicy(entry.packageName, user, displayId, before.map { it.id }.toSet())
             policy = owner
+            // Hosting goes through startActivityFromRecents, which on this head unit's services.jar also
+            // calls moveHomeStackToFront on display 0: the launcher then covers the cast tab.
+            var hostedFromPrimary = false
             val existing = initialTask(before, entry)
             if (existing != null) {
                 originalStack = existing.stack
                 owner.adopt(existing, true)
                 access.host(existing, displayId, entry.packageName, user)
+                hostedFromPrimary = true
             } else {
                 RemoteDisplaySession.launch(listOf("/system/bin/am", "start-activity", "-W", "--display",
                     displayId.toString(), "--user", user.toString(), "-n", entry.component,
@@ -70,6 +74,7 @@ internal class MirrorAppSession @JvmOverloads constructor(surface: Surface, entr
                         if (it.display == 0) {
                             originalStack = it.stack
                             access.host(it, displayId, entry.packageName, user)
+                            hostedFromPrimary = true
                             System.err.println("SHELL_MIRROR_COLD_FORWARD_HOSTED task=${it.id} user=$user; exact_new_task=true")
                         }
                     }
@@ -88,10 +93,22 @@ internal class MirrorAppSession @JvmOverloads constructor(surface: Surface, entr
             fence.changed(System.nanoTime())
             System.err.println("SHELL_MIRROR_STARTED ${SingleAppTaskPolicy.describe(task)} source=${width}x$height " +
                 "same_instance=true no_destroy_flag=true original_stack=$originalStack")
+            // Start was pressed on the cast tab; put it back in front of the launcher the host just raised.
+            if (hostedFromPrimary) {
+                showCastTab()
+                System.err.println("SHELL_MIRROR_CAST_TAB_RESTORED reason=startup_host_raised_home")
+            }
         } catch (error: Exception) {
             try { close() } catch (cleanup: Exception) { error.addSuppressed(cleanup) }
             throw error
         }
+    }
+
+    /** Shell-side start: not subject to the background-activity limits the app process would hit here. */
+    private fun showCastTab() {
+        RemoteDisplaySession.launch(listOf("/system/bin/am", "start-activity", "--display", "0",
+            "--user", user.toString(), "-n", BuildConfig.APPLICATION_ID + "/" + ProductActivity::class.java.name,
+            "-f", "0x34000000", "--ei", "page", "0"))
     }
 
     private fun initialTask(tasks: List<AppTaskPolicy.Task>, entry: SingleAppEntry.Entry): AppTaskPolicy.Task? {
@@ -140,10 +157,8 @@ internal class MirrorAppSession @JvmOverloads constructor(surface: Surface, entr
             if ((icon != null || pendingLaunch) && task != null && now - lastRoute >= 500_000_000L) {
                 if (icon != null && owner.disposableIconTask(icon)) { exact.removeMirrorIconTask(icon, owner) }
                 endpoint.notifyApp(MirrorWire.SHOW)
-                // Only a verified original-icon action brings the cast tab to the foreground.
-                RemoteDisplaySession.launch(listOf("/system/bin/am", "start-activity", "--display", "0",
-                    "--user", user.toString(), "-n", BuildConfig.APPLICATION_ID + "/" + ProductActivity::class.java.name,
-                    "-f", "0x34000000", "--ei", "page", "0"))
+                // After startup, only a verified original-icon action brings the cast tab to the foreground.
+                showCastTab()
                 lastRoute = now
                 pendingLaunch = false
                 System.err.println("SHELL_MIRROR_ICON_ROUTED source=verified_task_or_fresh_launcher; no_raw_intent_logged=true")

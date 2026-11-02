@@ -176,7 +176,9 @@ public final class ShellScreenCapture {
             if (options.contentViewport()) {
                 ContentViewport viewport = options.centerWindow() ? ContentViewport.center() : ContentViewport.full();
                 if (target.isNamed() && mirrorTicket != null) {
-                    viewport = viewport.withSourceSize(ExternalDisplayWire.WIDTH, ExternalDisplayWire.HEIGHT);
+                    // The app starts a named session in the standby display's own mode, so this matches its size.
+                    viewport = viewport.withSourceSize(ExternalDisplayWire.width(options.centerWindow()),
+                            ExternalDisplayWire.height(options.centerWindow()));
                 }
                 if (business != null) {
                     // Keep the business application's original main-screen layout. The
