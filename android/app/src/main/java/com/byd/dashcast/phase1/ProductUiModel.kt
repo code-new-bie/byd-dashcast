@@ -24,7 +24,7 @@ internal data class ProductPresentation(
     val modeEnabled: Boolean,
     val canChooseApp: Boolean
 ) {
-    enum class Action { START, STOP, CHOOSE, SETUP, NONE }
+    enum class Action { START, STOP, CHOOSE, NONE }
 }
 
 internal object ProductUiModel {
@@ -32,7 +32,6 @@ internal object ProductUiModel {
         state: ProjectionSessionController.State,
         operation: ProductOperation,
         busy: Boolean,
-        setup: Boolean,
         selected: Boolean,
         allowed: Boolean
     ): ProductPresentation {
@@ -64,7 +63,6 @@ internal object ProductUiModel {
             }
             return view(title, "请稍候…", ProductPresentation.Action.NONE, false)
         }
-        if (!setup) { return view("欢迎使用 Dashcast", "开始连接", ProductPresentation.Action.SETUP) }
         if (!selected || !allowed) {
             return view("选择一个应用开始", "选择应用", ProductPresentation.Action.CHOOSE)
         }

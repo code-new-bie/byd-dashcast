@@ -16,4 +16,6 @@
     <item name="product_picture_more" type="id" />
     <item name="product_accessibility" type="id" />
     <item name="product_export_logs" type="id" />
+    <item name="product_boot_start" type="id" />
+    <item name="product_boot_permission" type="id" />
 </resources>

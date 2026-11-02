@@ -218,7 +218,7 @@ internal object ExternalDisplayAccess {
             record("EXTERNAL_DISPLAY_OBSERVATION display=$observedDisplayId healthy=$healthy applications=${owners.size} map_focused=$mainMapFocused")
         }
         if (hadMapEntry != mapEntryVisible()) {
-            record("MAP_ENTRY_ELIGIBILITY focused=$mainMapFocused ready=$healthy enabled=$desired overlay_permission=${android.provider.Settings.canDrawOverlays(checkNotNull(context))} accessibility=${MirrorIconService.connected()}")
+            record("MAP_ENTRY_ELIGIBILITY focused=$mainMapFocused ready=$healthy enabled=$desired accessibility=${MirrorIconService.connected()}")
             MirrorIconService.refresh()
         }
         if (!desired && captureTicket == null && owners.isEmpty()) {

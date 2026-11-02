@@ -2,7 +2,7 @@
 
 仓库里有两部分可以构建：车机 APK，以及仪表 App 里需要修改的文件（下称“仪表组件”）。APK 只依赖本仓库源码。仪表组件要用你自己持有的固件原件作输入，仓库不包含任何固件。
 
-当前版本：APK **1.20.2 / code72**，配套仪表 **1.19.3**。
+当前版本：APK **1.21.0 / code73**，配套仪表 **1.19.3**。
 
 ## 一、环境配置
 
@@ -30,7 +30,7 @@ Windows 用 `gradlew.bat`。三个任务分别是单元测试、构建 debug APK
 
 | 文件 | 内容 |
 |---|---|
-| `android/app/build/outputs/apk/debug/app-debug.apk` | debug APK，包名 `com.byd.dashcast.phase1.debug`，版本 `1.20.2-debug` / code72 |
+| `android/app/build/outputs/apk/debug/app-debug.apk` | debug APK，包名 `com.byd.dashcast.phase1.debug`，版本 `1.21.0-debug` / code73 |
 | `android/app/build/test-results/testDebugUnitTest/` | 单元测试结果（XML） |
 | `android/app/build/reports/lint-results-debug.html` | lint 报告 |
 

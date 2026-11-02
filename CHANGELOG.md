@@ -2,6 +2,15 @@
 
 较早版本的详细说明文档已从仓库移除，需要时可在 Git 历史中查看（例如提交 `ba358c3` 及更早的 `docs/PRODUCT_*.md`、`docs/TASKS_*.md`）。
 
+## APK1.21.0 / 仪表1.19.3（2026-11-02）
+
+- Remove the first-run "开始前的准备" dialog and the setup gate; casting starts directly.
+- Grant the instrument USB device to the app from the authorized shell (it holds MANAGE_USB on the head unit), so the system "allow access" dialog no longer appears after every NCM re-enumeration; the dialog remains the fallback.
+- Add a boot-start setting that restores the saved connection and access switches after BOOT_COMPLETED without opening the UI or starting a cast, plus a shortcut to the vendor auto-start page.
+- Theme: follow system (default), dark or light; the activity handles uiMode changes and redraws in place.
+- The custom map's own projection button only asks the vehicle for a navi-type change and waits for a cluster echo this cluster never sends. Recognize its click through the app's accessibility service (enabled from the shell when access is turned on, keeping other services) and toggle the map projection; remove the owned fallback overlay button and the overlay permission grant.
+- 598 unit tests, 0 lint errors, emulator checks; vehicle acceptance pending. [说明](docs/PRODUCT_1.21.0.md)。
+
 ## APK1.20.2 / 仪表1.19.3（2026-11-02）
 
 - APK 1.20.0: remember the instrument-connection and in-app access switches and restore them once per process; start native map entries in their instrument UI; choose stacked or side cast layout by the larger fitted window; add press, disabled and export feedback in help.

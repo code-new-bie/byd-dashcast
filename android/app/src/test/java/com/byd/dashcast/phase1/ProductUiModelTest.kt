@@ -6,11 +6,11 @@ import java.io.IOException
 
 class ProductUiModelTest {
     private fun view(state: ProjectionSessionController.State, kind: ProductOperation = ProductOperation.NONE,
-        busy: Boolean = false, setup: Boolean = true, selected: Boolean = true, allowed: Boolean = true) =
-        ProductUiModel.present(state, kind, busy, setup, selected, allowed)
+        busy: Boolean = false, selected: Boolean = true, allowed: Boolean = true) =
+        ProductUiModel.present(state, kind, busy, selected, allowed)
 
-    @Test fun firstUseLeadsToSetupInsteadOfAnUnexplainedDisabledButton() {
-        assertEquals(ProductPresentation.Action.SETUP, view(ProjectionSessionController.State.IDLE, setup = false).action)
+    @Test fun firstUseOffersStartWithoutASetupStep() {
+        assertEquals(ProductPresentation.Action.START, view(ProjectionSessionController.State.IDLE).action)
     }
 
     @Test fun missingOrUnavailableAppLeadsToSelection() {

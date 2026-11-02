@@ -9,6 +9,9 @@ import android.content.Context
 internal class ProductSettings(context: Context) {
     companion object {
         const val DEFAULT_CROP = false
+        const val THEME_SYSTEM = 0
+        const val THEME_DARK = 1
+        const val THEME_LIGHT = 2
         private const val FRAMING_MIGRATED = "instrument_framing_v3_complete"
     }
 
@@ -24,18 +27,20 @@ internal class ProductSettings(context: Context) {
         }
     }
 
-    var setupComplete: Boolean
-        get() = preferences.getBoolean("setup_complete", false)
-        set(value) { preferences.edit().putBoolean("setup_complete", value).apply() }
     var target: String?
         get() = preferences.getString("target", null)
         set(value) { preferences.edit().putString("target", value).apply() }
     var crop: Boolean
         get() = preferences.getBoolean("crop", DEFAULT_CROP)
         set(value) { preferences.edit().putBoolean("crop", value).apply() }
-    var light: Boolean
-        get() = preferences.getBoolean("light", false)
-        set(value) { preferences.edit().putBoolean("light", value).apply() }
+    /** 0 follows the system day/night setting, 1 is dark, 2 is light. The old two-way "light" key is ignored. */
+    var themeMode: Int
+        get() = preferences.getInt("theme_mode", THEME_SYSTEM).takeIf { it in THEME_SYSTEM..THEME_LIGHT } ?: THEME_SYSTEM
+        set(value) { preferences.edit().putInt("theme_mode", value.coerceIn(THEME_SYSTEM, THEME_LIGHT)).apply() }
+    fun light(systemNight: Boolean): Boolean = ThemePolicy.light(themeMode, systemNight)
+    var bootStart: Boolean
+        get() = preferences.getBoolean("boot_start", false)
+        set(value) { preferences.edit().putBoolean("boot_start", value).apply() }
     var underlay: Boolean
         get() = preferences.getBoolean("underlay", true)
         set(value) { preferences.edit().putBoolean("underlay", value).apply() }

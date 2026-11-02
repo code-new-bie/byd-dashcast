@@ -11,9 +11,8 @@ import java.lang.ref.WeakReference
  */
 class MirrorIconService : AccessibilityService() {
     private var lastMapClick = -1000L
-    override fun onServiceConnected() { active = WeakReference(this); configure(); ExternalDisplayService.refreshMapEntry() }
+    override fun onServiceConnected() { active = WeakReference(this); configure() }
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        ExternalDisplayService.refreshMapEntry()
         if (event?.eventType == AccessibilityEvent.TYPE_VIEW_CLICKED &&
             event.packageName?.toString() == "com.byd.automap") {
             var node = event.source
@@ -22,7 +21,7 @@ class MirrorIconService : AccessibilityService() {
                     if (MapButtonPolicy.accepts(event.packageName?.toString(), node?.viewIdResourceName,
                             event.eventTime, lastMapClick)) {
                         lastMapClick = event.eventTime
-                        mapClick(this,true)
+                        mapClick(this)
                         return
                     }
                     val parent = node?.parent
@@ -39,8 +38,8 @@ class MirrorIconService : AccessibilityService() {
         val selected = MirrorBridge.current() ?: return
         if (event.packageName?.toString() == selected.packageName) { MirrorBridge.route(selected.packageName) }
     }
-    override fun onInterrupt() { ExternalDisplayService.refreshMapEntry() }
-    override fun onDestroy() { active = null; ExternalDisplayService.refreshMapEntry(); super.onDestroy() }
+    override fun onInterrupt() {}
+    override fun onDestroy() { active = null; super.onDestroy() }
 
     private fun configure() {
         val info = serviceInfo ?: return
@@ -54,25 +53,35 @@ class MirrorIconService : AccessibilityService() {
 
     companion object {
         @Volatile private var active: WeakReference<MirrorIconService>? = null
-        fun mapRoot() = active?.get()?.rootInActiveWindow
         fun connected(): Boolean = active?.get()!=null
-        fun mapClick(context: android.content.Context, original: Boolean) {
+        /** The OEM button only asks the vehicle for a navi-type change and waits for the cluster to echo it;
+         * this cluster never echoes, so the map itself does nothing. Act on the click here instead. */
+        fun mapClick(context: android.content.Context) {
             val controller = ProductController.get(context)
-            controller.recordExternal("MAP_ENTRY_CLICK source=${if (original) "oem" else "fallback"}")
-            if (ProjectionService.active()) { controller.stop(); return }
-            if (!original || !ExternalDisplayAccess.enabled()) { controller.toggleMap(); return }
-            // Give the original button's own MeterActivity time to arrive at the standby screen.
-            // If the OEM action does nothing on this vehicle, use the established native map path.
+            controller.recordExternal("MAP_ENTRY_CLICK source=oem")
+            if (ProjectionService.active() || !ExternalDisplayAccess.enabled()) { controller.mapButton(); return }
+            // A cluster that does echo opens the map's own MeterActivity on the standby screen; give it a
+            // moment so both paths do not race, then use the established native map path.
             android.os.Handler(context.mainLooper).postDelayed({
-                if (ExternalDisplayAccess.mapEntryVisible() && !ProjectionService.active() && !controller.busy) {
-                    controller.toggleMap()
-                }
+                if (!ProjectionService.active() && !controller.busy) { controller.mapButton() }
             },1500)
         }
         fun refresh() {
             active?.get()?.let { service -> android.os.Handler(service.mainLooper).post { service.configure() } }
-            ExternalDisplayService.refreshMapEntry()
         }
+    }
+}
+
+/** Edits the colon-separated Settings.Secure list without dropping other services. */
+internal object AccessibilitySetting {
+    fun component(packageName: String) = "$packageName/${MirrorIconService::class.java.name}"
+
+    /** Returns the new value, or null when the service is already listed. */
+    fun withService(current: String?, component: String): String? {
+        val entries = current.orEmpty().trim().takeUnless { it == "null" }.orEmpty()
+            .split(':').map { it.trim() }.filter { it.isNotEmpty() }
+        if (component in entries) { return null }
+        return (entries + component).joinToString(":")
     }
 }
 

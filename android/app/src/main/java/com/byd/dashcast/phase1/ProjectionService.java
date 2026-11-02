@@ -94,8 +94,8 @@ public final class ProjectionService extends Service {
     }
 
     static void startProduct(Context context, CaptureOptions options, ProjectionTarget target, boolean underlay) {
-        if (!new ProductSettings(context).getSetupComplete() || target == null || options == null) {
-            throw new IllegalArgumentException("Product setup and explicit capture selection required");
+        if (target == null || options == null) {
+            throw new IllegalArgumentException("Explicit capture selection required");
         }
         context.startForegroundService(new Intent(context, ProjectionService.class).setAction(START)
                 .putExtra("seconds", ContinuousSessionPolicy.UNLIMITED_SECONDS).putExtra("product_session", true)
@@ -243,8 +243,8 @@ public final class ProjectionService extends Service {
             if (!controller.active()) { stopSelf(); }
             return START_NOT_STICKY;
         }
-        boolean confirmed = product ? new ProductSettings(this).getSetupComplete()
-                : intent.getBooleanExtra("parked_matching_firmware", false);
+        // Product sessions come only from the user's own start action; there is no separate setup step.
+        boolean confirmed = product || intent.getBooleanExtra("parked_matching_firmware", false);
         if (!START.equals(intent.getAction()) || !confirmed
                 || JOURNAL.quarantined() || JOURNAL.currentState() == ProjectionSessionController.State.RECOVERY_REQUIRED
                 || JOURNAL.currentState() == ProjectionSessionController.State.DISCONNECTED) {

@@ -66,11 +66,12 @@ class ProductActivity : Activity() {
     private var query = ""
     private var favoritesOnly = false
     private var advancedPicture = false
+    private var renderedLight = false
     private val main = Handler(Looper.getMainLooper())
     private val refresh = object : Runnable {
         override fun run() { updateStatus(); main.postDelayed(this, 500) }
     }
-    private val light get() = settings.light
+    private val light get() = settings.light(ThemePolicy.systemNight(resources.configuration))
     private val ink get() = color(if (light) "#162941" else "#F1F5FC")
     private val muted get() = color(if (light) "#55677D" else "#ADBCD0")
     private val canvas get() = color(if (light) "#EFF3F8" else "#0D1624")
@@ -90,8 +91,14 @@ class ProductActivity : Activity() {
         favoritesOnly = savedInstanceState?.getBoolean("favorites") ?: false
         advancedPicture = savedInstanceState?.getBoolean("advanced_picture") ?: false
         build()
-        if (!settings.setupComplete && savedInstanceState == null) { firstRun() }
         control.restoreSavedConnections()
+    }
+
+    /** uiMode is handled here (see the manifest) so a system day/night change redraws in place. */
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        val before = renderedLight
+        super.onConfigurationChanged(newConfig)
+        if (light != before) { build() }
     }
 
     override fun onResume() {
@@ -140,6 +147,7 @@ class ProductActivity : Activity() {
         window.statusBarColor = canvas
         window.navigationBarColor = canvas
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+        renderedLight = light
         window.decorView.systemUiVisibility = if (light) View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR else 0
         val root = column().apply {
             setBackgroundColor(canvas); setPadding(dp(18), dp(10), dp(18), dp(10))
@@ -191,11 +199,8 @@ class ProductActivity : Activity() {
             contentDescription = "仪表投屏连接，开启用于投屏，关闭请求恢复U盘"
             setOnCheckedChangeListener { _, on ->
                 if (!reflectingRole) {
-                    if (!settings.setupComplete) { firstRun() }
-                    else {
-                        settings.instrumentConnection = on
-                        control.switchRole(if (on) InstrumentUsbCommand.NCM else InstrumentUsbCommand.HOST)
-                    }
+                    settings.instrumentConnection = on
+                    control.switchRole(if (on) InstrumentUsbCommand.NCM else InstrumentUsbCommand.HOST)
                     updateStatus()
                 }
             }
@@ -223,7 +228,6 @@ class ProductActivity : Activity() {
         when (presentation(app).action) {
             ProductPresentation.Action.STOP -> control.stop()
             ProductPresentation.Action.CHOOSE -> navigate(1)
-            ProductPresentation.Action.SETUP -> firstRun()
             ProductPresentation.Action.START -> app?.let { control.startApp(it) }
             ProductPresentation.Action.NONE -> Unit
         }
@@ -236,9 +240,7 @@ class ProductActivity : Activity() {
         val utilities = row()
         utilities.addView(button("刷新列表") { apps = ProductAppCatalog.load(this); build() },
             LinearLayout.LayoutParams(0, -2, 1f).apply { marginEnd = dp(12) })
-        utilities.addView(button("仪表地图") {
-            if (!settings.setupComplete) { firstRun() } else { control.toggleMap(); navigate(0) }
-        }, LinearLayout.LayoutParams(0, -2, 1f))
+        utilities.addView(button("仪表地图") { control.toggleMap(); navigate(0) }, LinearLayout.LayoutParams(0, -2, 1f))
         body.addView(utilities)
         val search = EditText(this).apply {
             id = R.id.product_app_search; hint = "搜索应用"; textSize = 20f
@@ -322,7 +324,6 @@ class ProductActivity : Activity() {
             } else if (presentation(app).canChooseApp) {
                 settings.target = app.component; navigate(0)
                 if (sameTask) { updateStatus() }
-                else if (!settings.setupComplete) { firstRun() }
                 else { control.startApp(app) }
             } else { Toast.makeText(this@ProductActivity, "请等当前操作结束后再更换应用。", Toast.LENGTH_SHORT).show() }
         }, LinearLayout.LayoutParams(if (wide) dp(100) else 0, -2, if (wide) 0f else 1f))
@@ -347,15 +348,16 @@ class ProductActivity : Activity() {
         }
         addCard {
             addView(text("应用外观", 21, true))
-            choices(this, "界面颜色", listOf("深色", "浅色"), if (settings.light) 1 else 0) {
-                settings.light = it == 1; build()
+            choices(this, "界面颜色", listOf("跟随系统", "深色", "浅色"), settings.themeMode) {
+                settings.themeMode = it; build()
             }
-            addView(text("只改变本应用。仪表边缘自动跟随仪表深浅模式，地图配色在地图应用中设置。", 16))
+            addView(text("跟随系统时，车机切换深色或浅色，本应用随之切换。仪表边缘自动跟随仪表深浅模式，地图配色在地图应用中设置。", 16))
         }
+        startupCard()
         addCard {
             addView(text("从原应用图标打开", 21, true))
             addView(text("投屏时，点击原应用图标即可继续操作；回到桌面或打开其他应用，仪表仍会显示投屏画面。", 16))
-            addView(text(if (accessibilityEnabled()) "快捷打开已开启" else "可在系统无障碍设置中开启快捷打开。部分车机未提供此设置，也可继续使用。", 16))
+            addView(text(if (accessibilityEnabled()) "快捷打开已开启" else "开启“应用内投屏接入”时会自动开启快捷打开，也可在系统无障碍设置中手动开启。", 16))
             addView(button("前往系统设置") { SafeSettingsNavigator.open(this@ProductActivity) }.apply {
                 id = R.id.product_accessibility
             })
@@ -383,17 +385,14 @@ class ProductActivity : Activity() {
                 contentDescription = "应用内投屏接入开关"
                 setOnCheckedChangeListener { _, checked ->
                     if (!reflectingAccess) {
-                        if (!settings.setupComplete) { firstRun(); build() }
-                        else {
-                            settings.externalAccess = checked
-                            ExternalDisplayService.setEnabled(this@ProductActivity,checked)
-                        }
+                        settings.externalAccess = checked
+                        ExternalDisplayService.setEnabled(this@ProductActivity,checked)
                     }
                 }
             }.also { line.addView(it,LinearLayout.LayoutParams(dp(76),dp(52)).apply { marginStart=dp(16) }) }
             addView(line)
             addView(text("开启后，可在支持投屏的应用中填写屏幕名发送画面。开关不改变仪表，关闭也不打断当前投屏。",16))
-            addView(text("开启后管理定制地图的投屏入口，切到其他应用后隐藏。与从原图标继续操作分别管理。",15))
+            addView(text("开启后，定制地图自带的仪表投屏按钮可以直接使用：点一次投到仪表，再点一次停止。为识别这个按钮，开启时会通过已授权的调试连接打开本应用的无障碍服务。",15))
             accessState = text(ExternalDisplayAccess.message,15).also { addView(it) }
             copyScreenName = button("复制屏幕名") {
                 if (!ExternalDisplayAccess.ready()) {
@@ -424,22 +423,39 @@ class ProductActivity : Activity() {
         updateStatus()
     }
 
-    private fun firstRun() {
-        AlertDialog.Builder(this).setTitle("开始前的准备")
-            .setMessage("1. 安装与本应用配套的仪表包。\n2. 用数据线连接车机和仪表。\n3. 首次连接时，允许系统弹出的调试和 USB 访问请求。\n\n准备好后即可连接，之后选择应用开始投屏。")
-            .setPositiveButton("已安装配套仪表包，连接") { _, _ -> settings.setupComplete = true; control.connect(); updateStatus() }
-            .setNegativeButton("稍后", null).show()
-    }
-
     private fun connectionHelp() {
         AlertDialog.Builder(this).setTitle("连接仪表")
-            .setMessage("先确认已安装配套仪表包，并用数据线连接车机和仪表。\n\n首次连接时，在“允许 USB 调试”和访问仪表的系统弹窗中选择允许。已有授权会在覆盖安装后保留。\n\n开始投屏会自动准备连接，也可以在首页打开“仪表投屏连接”。关闭开关会先停止投屏，再请求恢复U盘使用，无需拔线。")
-            .setPositiveButton("知道了", null)
-            .setNeutralButton("首次连接设置") { _, _ -> firstRun() }.show()
+            .setMessage("先确认已安装配套仪表包，并用数据线连接车机和仪表。\n\n第一次使用时，系统会询问是否“允许 USB 调试”，勾选“始终允许”后确认，之后不再询问。访问仪表 USB 由本应用通过调试连接自动授权，正常不再弹窗。\n\n开始投屏会自动准备连接，也可以在首页打开“仪表投屏连接”。关闭开关会先停止投屏，再请求恢复U盘使用，无需拔线。")
+            .setPositiveButton("知道了", null).show()
+    }
+
+    private fun startupCard() {
+        addCard {
+            val line = row().apply { gravity = Gravity.CENTER_VERTICAL }
+            line.addView(text("开机启动", 21, true), LinearLayout.LayoutParams(0, -2, 1f))
+            makeSwitch(settings.bootStart).apply {
+                id = R.id.product_boot_start
+                textOn = ""; textOff = ""; showText = false
+                contentDescription = "开机启动开关"
+                trackDrawable?.setTint(if (isChecked) accent else border)
+                setOnCheckedChangeListener { _, checked ->
+                    settings.bootStart = checked
+                    trackDrawable?.setTint(if (checked) accent else border)
+                }
+            }.also { line.addView(it, LinearLayout.LayoutParams(dp(76), dp(52)).apply { marginStart = dp(16) }) }
+            addView(line)
+            addView(text("开机后自动恢复上次开着的“仪表投屏连接”和“应用内投屏接入”，不打开界面，也不自动开始投屏。", 16))
+            addView(text("车机默认禁止第三方应用自启动，需要在原车的自启动管理中允许本应用。", 15))
+            addView(button("前往自启动管理") {
+                if (!BootStart.openVendorSettings(this@ProductActivity)) {
+                    Toast.makeText(this@ProductActivity, "此车机没有自启动管理页面，开机启动可直接使用。", Toast.LENGTH_SHORT).show()
+                }
+            }.apply { id = R.id.product_boot_permission })
+        }
     }
 
     private fun presentation(app: ProductApp? = ProductAppCatalog.select(apps, settings.target)) = ProductUiModel.present(
-        ProjectionService.state(), control.operation, control.busy, settings.setupComplete, app != null, app?.capability?.allowed == true)
+        ProjectionService.state(), control.operation, control.busy, app != null, app?.capability?.allowed == true)
 
     private fun updateStatus() {
         if (!::control.isInitialized) { return }

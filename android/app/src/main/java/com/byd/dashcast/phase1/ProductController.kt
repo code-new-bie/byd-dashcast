@@ -90,7 +90,7 @@ internal class ProductController private constructor(context: Context) {
     /** Re-applies the saved switch choices once per process. Before this, both switches only mirrored
      * live state, so after an app restart the user had to turn them on again. */
     fun restoreSavedConnections() {
-        if (!settings.setupComplete || !restored.compareAndSet(false, true)) { return }
+        if (!restored.compareAndSet(false, true)) { return }
         if (settings.externalAccess && !ExternalDisplayAccess.enabled()) {
             log("PRODUCT_RESTORE_EXTERNAL_ACCESS saved=true")
             ExternalDisplayService.setEnabled(app, true)
@@ -118,7 +118,6 @@ internal class ProductController private constructor(context: Context) {
     fun start(target: ProjectionTarget) = start(target, false)
 
     private fun start(target: ProjectionTarget, showWorkspace: Boolean) {
-        if (!settings.setupComplete) { message = "请先完成首次连接设置"; return }
         if (busy) { message = "当前操作尚未完成，请稍候"; return }
         if (ProjectionService.active()) {
             if (showWorkspace) { replace(target, true) }
@@ -144,12 +143,18 @@ internal class ProductController private constructor(context: Context) {
         replace(next)
     }
 
+    /** The custom map's own projection button: stop when it or its standby-screen activity is on the
+     * instrument, otherwise project the map (replacing another app if one is showing). */
+    fun mapButton() {
+        if (ProjectionService.active() && requestedTarget?.isNamed == true) { stop(); return }
+        toggleMap()
+    }
+
     fun namedDisplay(): Boolean = replace(ProjectionTarget.namedDisplay())
 
     fun recordExternal(line: String) = log(line)
 
     private fun replace(target: ProjectionTarget, showWorkspace: Boolean = false): Boolean {
-        if (!settings.setupComplete) { message = "请先完成首次连接设置"; return false }
         if (busy) { message = "当前操作尚未完成，请稍候"; return false }
         if (!target.isNamed) { ExternalDisplayAccess.suppressCurrent() }
         stop()
@@ -188,6 +193,13 @@ internal class ProductController private constructor(context: Context) {
 
     private fun requestStartPermission(request: StartRequest, device: UsbDevice) {
         if (request.generation != startGeneration.get()) { return }
+        // Every NCM switch re-enumerates the instrument and drops the previous grant; let the shell grant it
+        // so the system dialog only appears when that fails.
+        if (ShellUsbGrant.request(app, device, ::log) && Usb.hasPermission(app, device)) {
+            log("PRODUCT_USB_PERMISSION_SHELL_GRANTED generation=${request.generation}")
+            startReady(request)
+            return
+        }
         usbPermission.begin(device.deviceName, request.generation, request)
         message = "请在系统弹窗中允许访问仪表 USB，随后会继续投屏。"
         log("PRODUCT_USB_PERMISSION_WAIT generation=${request.generation}")
@@ -219,7 +231,6 @@ internal class ProductController private constructor(context: Context) {
     }
 
     fun switchRole(command: InstrumentUsbCommand) {
-        if (!settings.setupComplete) { message = "请先完成首次连接设置"; return }
         if (command == InstrumentUsbCommand.HOST) {
             ExternalDisplayAccess.suppressCurrent()
             startGeneration.incrementAndGet()
@@ -364,7 +375,8 @@ internal class ProductController private constructor(context: Context) {
                 ?: throw IOException("USB_BUSY: 另一个操作正在清理；未发送切换")
             override fun releaseTargetData() {
                 val device = targetDevice() ?: throw IOException("USB_OBSERVATION_CHANGED")
-                if (!Usb.hasPermission(app, device)) {
+                if (!Usb.hasPermission(app, device) &&
+                    !(ShellUsbGrant.request(app, device, ::log) && Usb.hasPermission(app, device))) {
                     // Request permission separately; do not send Host before the proof exists.
                     Usb.requestPermission(app, device)
                     throw IOException("USB_PERMISSION_REQUIRED: 请允许 USB 后再次恢复 U 盘模式")
@@ -419,7 +431,8 @@ internal class ProductController private constructor(context: Context) {
             expected != ProjectionSessionController.State.RECOVERY_REQUIRED) { return true }
         check(Looper.myLooper() != Looper.getMainLooper()) { "Recovery I/O must never run on the UI thread" }
         val device = targetDevice() ?: throw IOException("DETACHED_RECOVERY_RECONNECT_REQUIRED")
-        if (!Usb.hasPermission(app, device)) {
+        if (!Usb.hasPermission(app, device) &&
+            !(ShellUsbGrant.request(app, device, ::log) && Usb.hasPermission(app, device))) {
             if (request != null) {
                 requestStartPermission(request, device)
                 return false

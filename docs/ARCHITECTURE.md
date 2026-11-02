@@ -18,7 +18,8 @@
 - **shell 宿主**：应用通过本机 adbd（`AdbShellClient`，RSA 身份存在 Android Keystore）以 shell 身份运行 `app_process` 宿主，由它创建虚拟屏、迁移应用任务和采集画面（`ShellMirrorHost`、`ShellScreenCapture`、`ShellExternalDisplay`）。普通应用的任务放在本应用拥有的虚拟屏上；主屏上的投屏页和仪表看到的是同一帧画面。
 - **视频**：画面经编码器编成 H.264，按 DCV1 协议（`NoAuthVideoProtocol`）通过 TCP 发出。
 - **USB 连接**：`ncm/` 是用户态 USB NCM 实现，车机作为 USB 主机，经数据线和仪表组成网络。仪表 USB 角色（平时做 USB 主机读 U 盘，投屏时做 NCM 网络设备）的切换请求经原厂导航文字通道发给仪表（`NavigationUsbRelay`），由仪表脚本执行。
-- **外部接入**：`ExternalDisplayService` 提供名为 `fission_dashcast_meter` 的屏幕，供支持外部屏幕的应用（如定制版高德地图）直接发送画面。
+- **外部接入**：`ExternalDisplayService` 提供名为 `fission_dashcast_meter` 的屏幕，供支持外部屏幕的应用（如定制版高德地图）直接发送画面。定制地图自带的仪表按钮只会向车辆请求切换导航类型、并等待原车仪表回报，我们的仪表不回报，所以由无障碍服务 `MirrorIconService` 识别这个按钮的点击，再由 App 开关地图投屏；开启接入时，shell 宿主会顺带打开这个无障碍服务。
+- **授权与启动**：仪表每次切换到投屏模式都会重新枚举 USB 设备，`ShellUsbGrant` 在 shell 里（车机 shell 有 `MANAGE_USB`）给本应用授予该设备的访问权限，避免系统弹窗；`BootReceiver` 在“开机启动”开启时，恢复保存的连接开关。
 
 ## 仪表端（`instrument`）
 
