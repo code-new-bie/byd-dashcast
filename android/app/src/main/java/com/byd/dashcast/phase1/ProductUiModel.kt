@@ -16,6 +16,28 @@ internal enum class ProductConnection {
     }
 }
 
+/** The top-left connection dot. The mode switch is the user's choice; this shows how the link follows it. */
+internal enum class LinkDot(val label: String) {
+    OFF("U盘模式，未启用投屏连接"),
+    CONNECTING("正在连接仪表"),
+    READY("仪表已连接，可以投屏"),
+    CASTING("正在投屏"),
+    FAILED("仪表未连上");
+
+    companion object {
+        fun of(mode: Boolean, connection: ProductConnection, linking: Boolean, casting: Boolean, failed: Boolean): LinkDot =
+            when {
+                casting -> CASTING
+                !mode -> OFF
+                linking -> CONNECTING
+                connection == ProductConnection.CONNECTED -> READY
+                failed || connection == ProductConnection.AMBIGUOUS || connection == ProductConnection.UNAVAILABLE -> FAILED
+                // Seen but not yet granted, or waiting for the instrument after a detach.
+                else -> CONNECTING
+            }
+    }
+}
+
 internal data class ProductPresentation(
     val title: String,
     val actionLabel: String,

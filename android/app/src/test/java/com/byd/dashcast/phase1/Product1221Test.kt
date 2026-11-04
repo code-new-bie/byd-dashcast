@@ -5,15 +5,15 @@ import org.junit.Assert.*
 import org.junit.Test
 import java.io.File
 
-/** 1.22.1: a failed connection gives the U-disk back; the IME no longer squeezes the cast page. */
+/** 1.22.1: an unanswered connect request is detected; the IME no longer squeezes the cast page. */
 class Product1221Test {
-    @Test fun onlyAnUnansweredConnectRequestAsksTheInstrumentBackToUsbDisk() {
+    @Test fun onlyAnUnansweredConnectRequestCountsAsAFailedLink() {
         val unknown = HotRoleTransition.Result.REQUEST_SENT_PEER_UNKNOWN
-        assertTrue(HotRoleTransition.leftWithoutUsbDisk(InstrumentUsbCommand.NCM, unknown, false))
-        assertFalse(HotRoleTransition.leftWithoutUsbDisk(InstrumentUsbCommand.NCM, unknown, true))
-        assertFalse(HotRoleTransition.leftWithoutUsbDisk(InstrumentUsbCommand.HOST, unknown, false))
+        assertTrue(HotRoleTransition.requestUnanswered(InstrumentUsbCommand.NCM, unknown, false))
+        assertFalse(HotRoleTransition.requestUnanswered(InstrumentUsbCommand.NCM, unknown, true))
+        assertFalse(HotRoleTransition.requestUnanswered(InstrumentUsbCommand.HOST, unknown, false))
         for (done in listOf(HotRoleTransition.Result.EXISTING_NCM, HotRoleTransition.Result.NCM_ENUMERATED)) {
-            assertFalse(HotRoleTransition.leftWithoutUsbDisk(InstrumentUsbCommand.NCM, done, false))
+            assertFalse(HotRoleTransition.requestUnanswered(InstrumentUsbCommand.NCM, done, false))
         }
     }
 

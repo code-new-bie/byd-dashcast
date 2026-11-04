@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.hardware.usb.UsbDevice
+import android.hardware.usb.UsbManager
 import android.os.Handler
 import android.os.Looper
 import com.byd.dashcast.phase1.ncm.LogHub
@@ -39,6 +40,10 @@ internal class ProductController private constructor(context: Context) {
         private set
     @Volatile var operation: ProductOperation = ProductOperation.NONE
         private set
+    /** Set when the last link attempt in projection mode reached no instrument; cleared when one is seen. */
+    @Volatile var linkFailure: String? = null
+        private set
+    val linking: Boolean get() = busy && (operation == ProductOperation.MODE || operation == ProductOperation.CONNECT)
     private val usbPermission = UsbPermissionContinuation<StartRequest>()
     private data class StartRequest(val target: ProjectionTarget, val options: CaptureOptions, val underlay: Boolean, val generation: Long)
     val busy: Boolean get() = occupied.get()
@@ -83,6 +88,24 @@ internal class ProductController private constructor(context: Context) {
                 }
             }
         }, IntentFilter(Usb.ACTION_PERM))
+        app.registerReceiver(object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                val device = intent.getParcelableExtra<UsbDevice>(UsbManager.EXTRA_DEVICE)
+                if (device == null || !target(device)) { return }
+                main.removeCallbacks(reattachCheck)
+                if (intent.action == UsbManager.ACTION_USB_DEVICE_ATTACHED) {
+                    log("PRODUCT_INSTRUMENT_ATTACHED")
+                    linkFailure = null
+                    main.postDelayed({ ensureLink("attached") }, 300)
+                } else if (intent.action == UsbManager.ACTION_USB_DEVICE_DETACHED && settings.instrumentConnection) {
+                    log("PRODUCT_INSTRUMENT_DETACHED")
+                    main.postDelayed(reattachCheck, 20_000)
+                }
+            }
+        }, IntentFilter().apply {
+            addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED)
+            addAction(UsbManager.ACTION_USB_DEVICE_DETACHED)
+        })
     }
 
     fun connect() = operation("正在连接车机，如出现调试弹窗请选择允许。", ProductOperation.CONNECT) { authenticate() }
@@ -95,9 +118,57 @@ internal class ProductController private constructor(context: Context) {
             log("PRODUCT_RESTORE_EXTERNAL_ACCESS saved=true")
             ExternalDisplayService.setEnabled(app, true)
         }
-        if (settings.instrumentConnection && !ProjectionService.active() && !connectionState().observed) {
+        if (settings.instrumentConnection && !ProjectionService.active()) {
             log("PRODUCT_RESTORE_INSTRUMENT_CONNECTION saved=true")
-            switchRole(InstrumentUsbCommand.NCM, fromSwitch = false)
+            ensureLink("restore")
+        }
+    }
+
+    /** The instrument mode switch. Projection mode keeps the link up by itself (on start, when the cable is
+     * plugged in, after the instrument disappears); U-disk mode stops casting and gives the port back. */
+    fun setProjectionMode(on: Boolean) {
+        settings.instrumentConnection = on
+        linkFailure = null
+        log("PRODUCT_MODE_SELECTED projection=$on")
+        if (on) { ensureLink("switch") } else { main.removeCallbacks(reattachCheck); switchRole(InstrumentUsbCommand.HOST) }
+    }
+
+    /** From the connection dot: try again, which sends the mode request once more if nothing is attached. */
+    fun retryLink() {
+        linkFailure = null
+        ensureLink("retry")
+    }
+
+    /** Brings the link up in projection mode: request NCM if nothing is attached, otherwise make sure ADB is
+     * ready and the instrument already has USB access, so a later start skips both. Never queues behind,
+     * or reports over, another operation. */
+    private fun ensureLink(reason: String) {
+        if (!settings.instrumentConnection || ProjectionService.active() || busy) { return }
+        log("PRODUCT_LINK_ENSURE reason=$reason")
+        if (connectionState().observed) {
+            operation("正在准备仪表连接。", ProductOperation.CONNECT) {
+                if (!adbReady) { authenticate() }
+                grantAttachedInstrument()
+                linkFailure = null
+                message = "仪表已连接，可以开始投屏。"
+            }
+        } else { switchRole(InstrumentUsbCommand.NCM) }
+    }
+
+    /** Grants USB access as soon as the instrument is attached instead of when a cast starts. */
+    private fun grantAttachedInstrument() {
+        val device = targetDevice() ?: return
+        if (Usb.hasPermission(app, device)) { return }
+        if (ShellUsbGrant.request(app, device, ::log) && Usb.hasPermission(app, device)) {
+            log("PRODUCT_USB_PREGRANTED device=${device.deviceName}")
+        }
+    }
+
+    /** The instrument left while in projection mode and did not come back (it may have restarted in U-disk
+     * mode): ask once more. Only one such request per detach, so the instrument is not spammed. */
+    private val reattachCheck = Runnable {
+        if (settings.instrumentConnection && !ProjectionService.active() && !connectionState().observed) {
+            ensureLink("reattach_timeout")
         }
     }
 
@@ -183,17 +254,18 @@ internal class ProductController private constructor(context: Context) {
         requireClean()
         if (!adbReady) { authenticate() }
         if (request.generation != startGeneration.get()) { return }
+        // Casting needs projection mode; the switch shows it, so turning it off still gives the U-disk back.
+        settings.instrumentConnection = true
         val result = transition(InstrumentUsbCommand.NCM)
         if (request.generation != startGeneration.get()) { return }
         log("PRODUCT_START_ROLE=$result")
         val device = targetDevice() ?: run {
-            if (HotRoleTransition.leftWithoutUsbDisk(InstrumentUsbCommand.NCM, result, false)) {
-                restoreHostAfterTimeout(false)
+            if (HotRoleTransition.requestUnanswered(InstrumentUsbCommand.NCM, result, false)) {
+                linkFailed("PRODUCT_START_LINK_TIMEOUT")
             }
-            throw IOException("NCM_NOT_ENUMERATED: 尚未发现仪表连接，已请求仪表恢复U盘；请检查数据线后重试")
+            throw IOException("NCM_NOT_ENUMERATED: 尚未发现仪表连接，请检查数据线后重试；切到U盘模式可恢复U盘")
         }
-        // The instrument is in projection-connection mode now; the switch shows it so it can be turned back.
-        settings.instrumentConnection = true
+        linkFailure = null
         if (!Usb.hasPermission(app, device)) { requestStartPermission(request, device) }
         else { startReady(request) }
     }
@@ -237,8 +309,8 @@ internal class ProductController private constructor(context: Context) {
         log(selected.capability.evidence.take(2200))
     }
 
-    /** [fromSwitch]: the user toggled the switch, so a failed connection also turns the switch back off. */
-    fun switchRole(command: InstrumentUsbCommand, fromSwitch: Boolean = true) {
+    /** NCM only from projection mode (see [ensureLink]); Host when the user selects U-disk mode. */
+    private fun switchRole(command: InstrumentUsbCommand) {
         if (command == InstrumentUsbCommand.HOST) {
             ExternalDisplayAccess.suppressCurrent()
             startGeneration.incrementAndGet()
@@ -253,19 +325,18 @@ internal class ProductController private constructor(context: Context) {
                 // This does not clear pending peer recovery or start a media session.
                 relay().request(command)
                 log("PRODUCT_DETACHED_USER_NCM_REQUEST; recovery remains pending, no Host or media START")
-                if (awaitNcm()) { message = "仪表已连接，可以开始投屏。"; return@operation }
-                // Still detached: send Host directly, the same way, so the instrument is not left without U-disk.
-                relay().request(InstrumentUsbCommand.HOST)
-                connectFailed(fromSwitch, "PRODUCT_DETACHED_CONNECT_TIMEOUT_HOST_SENT")
+                if (awaitNcm()) { linkReady(); return@operation }
+                linkFailed("PRODUCT_DETACHED_LINK_TIMEOUT")
                 return@operation
             }
             recoverIfNecessary()
             if (!adbReady) { authenticate() }
             val result = transition(command)
-            if (HotRoleTransition.leftWithoutUsbDisk(command, result, targetDevice() != null)) {
-                restoreHostAfterTimeout(fromSwitch)
+            if (HotRoleTransition.requestUnanswered(command, result, targetDevice() != null)) {
+                linkFailed("PRODUCT_LINK_TIMEOUT result=$result")
                 return@operation
             }
+            if (command == InstrumentUsbCommand.NCM) { linkReady() }
             message = when (result) {
                 HotRoleTransition.Result.EXISTING_NCM -> "仪表已连接，可以开始投屏。"
                 HotRoleTransition.Result.NCM_ENUMERATED -> "仪表已连接，可以开始投屏。"
@@ -374,23 +445,18 @@ internal class ProductController private constructor(context: Context) {
         InstrumentUsbController(app, AdbShellClient("127.0.0.1", 5555, 20000, identity,
             { line -> log(line) }, cancelled), cancelled, { line -> log(line) })
 
-    /** The NCM request went out but no instrument appeared: it may have switched with no cable to the head
-     * unit, which would leave it without U-disk. Ask it back to Host mode instead of leaving that to the user. */
-    private fun restoreHostAfterTimeout(fromSwitch: Boolean) {
-        val result = try { transition(InstrumentUsbCommand.HOST) } catch (error: Exception) {
-            log("PRODUCT_CONNECT_TIMEOUT_HOST_FAILED ${error.javaClass.simpleName}: ${error.message}")
-            message = "没有连上仪表，恢复U盘的请求也没有发出：${ProductErrors.explain(error)}"
-            if (fromSwitch) { settings.instrumentConnection = false }
-            return
-        }
-        connectFailed(fromSwitch, "PRODUCT_CONNECT_TIMEOUT_HOST_SENT result=$result")
+    /** The NCM request went out but no instrument appeared. Projection mode stays selected (the switch can
+     * always give the U-disk back); plugging the cable in or the dot's retry tries again. */
+    private fun linkFailed(line: String) {
+        linkFailure = "没有连上仪表。请检查车机和仪表之间的数据线；插好后会自动连接，也可点左上角圆点重试。" +
+            "需要用U盘时，把仪表模式切到U盘。"
+        message = linkFailure!!
+        log(line)
     }
 
-    private fun connectFailed(fromSwitch: Boolean, line: String) {
-        // A failed attempt from the switch turns it off again; a saved choice restored at boot stays on.
-        if (fromSwitch) { settings.instrumentConnection = false }
-        message = "没有连上仪表，已请求仪表恢复U盘。请检查车机和仪表之间的数据线后再试。"
-        log("$line from_switch=$fromSwitch")
+    private fun linkReady() {
+        grantAttachedInstrument()
+        linkFailure = null
     }
 
     private fun awaitNcm(): Boolean {
@@ -553,6 +619,9 @@ internal class ProductController private constructor(context: Context) {
                     if (error is InterruptedException) { Thread.currentThread().interrupt() }
                     message = ProductErrors.explain(error)
                     if (kind == ProductOperation.START) { MirrorWorkspace.fail(generation, message) }
+                    // Any failure while bringing the link up in projection mode shows the red dot.
+                    if ((kind == ProductOperation.MODE || kind == ProductOperation.CONNECT) &&
+                        settings.instrumentConnection) { linkFailure = message }
                     log("PRODUCT_OPERATION_FAILED ${error.javaClass.simpleName}: ${error.message}")
                 } finally { operation = ProductOperation.NONE; occupied.set(false); finished() }
             }

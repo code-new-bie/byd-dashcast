@@ -2,6 +2,13 @@
 
 较早版本的详细说明文档已从仓库移除，需要时可在 Git 历史中查看（例如提交 `ba358c3` 及更早的 `docs/PRODUCT_*.md`、`docs/TASKS_*.md`）。
 
+## APK1.23.0 / 仪表1.22.0（2026-11-04）
+
+- The home switch is now the instrument mode ("投屏模式" / U-disk) and is remembered. In projection mode the app keeps the link up by itself: on start and boot, when the instrument is attached, and once more 20 s after it disappears without coming back. An unanswered request keeps projection mode (red dot) instead of sending Host; only the U-disk choice sends Host. Starting a cast selects projection mode.
+- A connection dot left of the name replaces the header status text: grey U-disk mode, blinking yellow connecting, green ready, green with a ring casting, red not connected; tapping it shows the details and a retry.
+- Faster start: the link is already up in projection mode, and USB access is granted as soon as the instrument is attached. The pre-send relay checks are unchanged.
+- 609 unit tests, 0 lint errors; emulator checks of the grey/red dots, the details dialog and the remembered mode; vehicle acceptance pending. [说明](docs/PRODUCT_1.23.0.md)。
+
 ## APK1.22.2 / 仪表1.22.0（2026-11-04）
 
 - Follow-system theme: on the car a day/night switch with the app in front only showed after changing pages. The 500 ms status refresh now redraws as soon as the resolved theme differs from the page, and onConfigurationChanged also trusts the delivered configuration.

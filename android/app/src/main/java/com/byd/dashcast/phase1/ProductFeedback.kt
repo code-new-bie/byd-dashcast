@@ -34,7 +34,7 @@ internal object ProductErrors {
             text.contains("DETACHED_RECOVERY") ->
                 "连接已断开，仪表正在恢复；连接好后点击“重新连接”。"
             text.contains("NCM_NOT_ENUMERATED") ->
-                "尚未连接到仪表，请检查数据线，并开启“仪表投屏连接”。"
+                "尚未连接到仪表，请检查数据线，并打开“投屏模式”。"
             text.contains("USB_PERMISSION") -> "请允许访问仪表 USB 后再试。"
             text.contains("USB_BUSY") || text.contains("SERVICE_FINISHING") || text.contains("SESSION_ACTIVE") ->
                 "上次操作还未结束，请稍候再试。"

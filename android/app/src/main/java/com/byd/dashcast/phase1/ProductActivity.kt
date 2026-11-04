@@ -41,7 +41,8 @@ class ProductActivity : Activity() {
     private lateinit var body: LinearLayout
     private var scroll: ScrollView? = null
     private var headline: TextView? = null
-    private var connection: TextView? = null
+    private var linkDot: View? = null
+    private var linkLabel: View? = null
     private var detail: TextView? = null
     private var sourceLabel: TextView? = null
     private var primary: Button? = null
@@ -141,7 +142,7 @@ class ProductActivity : Activity() {
         }
         embedded.setConsumerVisible(false)
         (embedded.parent as? ViewGroup)?.removeView(embedded)
-        headline = null; connection = null; detail = null; sourceLabel = null
+        headline = null; linkDot = null; linkLabel = null; detail = null; sourceLabel = null
         primary = null; chooseApp = null; appBack = null; export = null
         fullMode = null; smallMode = null; modeNote = null; scroll = null
         roleSwitch = null; roleState = null
@@ -156,8 +157,18 @@ class ProductActivity : Activity() {
             isFocusableInTouchMode = true; requestFocus()
         }
         val header = row()
-        header.addView(text(getString(R.string.app_name), 23, true).apply { minHeight = dp(52) },
-            LinearLayout.LayoutParams(0, -2, 1f))
+        // Top left: the connection dot and the name; tapping either shows the connection details.
+        val brand = row().apply {
+            id = R.id.product_link_status; isClickable = true; isFocusable = true
+            setOnClickListener { showLinkDetails() }
+        }
+        linkDot = View(this).apply { id = R.id.product_link_dot }
+        brand.addView(linkDot, LinearLayout.LayoutParams(dp(16), dp(16)).apply {
+            marginEnd = dp(10); gravity = Gravity.CENTER_VERTICAL
+        })
+        brand.addView(text(getString(R.string.app_name), 23, true).apply { minHeight = dp(52); gravity = Gravity.CENTER_VERTICAL })
+        linkLabel = brand
+        header.addView(brand, LinearLayout.LayoutParams(0, -2, 1f))
         val nav = row()
         listOf("投屏", "应用", "设置").forEachIndexed { index, label ->
             nav.addView(button(label, index == page) { navigate(index) }.apply {
@@ -168,8 +179,8 @@ class ProductActivity : Activity() {
             }, LinearLayout.LayoutParams(0, navigationHeight(52), 1f).apply { marginEnd = if (index == 2) 0 else dp(12) })
         }
         if (wide) { header.addView(nav, LinearLayout.LayoutParams(dp(340), -2)) }
-        connection = text("", 15).apply { gravity = Gravity.END; maxLines = 2 }
-        header.addView(connection, LinearLayout.LayoutParams(0, -2, 1f).apply { marginStart = dp(12) })
+        // Keeps the tabs centred now that the connection text lives behind the dot.
+        header.addView(View(this), LinearLayout.LayoutParams(0, 1, 1f).apply { marginStart = dp(12) })
         root.addView(header)
         if (!wide) { root.addView(nav, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) }) }
         if (page == 0) { home(root) }
@@ -196,16 +207,12 @@ class ProductActivity : Activity() {
         chooseApp = button("更换应用") { navigate(1) }.apply { id = R.id.product_choose_app }
         appBack = button("应用返回") { embedded.applicationBack() }.apply { id = R.id.product_app_back }
         val line = row().apply { setPadding(dp(8), 0, dp(8), 0) }
-        line.addView(text("仪表连接", 16), LinearLayout.LayoutParams(0, -2, 1f))
-        roleSwitch = makeSwitch(connectionRequested()).apply {
+        line.addView(text("投屏模式", 16), LinearLayout.LayoutParams(0, -2, 1f))
+        roleSwitch = makeSwitch(settings.instrumentConnection).apply {
             id = R.id.product_mode_switch
-            contentDescription = "仪表投屏连接，开启用于投屏，关闭请求恢复U盘"
+            contentDescription = "仪表投屏模式，开启时自动连接仪表，关闭后仪表恢复U盘"
             setOnCheckedChangeListener { _, on ->
-                if (!reflectingRole) {
-                    settings.instrumentConnection = on
-                    control.switchRole(if (on) InstrumentUsbCommand.NCM else InstrumentUsbCommand.HOST)
-                    updateStatus()
-                }
+                if (!reflectingRole) { control.setProjectionMode(on); updateStatus() }
             }
         }
         line.addView(roleSwitch, LinearLayout.LayoutParams(dp(76), dp(52)))
@@ -416,7 +423,7 @@ class ProductActivity : Activity() {
 
     private fun connectionHelp() {
         AlertDialog.Builder(this).setTitle("连接仪表")
-            .setMessage("先确认已安装配套仪表包，并用数据线连接车机和仪表。\n\n第一次使用时，系统会询问是否“允许 USB 调试”，勾选“始终允许”后确认，之后不再询问。访问仪表 USB 由本应用通过调试连接自动授权，正常不再弹窗。\n\n开始投屏会自动准备连接，也可以在首页打开“仪表投屏连接”。关闭开关会先停止投屏，再请求恢复U盘使用，无需拔线。")
+            .setMessage("先确认已安装配套仪表包，并用数据线连接车机和仪表。\n\n第一次使用时，系统会询问是否“允许 USB 调试”，勾选“始终允许”后确认，之后不再询问。访问仪表 USB 由本应用通过调试连接自动授权，正常不再弹窗。\n\n首页的“投屏模式”打开后，会自动连接仪表并保持连接，左上角圆点显示连接状态（绿色已连接、黄色连接中、红色未连上）。关闭后先停止投屏，再请求仪表恢复U盘使用，无需拔线。")
             .setPositiveButton("知道了", null).show()
     }
 
@@ -435,7 +442,7 @@ class ProductActivity : Activity() {
                 }
             }.also { line.addView(it, LinearLayout.LayoutParams(dp(76), dp(52)).apply { marginStart = dp(16) }) }
             addView(line)
-            addView(text("开机后自动恢复上次开着的“仪表投屏连接”和“应用内投屏接入”，不打开界面，也不自动开始投屏。", 16))
+            addView(text("开机后自动恢复上次开着的“投屏模式”和“应用内投屏接入”，不打开界面，也不自动开始投屏。", 16))
             addView(text("车机默认禁止第三方应用自启动，需要在原车的自启动管理中允许本应用。", 15))
             addView(button("前往自启动管理") {
                 if (!BootStart.openVendorSettings(this@ProductActivity)) {
@@ -448,10 +455,45 @@ class ProductActivity : Activity() {
     private fun presentation(app: ProductApp? = ProductAppCatalog.select(apps, settings.target)) = ProductUiModel.present(
         ProjectionService.state(), control.operation, control.busy, app != null, app?.capability?.allowed == true)
 
-    /** The switch shows the requested mode, not only a live device: after a lost connection it stays on,
-     * so turning it off can still ask the instrument back to U-disk mode. */
-    private fun connectionRequested(usb: ProductConnection = control.connectionState()) =
-        settings.instrumentConnection || usb.observed
+    private fun linkState(usb: ProductConnection = control.connectionState()) = LinkDot.of(settings.instrumentConnection,
+        usb, control.linking, ProjectionService.state() == ProjectionSessionController.State.STREAMING,
+        control.linkFailure != null)
+
+    private fun paintLinkDot(dot: LinkDot) {
+        val view = linkDot ?: return
+        val fill = color(when (dot) {
+            LinkDot.OFF -> "#8A96A8"
+            LinkDot.CONNECTING -> "#F2A626"
+            LinkDot.READY, LinkDot.CASTING -> "#2BB673"
+            LinkDot.FAILED -> "#E5484D"
+        })
+        if (view.tag != dot) {
+            view.tag = dot
+            view.background = GradientDrawable().apply {
+                shape = GradientDrawable.OVAL; setColor(fill)
+                // Casting: a soft ring around the green dot.
+                if (dot == LinkDot.CASTING) { setStroke(dp(4), Color.argb(90, 43, 182, 115)) }
+            }
+        }
+        // The 500 ms refresh drives a 1 Hz blink while connecting.
+        view.alpha = if (dot == LinkDot.CONNECTING && (System.currentTimeMillis() / 500) % 2 == 1L) .3f else 1f
+        linkLabel?.contentDescription = "仪表连接状态：${dot.label}，点按查看详情"
+    }
+
+    /** The connection details that used to sit in the header, plus a retry when the link is down. */
+    private fun showLinkDetails() {
+        val usb = control.connectionState()
+        val dot = linkState(usb)
+        val lines = listOf("仪表模式：${if (settings.instrumentConnection) "投屏模式" else "U盘模式"}",
+            "车机调试连接：${if (control.adbReady) "已连接" else "待连接"}", "仪表 USB：${usb.description}")
+        val dialog = android.app.AlertDialog.Builder(this).setTitle(dot.label)
+            .setMessage((lines + listOfNotNull(control.linkFailure)).joinToString("\n"))
+            .setPositiveButton("好", null)
+        if (settings.instrumentConnection && dot in setOf(LinkDot.FAILED, LinkDot.CONNECTING) && !control.busy) {
+            dialog.setNeutralButton("重新连接") { _, _ -> control.retryLink(); updateStatus() }
+        }
+        dialog.show()
+    }
 
     private fun updateStatus() {
         if (!::control.isInitialized) { return }
@@ -459,9 +501,7 @@ class ProductActivity : Activity() {
         val ui = presentation()
         val usb = control.connectionState()
         headline?.text = ui.title
-        val waiting = settings.instrumentConnection && !usb.observed && !control.busy
-        connection?.text = "${if (control.adbReady) "车机已连接" else "车机待连接"} · " +
-            if (waiting) "仪表未连上，关闭开关可恢复U盘" else usb.description
+        paintLinkDot(linkState(usb))
         val hasFailure = !control.busy && state in setOf(ProjectionSessionController.State.FAILED,
             ProjectionSessionController.State.QUARANTINED, ProjectionSessionController.State.DISCONNECTED,
             ProjectionSessionController.State.RECOVERY_REQUIRED)
@@ -495,7 +535,7 @@ class ProductActivity : Activity() {
         modeNote?.text = "${if (active || control.busy) "下次使用" else "仪表画面"}${if (settings.underlay) "全屏" else "小窗"}"
         reflectingRole = true
         try {
-            if (!control.busy) { roleSwitch?.isChecked = connectionRequested(usb) }
+            if (!control.busy) { roleSwitch?.isChecked = settings.instrumentConnection }
             roleSwitch?.isEnabled = ui.modeEnabled
             roleSwitch?.trackDrawable?.setTint(if (roleSwitch?.isChecked == true) accent else border)
             roleState?.text = if (control.busy && control.operation == ProductOperation.MODE) "正在切换…"

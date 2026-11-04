@@ -31,9 +31,9 @@ internal class HotRoleTransition(private val backend: Backend) {
     enum class Result { EXISTING_NCM, NCM_ENUMERATED, REQUEST_SENT_PEER_UNKNOWN, HOST_DETACHED_NOT_ACKNOWLEDGED }
 
     companion object {
-        /** The NCM request went out but no instrument appeared: it may have switched with no link to the
-         * head unit and so lost its U-disk mode; the caller asks it back to Host. */
-        fun leftWithoutUsbDisk(command: InstrumentUsbCommand, result: Result, deviceSeen: Boolean) =
+        /** The NCM request went out but no instrument appeared (no cable, or the instrument did not switch);
+         * the caller marks the link as failed and waits for the cable or a retry. */
+        fun requestUnanswered(command: InstrumentUsbCommand, result: Result, deviceSeen: Boolean) =
             command == InstrumentUsbCommand.NCM && result == Result.REQUEST_SENT_PEER_UNKNOWN && !deviceSeen
     }
 
