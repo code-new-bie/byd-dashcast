@@ -19,6 +19,8 @@ OWNED_BACKGROUNDS = {
     "instrument/assets/b2/DXFullDark.png": "b36b53392adb3cbf5cbbff9c558086f9c9219e804e66009ea9eae2a41947cbfe",
     "instrument/assets/b2/DXCenterDark.png": "eb34697ca949808502749f11b591d24f1c7a5346f02695b0104a68a13aabc7de",
     "instrument/assets/b3-center/DXCenterDark.png": "0e91c53698e5bc06d5739e8caf7a8467608cc8e8d64506bd3b1351eb8f471e75",
+    "instrument/assets/rwvg/DXFullDark.png": "52952c86dc211e8f97ceb154e8b5b4062a1fc18206d88e8e1ee7964bc1037b6c",
+    "instrument/assets/rwvg/DXCenterDark.png": "2d056caff3dcf873a0767fd83e0471dfd6a97cd44643baac41d25a5f79d81335",
     "assets/backgrounds/full-dark.png": "058c12def19b93ff433964d247898e7fc729a61b247076ab8341d7f443e7c411",
     "assets/backgrounds/full-light.png": "a9163305594485444bc4d624f73eb658f66ea33d5c35fa96f036c1ae99540e61",
     "assets/backgrounds/center-dark.png": "3d1afb21cdff2da37b035606d16a08ed66f40cc50e575cf2dd6275c388b32a59",

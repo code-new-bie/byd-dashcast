@@ -8,7 +8,8 @@ internal data class WorkspaceDisplayProfile(val width: Int, val height: Int, val
 
     companion object {
         @JvmStatic fun forMode(center: Boolean): WorkspaceDisplayProfile =
-            if (center) WorkspaceDisplayProfile(2304, 1296, 480)
-            else WorkspaceDisplayProfile(3392, 912, 320)
+            // RWVG: 1.8x / 2x of the small / full instrument sources, so one dp is one instrument pixel.
+            if (center) WorkspaceDisplayProfile(3366, 1458, 480)
+            else WorkspaceDisplayProfile(3824, 996, 320)
     }
 }

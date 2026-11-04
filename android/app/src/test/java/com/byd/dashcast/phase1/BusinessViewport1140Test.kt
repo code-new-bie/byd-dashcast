@@ -17,8 +17,8 @@ class BusinessViewport1140Test {
     }
     @Test fun nativeMapKeepsWideIndependentEntryAndGenericCanFitOrCrop() {
         val source=ContentViewport.forBusiness(BusinessDisplayProfile(1920,960,240),false)
-        assertEquals(1696,ContentViewport.full().sourceWidth)
-        assertEquals(456,ContentViewport.full().sourceHeight)
+        assertEquals(1912,ContentViewport.full().sourceWidth)
+        assertEquals(498,ContentViewport.full().sourceHeight)
         val fit=SourceRenderMapping.create(source,false)
         val crop=SourceRenderMapping.create(source,true)
         assertNotEquals(fit,crop)

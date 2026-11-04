@@ -12,8 +12,11 @@ class MirrorWorkspace1180Test {
             val factor = profile.density / 160f
             assertTrue(factor >= 2)
             assertEquals(carrier.physicalAspect, profile.width.toFloat() / profile.height, 0.0001f)
-            assertEquals(if (small) 768f else 1696f, profile.width / factor, 0.001f)
-            assertEquals(if (small) 432f else 456f, profile.height / factor, 0.001f)
+            // One dp is one instrument pixel of the RWVG carrier (fade-in band included).
+            assertEquals(if (small) 1122f else 1912f, profile.width / factor, 0.001f)
+            assertEquals(if (small) 486f else 498f, profile.height / factor, 0.001f)
+            assertEquals(carrier.encodedWidth.toFloat(), profile.width / factor, 0.001f)
+            assertEquals(carrier.encodedHeight.toFloat(), profile.height / factor, 0.001f)
             for (crop in listOf(false, true)) {
                 val mapping = SourceRenderMapping.create(viewport, crop)
                 assertArrayEquals(carrier.normalized(), mapping.content, 0f)

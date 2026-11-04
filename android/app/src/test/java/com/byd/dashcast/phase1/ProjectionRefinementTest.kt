@@ -64,9 +64,7 @@ class ProjectionRefinementTest {
         for (base in listOf(ContentViewport.full(), ContentViewport.center())) {
             val viewport = base.copy(sourceWidth = profile.width, sourceHeight = profile.height)
             val fit = SourceRenderMapping.create(viewport, false)
-            val physicalAspect = if (base == ContentViewport.center())
-                fit.content[2] * 1920 * .4f / (fit.content[3] * 720 * .6f)
-                else fit.content[2] * 1920 / (fit.content[3] * 720)
+            val physicalAspect = fit.content[2] * 1920 / (fit.content[3] * 720)
             assertEquals(16f / 9, physicalAspect, .0001f)
             assertArrayEquals(floatArrayOf(0f, 0f, 1f, 1f), fit.source, 0f)
             val mirror = MirrorGeometry.fit(profile.width, profile.height, 1920, 1080)

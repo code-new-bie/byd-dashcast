@@ -65,7 +65,6 @@ class ProductActivity : Activity() {
     private var renderedPage = -1
     private var query = ""
     private var favoritesOnly = false
-    private var advancedPicture = false
     private var renderedLight = false
     private val main = Handler(Looper.getMainLooper())
     private val refresh = object : Runnable {
@@ -89,7 +88,6 @@ class ProductActivity : Activity() {
         page = savedInstanceState?.getInt("page")?.coerceIn(0, 2) ?: intent.getIntExtra("page", 0).coerceIn(0, 2)
         query = savedInstanceState?.getString("query").orEmpty()
         favoritesOnly = savedInstanceState?.getBoolean("favorites") ?: false
-        advancedPicture = savedInstanceState?.getBoolean("advanced_picture") ?: false
         build()
         control.restoreSavedConnections()
     }
@@ -122,7 +120,6 @@ class ProductActivity : Activity() {
         outState.putInt("page", page)
         outState.putString("query", query)
         outState.putBoolean("favorites", favoritesOnly)
-        outState.putBoolean("advanced_picture", advancedPicture)
         super.onSaveInstanceState(outState)
     }
     @Deprecated("Vehicle runs Android 10 legacy back dispatch")
@@ -334,18 +331,6 @@ class ProductActivity : Activity() {
     private fun preferences() {
         body.addView(text("投屏设置", 27, true))
         externalAccessCard()
-        addCard {
-            addView(text("其他接入的画面", 21, true))
-            addView(button(if (advancedPicture) "收起其他接入选项" else "其他接入的画面选项") {
-                advancedPicture = !advancedPicture; build()
-            }.apply { id = R.id.product_picture_more })
-            if (advancedPicture) {
-                choices(this, "画面比例", listOf("完整显示", "填满区域"), if (settings.crop) 1 else 0) {
-                    settings.crop = it == 1; build()
-                }
-                addView(text("用于定制地图的仪表界面、地图内按钮、按名称等接入方式。普通应用从本应用开始的操作窗口会自动适配，不受此项影响。完整显示保留内容；填满区域会裁去多出的边缘。", 15))
-            }
-        }
         addCard {
             addView(text("应用外观", 21, true))
             choices(this, "界面颜色", listOf("跟随系统", "深色", "浅色"), settings.themeMode) {

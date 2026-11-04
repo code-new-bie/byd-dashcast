@@ -10,8 +10,8 @@ class ApertureReadability1170Test {
                 val viewport=ContentViewport.forBusiness(BusinessDisplayProfile(w,h,160),small)
                 val result=SourceRenderMapping.create(viewport,false)
                 assertArrayEquals(floatArrayOf(0f,0f,1f,1f),result.source,0f)
-                val px=if(small).4f else 1f;val py=if(small).6f else 1f
-                assertEquals(w.toFloat()/h,result.content[2]*1920*px/(result.content[3]*720*py),.00001f)
+                // RWVG draws both layouts 1:1 into the encoded frame.
+                assertEquals(w.toFloat()/h,result.content[2]*1920/(result.content[3]*720),.00001f)
                 assertTrue(viewport.readableCandidates().any { box ->
                     result.content[0]>=box[0]-.00001f && result.content[1]>=box[1]-.00001f &&
                         result.content[0]+result.content[2]<=box[0]+box[2]+.00001f &&

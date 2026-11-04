@@ -8,31 +8,19 @@ import android.content.Context
  */
 internal class ProductSettings(context: Context) {
     companion object {
+        /** RWVG removed the picture-ratio choice: viewport-shaped sources fill (fade-in band included) and
+         * only a business layout of another aspect is fitted, so the session option is always FIT. */
         const val DEFAULT_CROP = false
         const val THEME_SYSTEM = 0
         const val THEME_DARK = 1
         const val THEME_LIGHT = 2
-        private const val FRAMING_MIGRATED = "instrument_framing_v3_complete"
     }
 
     private val preferences = context.applicationContext.getSharedPreferences("dashcast.product.v1", Context.MODE_PRIVATE)
 
-    init {
-        // Migrate the old cropping default once. Later deliberate choices survive.
-        synchronized(preferences) {
-            if (!preferences.getBoolean(FRAMING_MIGRATED, false)) {
-                preferences.edit().putBoolean("crop", DEFAULT_CROP)
-                    .putBoolean(FRAMING_MIGRATED, true).apply()
-            }
-        }
-    }
-
     var target: String?
         get() = preferences.getString("target", null)
         set(value) { preferences.edit().putString("target", value).apply() }
-    var crop: Boolean
-        get() = preferences.getBoolean("crop", DEFAULT_CROP)
-        set(value) { preferences.edit().putBoolean("crop", value).apply() }
     /** 0 follows the system day/night setting, 1 is dark, 2 is light. The old two-way "light" key is ignored. */
     var themeMode: Int
         get() = preferences.getInt("theme_mode", THEME_SYSTEM).takeIf { it in THEME_SYSTEM..THEME_LIGHT } ?: THEME_SYSTEM
@@ -58,7 +46,7 @@ internal class ProductSettings(context: Context) {
         preferences.edit().putStringSet("favorites", next).apply()
     }
     fun options(): CaptureOptions {
-        val selection = CaptureOptions.of(if (crop) CaptureOptions.Mode.CROP else CaptureOptions.Mode.FIT)
+        val selection = CaptureOptions.of(CaptureOptions.Mode.FIT)
         return selection.forContentViewport(!underlay)
     }
 }

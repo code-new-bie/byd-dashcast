@@ -64,9 +64,10 @@ final class NoAuthVideoProtocol {
         return packet(START, 0, 0, 0, payload.array());
     }
 
+    /** RWVG: the small layout also uses the whole 1:1 frame; flag 2 still selects the small HMI layout. */
     static byte[] startCenterWindow() {
         ByteBuffer payload = ByteBuffer.allocate(24).order(ByteOrder.BIG_ENDIAN);
-        payload.putInt(576).putInt(128).putInt(768).putInt(432).putInt(FPS).putInt(2);
+        payload.putInt(0).putInt(0).putInt(WIDTH).putInt(HEIGHT).putInt(FPS).putInt(2);
         return packet(START, 0, 0, 0, payload.array());
     }
 

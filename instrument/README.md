@@ -9,6 +9,7 @@
 | `native-hmi/projection_background_controller.{c,h}`、`native-hmi/tests/` | 便携背景控制器及其测试，只依赖 C99，用于在主机上验证逻辑，不是可刷的 HMI 部件 |
 | `assets/b2/` | 1.19.2 的两张遮罩乘数图（全屏用 `DXFullDark.png`） |
 | `assets/b3-center/` | 1.19.3 的小窗遮罩乘数图 `DXCenterDark.png`（RGB 等于 Alpha） |
+| `assets/rwvg/` | 1.22.0 的两张淡入遮罩（直通乘数），由 `analysis/fade_in_masks.py` 从前两组生成；当前刷机包用的就是这两张 |
 
 遮罩图的 RGB 是混合时的乘数，不是普通图片：不要预乘，也不要用图片软件重新保存，否则重建结果会和审核过的文件不一致。
 

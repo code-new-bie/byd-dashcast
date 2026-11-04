@@ -28,7 +28,8 @@ class DisplayFusionTest {
     @Test fun centerWindowHasItsOwnExactFlagWithoutChangingTheLegacyStart() {
         val center = ByteBuffer.wrap(NoAuthVideoProtocol.startCenterWindow())
         assertEquals(48, center.capacity())
-        val expected = intArrayOf(576, 128, 768, 432, 30, 2)
+        // RWVG: the small layout uses the whole 1:1 frame too; only flag 2 tells it apart.
+        val expected = intArrayOf(0, 0, 1920, 720, 30, 2)
         expected.forEachIndexed { index, value -> assertEquals(value, center.getInt(24 + index * 4)) }
         val legacy = ByteBuffer.wrap(NoAuthVideoProtocol.start())
         assertEquals(640, legacy.getInt(24)); assertEquals(0, legacy.getInt(44))

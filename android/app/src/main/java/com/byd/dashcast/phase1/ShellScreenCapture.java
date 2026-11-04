@@ -186,7 +186,10 @@ public final class ShellScreenCapture {
                     viewport = workspace != null ? ContentViewport.forWorkspace(workspace, options.centerWindow())
                             : ContentViewport.forBusiness(business, options.centerWindow());
                 }
-                center = new CenterFrameRenderer(surface, viewport, options.mode() == CaptureOptions.Mode.CROP);
+                // RWVG: a source laid out for the viewport (map, named display) fills it, fade-in band included;
+                // only a business layout of another aspect is still fitted into the clear opening.
+                center = new CenterFrameRenderer(surface, viewport,
+                        options.mode() == CaptureOptions.Mode.CROP || business == null);
                 captureSurface = center.inputSurface();
                 logicalWidth = viewport.getSourceWidth();
                 logicalHeight = viewport.getSourceHeight();

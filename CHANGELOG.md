@@ -2,6 +2,14 @@
 
 较早版本的详细说明文档已从仓库移除，需要时可在 Git 历史中查看（例如提交 `ba358c3` 及更早的 `docs/PRODUCT_*.md`、`docs/TASKS_*.md`）。
 
+## APK1.22.0 / 仪表1.22.0（2026-11-04）
+
+- Fade the cast picture in at its edges like the user's reference: the clear opening of the 1.19.3 masks is kept exactly; outside it the new DXFullDark / DXCenterDark rise along a long-tailed S curve over 130/50 px (full) and 200/50 px (small).
+- The APK draws sharp source under the whole band at the old pixel density: full carrier 1912×498 at (4,89), small 1870×810 drawn at 0.6 into (399,101,1122,486) of a full 1:1 frame; standby displays and workspaces grow to match (1912×498 / 1870×810, 3824×996@320 / 3366×1458@480). App UI near its own edges now lands in the band.
+- Remove the picture-ratio setting: viewport-shaped sources (custom map, named display) always fill; only a business layout of another aspect is still fitted into the clear opening.
+- Receiver: START flag 2 accepts the full frame (0,0,1920,720). HMI and receiver move to capability RWVG, so the APK and instrument must be updated together. Small-window straight alpha with a 1:1 window is inferred, not read back.
+- 601 unit tests, 0 lint errors; components rebuilt from originals and hash-checked; vehicle acceptance pending. [说明](docs/PRODUCT_1.22.0.md)。
+
 ## APK1.21.0 / 仪表1.19.3（2026-11-02）
 
 - Remove the first-run "开始前的准备" dialog and the setup gate; casting starts directly.

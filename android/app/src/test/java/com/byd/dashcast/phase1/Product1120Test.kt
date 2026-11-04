@@ -71,8 +71,7 @@ class Product1120Test {
                 val mapping = SourceRenderMapping.create(viewport, ProductSettings.DEFAULT_CROP)
                 assertFalse(ProductSettings.DEFAULT_CROP)
                 assertArrayEquals(floatArrayOf(0f,0f,1f,1f),mapping.source,0f)
-                val physicalAspect=mapping.content[2]*1920f/(mapping.content[3]*720f)*
-                    (if(small) .4f/.6f else 1f)
+                val physicalAspect=mapping.content[2]*1920f/(mapping.content[3]*720f)
                 assertEquals(width.toFloat()/height,physicalAspect,.00001f)
                 // Main control always fits the complete source to its own client
                 // area; the instrument's crop does not modify either dimension.

@@ -1,7 +1,8 @@
 package com.byd.dashcast.phase1
 
 /** Sharp source covers the WHOLE native inner-rim opening, including its sides.
- * RWVE keeps 32px side outset and adds 8px above/below; safe bounds do not clip.
+ * RWVG adds the fade-in band: sharp source reaches 130px beyond the clear opening at the sides and 50px
+ * above/below (small window 200/50), where the mask fades it into the frame. The clear opening is unchanged.
  * The carrier rectangle and native 1920x720 transport are separate sizes.
  * @author Codex
  * @date 2026/10/23
@@ -29,21 +30,23 @@ internal data class ContentViewport @JvmOverloads constructor(
 
     fun withSourceSize(width: Int, height: Int): ContentViewport = copy(sourceWidth=width,sourceHeight=height)
 
-    /** Complete content stays within the supplied aperture; the main task is unchanged. */
+    /** Complete content stays within the clear aperture, never in the fade-in band; the main task is unchanged. */
     fun readableCandidates(): List<FloatArray> {
         fun box(x: Float,y: Float,w: Float,h: Float) =
             floatArrayOf(x/1920f,(720f-y-h)/720f,w/1920f,h/720f)
         return when {
-            encodedLeft==112 && encodedTop==112 && encodedWidth==1696 && encodedHeight==456 -> listOf(
-                box(420f,140f,1080f,396f),box(260f,159f,1400f,375f))
-            encodedLeft==0 && encodedTop==0 && encodedWidth==1920 && encodedHeight==720 -> listOf(
-                box(60f,40f,1800f,640f))
+            this.sameRect(full()) -> listOf(box(420f,140f,1080f,396f),box(260f,159f,1400f,375f))
+            this.sameRect(center()) -> listOf(box(600f,152f,720f,384f))
             else -> listOf(normalized())
         }
     }
 
+    private fun sameRect(other: ContentViewport) = encodedLeft == other.encodedLeft && encodedTop == other.encodedTop &&
+        encodedWidth == other.encodedWidth && encodedHeight == other.encodedHeight
+
     companion object {
-        @JvmStatic fun full(): ContentViewport = ContentViewport(1696, 456, 112, 112, 1696, 456)
+        /** RWVG: the 1696x456 opening grown by the fade-in band, 1:1 like before. */
+        @JvmStatic fun full(): ContentViewport = ContentViewport(1912, 498, 4, 89, 1912, 498)
         /** Historical carrier fixture sizes; live generic apps use forBusiness instead. */
         const val FULL_MIRROR_SOURCE_WIDTH = 3392
         const val FULL_MIRROR_SOURCE_HEIGHT = 912
@@ -59,7 +62,9 @@ internal data class ContentViewport @JvmOverloads constructor(
         @JvmStatic fun fullSafeBounds(): IntArray = intArrayOf(320, 176, 1280, 336)
         // The RGBA overlay now provides the feather itself. Keep sharp source
         // throughout the physical window, including every partly visible edge.
-        @JvmStatic fun center(): ContentViewport = ContentViewport(1280,720,0,0,1920,720,768f/432f)
+        // RWVG: the receiver window is the whole 1920x720 frame, so the small window is drawn 1:1 here:
+        // the old 768x432 window at the old 0.6 scale, grown by the fade-in band.
+        @JvmStatic fun center(): ContentViewport = ContentViewport(1870, 810, 399, 101, 1122, 486)
 
         const val PADDING_WIDTH = 32
         const val PADDING_HEIGHT = 16

@@ -16,14 +16,16 @@ internal object ExternalDisplayWire {
     const val CAPTURE_STATUS = 7
     const val CAPTURE_DETACH = 8
     const val SET_MODE = 9
-    const val WIDTH = 1696
-    const val HEIGHT = 456
+    const val WIDTH = 1912
+    const val HEIGHT = 498
     const val DENSITY = 160
 
-    /** Standby display size per instrument mode: the full opening, or the same 16:9 source the native
-     * small-window path uses. Apps lay out for this size when they open on the display. */
-    @JvmStatic fun width(center: Boolean): Int = if (center) 1280 else WIDTH
-    @JvmStatic fun height(center: Boolean): Int = if (center) 720 else HEIGHT
+    /** Standby display size per instrument mode: the full opening, or the source the native small-window
+     * path uses, each including the RWVG fade-in band. Apps lay out for this size when they open on the display. */
+    @JvmStatic fun width(center: Boolean): Int = if (center) CENTER_WIDTH else WIDTH
+    @JvmStatic fun height(center: Boolean): Int = if (center) CENTER_HEIGHT else HEIGHT
+    const val CENTER_WIDTH = 1870
+    const val CENTER_HEIGHT = 810
 
     fun <T> call(endpoint: IBinder, ticket: String, code: Int,
             write: (Parcel) -> Unit = {}, read: (Parcel) -> T): T {
