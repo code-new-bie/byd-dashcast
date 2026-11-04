@@ -10,7 +10,7 @@ class NamedWaitingActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(TextView(this).apply {
-            text = "等待应用按屏幕名投屏\n${NamedDisplayContract.NAME}\n\n在应用中选择此屏幕；回 Dashcast 可停止接入"
+            text = "等待应用按屏幕名投屏\n${NamedDisplayContract.NAME}\n\n在应用中选择此屏幕；回到仪表投屏可停止接入"
             textSize = 24f
             gravity = android.view.Gravity.CENTER
             setTextColor(Color.WHITE)

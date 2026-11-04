@@ -97,7 +97,7 @@ internal class ProductController private constructor(context: Context) {
         }
         if (settings.instrumentConnection && !ProjectionService.active() && !connectionState().observed) {
             log("PRODUCT_RESTORE_INSTRUMENT_CONNECTION saved=true")
-            switchRole(InstrumentUsbCommand.NCM)
+            switchRole(InstrumentUsbCommand.NCM, fromSwitch = false)
         }
     }
 
@@ -186,7 +186,14 @@ internal class ProductController private constructor(context: Context) {
         val result = transition(InstrumentUsbCommand.NCM)
         if (request.generation != startGeneration.get()) { return }
         log("PRODUCT_START_ROLE=$result")
-        val device = targetDevice() ?: throw IOException("NCM_NOT_ENUMERATED: 尚未发现仪表连接，可保持数据线连接后重试")
+        val device = targetDevice() ?: run {
+            if (HotRoleTransition.leftWithoutUsbDisk(InstrumentUsbCommand.NCM, result, false)) {
+                restoreHostAfterTimeout(false)
+            }
+            throw IOException("NCM_NOT_ENUMERATED: 尚未发现仪表连接，已请求仪表恢复U盘；请检查数据线后重试")
+        }
+        // The instrument is in projection-connection mode now; the switch shows it so it can be turned back.
+        settings.instrumentConnection = true
         if (!Usb.hasPermission(app, device)) { requestStartPermission(request, device) }
         else { startReady(request) }
     }
@@ -230,13 +237,14 @@ internal class ProductController private constructor(context: Context) {
         log(selected.capability.evidence.take(2200))
     }
 
-    fun switchRole(command: InstrumentUsbCommand) {
+    /** [fromSwitch]: the user toggled the switch, so a failed connection also turns the switch back off. */
+    fun switchRole(command: InstrumentUsbCommand, fromSwitch: Boolean = true) {
         if (command == InstrumentUsbCommand.HOST) {
             ExternalDisplayAccess.suppressCurrent()
             startGeneration.incrementAndGet()
             usbPermission.clear()
         }
-        operation(if (command == InstrumentUsbCommand.HOST) "正在停止投屏并恢复 U盘使用。" else "正在连接仪表。",
+        operation(if (command == InstrumentUsbCommand.HOST) "正在停止投屏并恢复 U盘使用。" else "正在连接仪表，请稍候。",
             ProductOperation.MODE) {
             if (command == InstrumentUsbCommand.NCM && !ProjectionService.active() &&
                 ProjectionService.state() == ProjectionSessionController.State.DISCONNECTED && observe().allNcm == 0) {
@@ -244,13 +252,20 @@ internal class ProductController private constructor(context: Context) {
                 // Explicit user role request only; the original instrument guard remains authoritative.
                 // This does not clear pending peer recovery or start a media session.
                 relay().request(command)
-                message = "已发送连接请求，请查看仪表提示；重新连接后可点击开始。"
                 log("PRODUCT_DETACHED_USER_NCM_REQUEST; recovery remains pending, no Host or media START")
+                if (awaitNcm()) { message = "仪表已连接，可以开始投屏。"; return@operation }
+                // Still detached: send Host directly, the same way, so the instrument is not left without U-disk.
+                relay().request(InstrumentUsbCommand.HOST)
+                connectFailed(fromSwitch, "PRODUCT_DETACHED_CONNECT_TIMEOUT_HOST_SENT")
                 return@operation
             }
             recoverIfNecessary()
             if (!adbReady) { authenticate() }
             val result = transition(command)
+            if (HotRoleTransition.leftWithoutUsbDisk(command, result, targetDevice() != null)) {
+                restoreHostAfterTimeout(fromSwitch)
+                return@operation
+            }
             message = when (result) {
                 HotRoleTransition.Result.EXISTING_NCM -> "仪表已连接，可以开始投屏。"
                 HotRoleTransition.Result.NCM_ENUMERATED -> "仪表已连接，可以开始投屏。"
@@ -358,6 +373,33 @@ internal class ProductController private constructor(context: Context) {
     private fun relay(identity: AdbRsaIdentity = AndroidAdbIdentity.load()): InstrumentUsbController =
         InstrumentUsbController(app, AdbShellClient("127.0.0.1", 5555, 20000, identity,
             { line -> log(line) }, cancelled), cancelled, { line -> log(line) })
+
+    /** The NCM request went out but no instrument appeared: it may have switched with no cable to the head
+     * unit, which would leave it without U-disk. Ask it back to Host mode instead of leaving that to the user. */
+    private fun restoreHostAfterTimeout(fromSwitch: Boolean) {
+        val result = try { transition(InstrumentUsbCommand.HOST) } catch (error: Exception) {
+            log("PRODUCT_CONNECT_TIMEOUT_HOST_FAILED ${error.javaClass.simpleName}: ${error.message}")
+            message = "没有连上仪表，恢复U盘的请求也没有发出：${ProductErrors.explain(error)}"
+            if (fromSwitch) { settings.instrumentConnection = false }
+            return
+        }
+        connectFailed(fromSwitch, "PRODUCT_CONNECT_TIMEOUT_HOST_SENT result=$result")
+    }
+
+    private fun connectFailed(fromSwitch: Boolean, line: String) {
+        // A failed attempt from the switch turns it off again; a saved choice restored at boot stays on.
+        if (fromSwitch) { settings.instrumentConnection = false }
+        message = "没有连上仪表，已请求仪表恢复U盘。请检查车机和仪表之间的数据线后再试。"
+        log("$line from_switch=$fromSwitch")
+    }
+
+    private fun awaitNcm(): Boolean {
+        repeat(160) {
+            if (observe().targetNcm == 1) { return true }
+            Thread.sleep(100)
+        }
+        return false
+    }
 
     private fun transition(command: InstrumentUsbCommand): HotRoleTransition.Result =
         HotRoleTransition(object : HotRoleTransition.Backend {

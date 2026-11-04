@@ -358,7 +358,7 @@ public final class ProjectionService extends Service {
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         PendingIntent stop = PendingIntent.getService(this, 1, new Intent(this, ProjectionService.class).setAction(STOP),
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-        return new Notification.Builder(this, CHANNEL).setSmallIcon(R.drawable.ic_launcher)
+        return new Notification.Builder(this, CHANNEL).setSmallIcon(R.drawable.ic_notification)
                 .setContentTitle(getString(R.string.projection_notification_title))
                 .setContentText(getString(R.string.projection_notification_text))
                 .setOngoing(true).setContentIntent(open)

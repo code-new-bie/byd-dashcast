@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Dashcast 仪表投屏</string>
-    <string name="mirror_accessibility_label">Dashcast 应用快捷打开</string>
+    <string name="app_name">仪表投屏</string>
+    <string name="mirror_accessibility_label">仪表投屏快捷打开</string>
     <string name="mirror_accessibility_description">投屏时从原应用图标打开操作画面，并响应地图自带的仪表投屏按钮。不读取输入的文字或密码；此权限由你自行开启。</string>
     <string name="projection_channel">仪表投屏</string>
     <string name="projection_notification_title">正在投屏到仪表</string>

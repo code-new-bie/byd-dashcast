@@ -2,6 +2,13 @@
 
 较早版本的详细说明文档已从仓库移除，需要时可在 Git 历史中查看（例如提交 `ba358c3` 及更早的 `docs/PRODUCT_*.md`、`docs/TASKS_*.md`）。
 
+## APK1.22.1 / 仪表1.22.0（2026-11-04）
+
+- Instrument connection: when an NCM request gets no instrument within ~16 s (from the switch, a cast start or the boot restore), ask the instrument back to Host so it is not left without U-disk; a failed attempt from the switch turns it off. The switch now shows the requested mode, so after a lost link it stays on and turning it off still sends Host.
+- The cast page no longer resizes when a hosted app opens the keyboard on the head unit (adjustNothing on page 0 only; other pages keep adjustResize).
+- Launcher name "仪表投屏" and a new adaptive icon (instrument housing with a fading-in blue light and a navigation arrow), matching notification glyph.
+- 603 unit tests, 0 lint errors, emulator checks of icon and keyboard modes; vehicle acceptance pending. [说明](docs/PRODUCT_1.22.1.md)。
+
 ## APK1.22.0 / 仪表1.22.0（2026-11-04）
 
 - Fade the cast picture in at its edges like the user's reference: the clear opening of the 1.19.3 masks is kept exactly; outside it the new DXFullDark / DXCenterDark rise along a long-tailed S curve over 130/50 px (full) and 200/50 px (small).

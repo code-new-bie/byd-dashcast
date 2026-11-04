@@ -143,7 +143,7 @@ class ProductActivity : Activity() {
         accessSwitch = null; accessState = null; copyScreenName = null
         window.statusBarColor = canvas
         window.navigationBarColor = canvas
-        window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+        window.setSoftInputMode(CastPageKeyboard.mode(page))
         renderedLight = light
         window.decorView.systemUiVisibility = if (light) View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR else 0
         val root = column().apply {
@@ -151,7 +151,8 @@ class ProductActivity : Activity() {
             isFocusableInTouchMode = true; requestFocus()
         }
         val header = row()
-        header.addView(text("Dashcast", 23, true).apply { minHeight = dp(52) }, LinearLayout.LayoutParams(0, -2, 1f))
+        header.addView(text(getString(R.string.app_name), 23, true).apply { minHeight = dp(52) },
+            LinearLayout.LayoutParams(0, -2, 1f))
         val nav = row()
         listOf("投屏", "应用", "设置").forEachIndexed { index, label ->
             nav.addView(button(label, index == page) { navigate(index) }.apply {
@@ -191,7 +192,7 @@ class ProductActivity : Activity() {
         appBack = button("应用返回") { embedded.applicationBack() }.apply { id = R.id.product_app_back }
         val line = row().apply { setPadding(dp(8), 0, dp(8), 0) }
         line.addView(text("仪表连接", 16), LinearLayout.LayoutParams(0, -2, 1f))
-        roleSwitch = makeSwitch(control.connectionState().observed).apply {
+        roleSwitch = makeSwitch(connectionRequested()).apply {
             id = R.id.product_mode_switch
             contentDescription = "仪表投屏连接，开启用于投屏，关闭请求恢复U盘"
             setOnCheckedChangeListener { _, on ->
@@ -442,13 +443,20 @@ class ProductActivity : Activity() {
     private fun presentation(app: ProductApp? = ProductAppCatalog.select(apps, settings.target)) = ProductUiModel.present(
         ProjectionService.state(), control.operation, control.busy, app != null, app?.capability?.allowed == true)
 
+    /** The switch shows the requested mode, not only a live device: after a lost connection it stays on,
+     * so turning it off can still ask the instrument back to U-disk mode. */
+    private fun connectionRequested(usb: ProductConnection = control.connectionState()) =
+        settings.instrumentConnection || usb.observed
+
     private fun updateStatus() {
         if (!::control.isInitialized) { return }
         val state = ProjectionService.state()
         val ui = presentation()
         val usb = control.connectionState()
         headline?.text = ui.title
-        connection?.text = "${if (control.adbReady) "车机已连接" else "车机待连接"} · ${usb.description}"
+        val waiting = settings.instrumentConnection && !usb.observed && !control.busy
+        connection?.text = "${if (control.adbReady) "车机已连接" else "车机待连接"} · " +
+            if (waiting) "仪表未连上，关闭开关可恢复U盘" else usb.description
         val hasFailure = !control.busy && state in setOf(ProjectionSessionController.State.FAILED,
             ProjectionSessionController.State.QUARANTINED, ProjectionSessionController.State.DISCONNECTED,
             ProjectionSessionController.State.RECOVERY_REQUIRED)
@@ -482,7 +490,7 @@ class ProductActivity : Activity() {
         modeNote?.text = "${if (active || control.busy) "下次使用" else "仪表画面"}${if (settings.underlay) "全屏" else "小窗"}"
         reflectingRole = true
         try {
-            if (!control.busy) { roleSwitch?.isChecked = usb.observed }
+            if (!control.busy) { roleSwitch?.isChecked = connectionRequested(usb) }
             roleSwitch?.isEnabled = ui.modeEnabled
             roleSwitch?.trackDrawable?.setTint(if (roleSwitch?.isChecked == true) accent else border)
             roleState?.text = if (control.busy && control.operation == ProductOperation.MODE) "正在切换…"
@@ -565,4 +573,12 @@ class ProductActivity : Activity() {
 /** Custom flat backgrounds look the same disabled as enabled; dim instead so it reads as unavailable. */
 private class ProductButton(context: Context) : Button(context) {
     override fun setEnabled(enabled: Boolean) { super.setEnabled(enabled); alpha = if (enabled) 1f else .5f }
+}
+
+/** The keyboard of an app hosted for casting opens on the head-unit screen. On the cast page it must cover
+ * the controls rather than resize the page, or the embedded window is squeezed; other pages keep resizing
+ * so the app search stays above the keyboard. */
+internal object CastPageKeyboard {
+    fun mode(page: Int): Int = if (page == 0) WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING
+        else WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
 }
