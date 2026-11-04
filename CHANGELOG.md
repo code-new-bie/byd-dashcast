@@ -2,6 +2,11 @@
 
 较早版本的详细说明文档已从仓库移除，需要时可在 Git 历史中查看（例如提交 `ba358c3` 及更早的 `docs/PRODUCT_*.md`、`docs/TASKS_*.md`）。
 
+## APK1.22.2 / 仪表1.22.0（2026-11-04）
+
+- Follow-system theme: on the car a day/night switch with the app in front only showed after changing pages. The 500 ms status refresh now redraws as soon as the resolved theme differs from the page, and onConfigurationChanged also trusts the delivered configuration.
+- 606 unit tests, 0 lint errors; emulator: in-place redraw in front, after returning from another screen, and on the cast page; the car-specific trigger was not reproduced. [说明](docs/PRODUCT_1.22.2.md)。
+
 ## APK1.22.1 / 仪表1.22.0（2026-11-04）
 
 - Instrument connection: when an NCM request gets no instrument within ~16 s (from the switch, a cast start or the boot restore), ask the instrument back to Host so it is not left without U-disk; a failed attempt from the switch turns it off. The switch now shows the requested mode, so after a lost link it stays on and turning it off still sends Host.

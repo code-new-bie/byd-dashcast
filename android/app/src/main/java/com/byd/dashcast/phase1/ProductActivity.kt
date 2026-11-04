@@ -68,7 +68,12 @@ class ProductActivity : Activity() {
     private var renderedLight = false
     private val main = Handler(Looper.getMainLooper())
     private val refresh = object : Runnable {
-        override fun run() { updateStatus(); main.postDelayed(this, 500) }
+        override fun run() {
+            // A day/night change can reach the resources without a matching callback on the head unit;
+            // the page is only drawn in build(), so redraw as soon as the resolved theme differs.
+            if (light != renderedLight) { build() }
+            updateStatus(); main.postDelayed(this, 500)
+        }
     }
     private val light get() = settings.light(ThemePolicy.systemNight(resources.configuration))
     private val ink get() = color(if (light) "#162941" else "#F1F5FC")
@@ -92,11 +97,11 @@ class ProductActivity : Activity() {
         control.restoreSavedConnections()
     }
 
-    /** uiMode is handled here (see the manifest) so a system day/night change redraws in place. */
+    /** uiMode is handled here (see the manifest) so a system day/night change redraws in place. The delivered
+     * config is checked too, in case the activity resources are updated later; the refresh loop covers that. */
     override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
-        val before = renderedLight
         super.onConfigurationChanged(newConfig)
-        if (light != before) { build() }
+        if (settings.light(ThemePolicy.systemNight(newConfig)) != renderedLight || light != renderedLight) { build() }
     }
 
     override fun onResume() {
