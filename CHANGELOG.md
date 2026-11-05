@@ -2,6 +2,13 @@
 
 较早版本的详细说明文档已从仓库移除，需要时可在 Git 历史中查看（例如提交 `ba358c3` 及更早的 `docs/PRODUCT_*.md`、`docs/TASKS_*.md`）。
 
+## APK1.23.1 / 仪表1.22.0（2026-11-05）
+
+- ProjectionService enters the foreground as soon as a start intent arrives, before any check; each early exit (finishing, cancelled, blocked, USB gate busy) now removes the notification and stops. Android 10 killed the whole app when a service started with startForegroundService() stopped before startForeground(); the STOP intent (startService) is unchanged.
+- App list: a launcher entry the projection target rejects (e.g. a non-ASCII class name) or whose label cannot be read is left out; it used to fail the whole list and crash the app on open, from the map button and in log export.
+- usbSummary/ncmObserved also catch the IOException thrown without a UsbManager; the about text names the 1.22.0 instrument package instead of 1.19.
+- 613 unit tests, 0 lint errors; emulator: both crashes reproduced on 1.23.0 and gone on 1.23.1; vehicle acceptance pending. [说明](docs/PRODUCT_1.23.1.md)。
+
 ## APK1.23.0 / 仪表1.22.0（2026-11-04）
 
 - The home switch is now the instrument mode ("投屏模式" / U-disk) and is remembered. In projection mode the app keeps the link up by itself: on start and boot, when the instrument is attached, and once more 20 s after it disappears without coming back. An unanswered request keeps projection mode (red dot) instead of sending Host; only the U-disk choice sends Host. Starting a cast selects projection mode.

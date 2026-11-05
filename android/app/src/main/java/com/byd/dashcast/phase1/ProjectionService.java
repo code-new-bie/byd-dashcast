@@ -225,12 +225,19 @@ public final class ProjectionService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        boolean stopRequest = intent == null || STOP.equals(intent.getAction());
+        if (!stopRequest) {
+            // Every other intent comes through startForegroundService(). Android 10 kills the whole app when
+            // such a service stops before startForeground(), so enter the foreground before any check and
+            // leave it again on each early exit below.
+            startForeground(NOTIFICATION_ID, notification());
+        }
         if (finishing) {
             JOURNAL.append("START_IGNORED while Service is finishing; wait for stopped status before retry");
-            stopSelf();
+            leaveWithoutSession();
             return START_NOT_STICKY;
         }
-        if (intent == null || STOP.equals(intent.getAction())) {
+        if (stopRequest) {
             controller.stop();
             if (!controller.active()) {
                 stopSelf();
@@ -240,7 +247,7 @@ public final class ProjectionService extends Service {
         boolean product = intent.getBooleanExtra("product_session", false);
         if (product && intent.getLongExtra("product_generation", -1L) != PRODUCT_GENERATION.get()) {
             JOURNAL.append("PRODUCT_START_CANCELLED before Service ownership");
-            if (!controller.active()) { stopSelf(); }
+            if (!controller.active()) { leaveWithoutSession(); }
             return START_NOT_STICKY;
         }
         // Product sessions come only from the user's own start action; there is no separate setup step.
@@ -250,7 +257,7 @@ public final class ProjectionService extends Service {
                 || JOURNAL.currentState() == ProjectionSessionController.State.DISCONNECTED) {
             JOURNAL.append("START_BLOCKED: missing user confirmation or previous cleanup unconfirmed");
             if (!controller.active()) {
-                stopSelf();
+                leaveWithoutSession();
             }
             return START_NOT_STICKY;
         }
@@ -261,7 +268,7 @@ public final class ProjectionService extends Service {
         UsbOperationGate.Lease lease = UsbOperationGate.acquire();
         if (lease == null) {
             JOURNAL.append("START_BLOCKED: another diagnostic/USB operation is still cleaning up");
-            stopSelf();
+            leaveWithoutSession();
             return START_NOT_STICKY;
         }
         try {
@@ -300,7 +307,6 @@ public final class ProjectionService extends Service {
                 }
                 ownedDevice = device.getDeviceName();
             }
-            startForeground(NOTIFICATION_ID, notification());
             if (!probe) {
                 registerReceiver(detach, new IntentFilter(UsbManager.ACTION_USB_DEVICE_DETACHED));
                 receiverRegistered = true;
@@ -345,6 +351,12 @@ public final class ProjectionService extends Service {
             stopSelf();
         }
         return START_NOT_STICKY;
+    }
+
+    /** A start intent that began no session: drop the notification shown on arrival and let the Service go. */
+    private void leaveWithoutSession() {
+        stopForeground(STOP_FOREGROUND_REMOVE);
+        stopSelf();
     }
 
     private Notification notification() {

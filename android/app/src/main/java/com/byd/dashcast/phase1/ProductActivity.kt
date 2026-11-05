@@ -368,7 +368,7 @@ class ProductActivity : Activity() {
             }
             addView(button("连接与首次使用") { connectionHelp() })
             addView(button("技术详情") { info("技术详情", control.diagnosticText().takeLast(20000)) })
-            addView(text("本应用 ${BuildConfig.VERSION_NAME}。配套仪表包为1.19系列（推荐1.19.3）；只更新本应用时无需重刷仪表。", 15))
+            addView(text("本应用 ${BuildConfig.VERSION_NAME}。配套仪表包为1.22.0；只更新本应用时无需重刷仪表。", 15))
         }
     }
 

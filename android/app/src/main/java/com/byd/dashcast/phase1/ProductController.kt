@@ -369,10 +369,10 @@ internal class ProductController private constructor(context: Context) {
             Usb.hasPermission(app, targetDevice()) -> "仪表 USB 已连接 · 已授权"
             else -> "仪表 USB 已连接 · 待授权"
         }
-    } catch (error: RuntimeException) { "USB 状态不可用：${error.javaClass.simpleName}" }
+    } catch (error: Exception) { "USB 状态不可用：${error.javaClass.simpleName}" }
 
     fun ncmObserved(): Boolean = try { observe().let { it.allNcm == 1 && it.targetNcm == 1 } }
-        catch (error: RuntimeException) { false }
+        catch (error: Exception) { false }
 
     fun connectionState(): ProductConnection = try {
         val seen = observe()

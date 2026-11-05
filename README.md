@@ -2,7 +2,7 @@
 
 把 BYD 车机（Android 10）上的应用投到 QNX 数字仪表上显示，通过一根 USB 数据线连接。目标车型为 2021 款宋 Plus DM-i。
 
-当前版本：APK **1.23.0 / code77**，配套仪表 **1.22.0**。本次改动见 [APK 1.23.0](docs/PRODUCT_1.23.0.md)；之前见 [APK 1.22.2](docs/PRODUCT_1.22.2.md)、[APK 1.22.1](docs/PRODUCT_1.22.1.md) 和 [1.22.0：边缘淡入](docs/PRODUCT_1.22.0.md)。车机桌面上的名称是“仪表投屏”。
+当前版本：APK **1.23.1 / code78**，配套仪表 **1.22.0**。本次改动见 [APK 1.23.1](docs/PRODUCT_1.23.1.md)；之前见 [APK 1.23.0](docs/PRODUCT_1.23.0.md)、[APK 1.22.2](docs/PRODUCT_1.22.2.md)、[APK 1.22.1](docs/PRODUCT_1.22.1.md) 和 [1.22.0：边缘淡入](docs/PRODUCT_1.22.0.md)。车机桌面上的名称是“仪表投屏”。
 
 ## 能做什么
 
