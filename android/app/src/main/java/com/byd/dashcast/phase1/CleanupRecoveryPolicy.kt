@@ -15,6 +15,12 @@ internal object CleanupRecoveryPolicy {
         else -> Outcome.COMPLETE
     }
 
+    /** LOCAL_UNCONFIRMED where only the shell capture helper's exit is missing: this process's USB is closed and
+     * nothing was left half open, so ending the leftover helper from the shell completes the local cleanup. */
+    @JvmStatic
+    fun captureOnly(captureClosed: Boolean, usbClosed: Boolean, partialOpenUnknown: Boolean): Boolean =
+        !captureClosed && usbClosed && !partialOpenUnknown
+
     /** Bounded exception tree, not message-text authorization or a replacement for ownership proof. */
     @JvmStatic
     fun describe(error: Throwable?): String {

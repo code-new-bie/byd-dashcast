@@ -1,7 +1,10 @@
 package com.byd.dashcast.phase1
 
 /** Presentation only. Never changes the session, recovery or USB state machine. */
-internal enum class ProductOperation { NONE, CONNECT, START, MODE, EXPORT }
+internal enum class ProductOperation { NONE, CONNECT, START, MODE, EXPORT, CLEANUP }
+
+/** The automatic cleanup after a quarantined session: running, or failed and waiting for "重启应用". */
+internal enum class ProductCleanup { NONE, RUNNING, FAILED }
 
 internal enum class ProductConnection {
     ABSENT, CONNECTED, PERMISSION, AMBIGUOUS, UNAVAILABLE;
@@ -46,7 +49,7 @@ internal data class ProductPresentation(
     val modeEnabled: Boolean,
     val canChooseApp: Boolean
 ) {
-    enum class Action { START, STOP, CHOOSE, NONE }
+    enum class Action { START, STOP, CHOOSE, RESTART, NONE }
 }
 
 internal object ProductUiModel {
@@ -55,7 +58,9 @@ internal object ProductUiModel {
         operation: ProductOperation,
         busy: Boolean,
         selected: Boolean,
-        allowed: Boolean
+        allowed: Boolean,
+        cleanup: ProductCleanup = ProductCleanup.NONE,
+        startQueued: Boolean = false
     ): ProductPresentation {
         val locked = state == ProjectionSessionController.State.QUARANTINED
         val stopping = state == ProjectionSessionController.State.STOPPING
@@ -64,8 +69,20 @@ internal object ProductUiModel {
         fun view(title: String, label: String, action: ProductPresentation.Action, enabled: Boolean = true) =
             ProductPresentation(title, label, action, enabled, modeEnabled, canChoose)
 
-        // An unknown cleanup result must never become a clickable retry after a wording change.
-        if (locked) { return view("暂时无法投屏", "需要先恢复连接", ProductPresentation.Action.NONE, false) }
+        // An unknown cleanup result never becomes a direct retry: a start pressed during the automatic cleanup
+        // only goes ahead after it, and a failed cleanup offers the restart instead.
+        if (locked) {
+            return when {
+                cleanup == ProductCleanup.FAILED ->
+                    view("上次投屏没能自动清理", "重启应用", ProductPresentation.Action.RESTART)
+                cleanup == ProductCleanup.RUNNING && startQueued ->
+                    view("正在清理上次投屏", "清理后自动开始", ProductPresentation.Action.NONE, false)
+                cleanup == ProductCleanup.RUNNING && selected && allowed ->
+                    view("正在清理上次投屏", "开始投屏", ProductPresentation.Action.START)
+                cleanup == ProductCleanup.RUNNING -> view("正在清理上次投屏", "请稍候…", ProductPresentation.Action.NONE, false)
+                else -> view("暂时无法投屏", "需要先恢复连接", ProductPresentation.Action.NONE, false)
+            }
+        }
         if (stopping) { return view("正在停止投屏", "正在停止…", ProductPresentation.Action.NONE, false) }
         if (state == ProjectionSessionController.State.STARTING) {
             return view("正在启动投屏", "取消启动", ProductPresentation.Action.STOP)
@@ -81,6 +98,7 @@ internal object ProductUiModel {
                 ProductOperation.CONNECT -> "正在连接车机"
                 ProductOperation.MODE -> "正在切换连接方式"
                 ProductOperation.EXPORT -> "正在导出日志"
+                ProductOperation.CLEANUP -> "正在清理上次投屏"
                 else -> "正在处理，请稍候"
             }
             return view(title, "请稍候…", ProductPresentation.Action.NONE, false)

@@ -107,12 +107,14 @@ class ProductActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        visible = true
         consumerResumed = true
         embedded.setConsumerVisible(page == 0)
         main.removeCallbacks(refresh)
         main.post(refresh)
     }
     override fun onPause() {
+        visible = false
         consumerResumed = false; embedded.setConsumerVisible(false)
         main.removeCallbacks(refresh); super.onPause()
     }
@@ -239,6 +241,7 @@ class ProductActivity : Activity() {
             ProductPresentation.Action.STOP -> control.stop()
             ProductPresentation.Action.CHOOSE -> navigate(1)
             ProductPresentation.Action.START -> app?.let { control.startApp(it) }
+            ProductPresentation.Action.RESTART -> control.restartAfterFailedCleanup()
             ProductPresentation.Action.NONE -> Unit
         }
         updateStatus()
@@ -453,7 +456,8 @@ class ProductActivity : Activity() {
     }
 
     private fun presentation(app: ProductApp? = ProductAppCatalog.select(apps, settings.target)) = ProductUiModel.present(
-        ProjectionService.state(), control.operation, control.busy, app != null, app?.capability?.allowed == true)
+        ProjectionService.state(), control.operation, control.busy, app != null, app?.capability?.allowed == true,
+        control.cleanup, control.startQueued)
 
     private fun linkState(usb: ProductConnection = control.connectionState()) = LinkDot.of(settings.instrumentConnection,
         usb, control.linking, ProjectionService.state() == ProjectionSessionController.State.STREAMING,
@@ -502,7 +506,8 @@ class ProductActivity : Activity() {
         val usb = control.connectionState()
         headline?.text = ui.title
         paintLinkDot(linkState(usb))
-        val hasFailure = !control.busy && state in setOf(ProjectionSessionController.State.FAILED,
+        // While the automatic cleanup runs, its own progress text is shown instead of the lockout.
+        val hasFailure = !control.busy && control.cleanup != ProductCleanup.RUNNING && state in setOf(ProjectionSessionController.State.FAILED,
             ProjectionSessionController.State.QUARANTINED, ProjectionSessionController.State.DISCONNECTED,
             ProjectionSessionController.State.RECOVERY_REQUIRED)
         detail?.text = if (hasFailure) ProductErrors.explain(java.io.IOException(ProjectionService.status())) else control.message
@@ -613,6 +618,12 @@ class ProductActivity : Activity() {
     private fun color(value: String) = Color.parseColor(value)
     private fun navigationHeight(base: Int) = dp(base + ((resources.configuration.fontScale - 1f).coerceAtLeast(0f) * 32).toInt())
     private fun dp(value: Int) = (resources.displayMetrics.density * value).toInt()
+
+    companion object {
+        /** Whether the page is in front, so an automatic restart brings it back. */
+        @Volatile var visible = false
+            private set
+    }
 }
 
 /** Custom flat backgrounds look the same disabled as enabled; dim instead so it reads as unavailable. */

@@ -19,15 +19,41 @@ final class ProjectionSessionController {
         void run(AtomicBoolean stop, AtomicBoolean abort, Runnable streaming, Runnable cleaning) throws IOException;
     }
 
-    interface Observer {
-        void state(State state, String detail);
+    /** What a QUARANTINED session left unconfirmed, which decides how it is cleaned up afterwards. */
+    enum CleanupScope {
+        /** Only the shell capture helper's exit; USB and the instrument receiver were confirmed closed. */
+        CAPTURE,
+        /** The capture helper's exit and the instrument receiver's reply; local USB was confirmed closed. */
+        CAPTURE_AND_PEER,
+        /** Anything held by this app process (USB, threads) or unknown: only a process restart releases it. */
+        LOCAL
     }
 
-    static final class CleanupUnconfirmedException extends IOException {
+    interface Observer {
+        void state(State state, String detail);
+
+        /** QUARANTINED only; observers that do not care about the scope get the plain callback. */
+        default void quarantined(String detail, CleanupScope scope) {
+            state(State.QUARANTINED, detail);
+        }
+    }
+
+    static class CleanupUnconfirmedException extends IOException {
         private static final long serialVersionUID = 1L;
 
         CleanupUnconfirmedException(String message, Throwable cause) {
             super(message, cause);
+        }
+    }
+
+    /** The capture helper's exit was not confirmed, while this process's own USB resources were. */
+    static final class CaptureExitUnconfirmedException extends CleanupUnconfirmedException {
+        private static final long serialVersionUID = 1L;
+        final boolean receiverConfirmed;
+
+        CaptureExitUnconfirmedException(String message, Throwable cause, boolean receiverConfirmed) {
+            super(message, cause);
+            this.receiverConfirmed = receiverConfirmed;
         }
     }
 
@@ -107,6 +133,7 @@ final class ProjectionSessionController {
 
     private void execute(Task task, AtomicBoolean ownedStop, AtomicBoolean ownedAbort) {
         State outcome = State.STOPPED;
+        CleanupScope scope = CleanupScope.LOCAL;
         Error fatal = null;
         String detail = "owned capture/receiver/USB cleanup confirmed; check instrument window manually";
         try {
@@ -117,9 +144,13 @@ final class ProjectionSessionController {
         } catch (PeerCleanupPendingException error) {
             outcome = State.RECOVERY_REQUIRED;
             detail = error.getMessage();
+        } catch (CaptureExitUnconfirmedException error) {
+            outcome = State.QUARANTINED;
+            scope = error.receiverConfirmed ? CleanupScope.CAPTURE : CleanupScope.CAPTURE_AND_PEER;
+            detail = error.getMessage() + "; leftover capture helper cleanup follows; no guard deletion";
         } catch (CleanupUnconfirmedException error) {
             outcome = State.QUARANTINED;
-            detail = error.getMessage() + "; stop testing, normal restart required; no guard deletion";
+            detail = error.getMessage() + "; app restart required; no guard deletion";
         } catch (IOException error) {
             outcome = State.FAILED;
             detail = "Session failed with owned cleanup confirmed: " + error;
@@ -133,7 +164,12 @@ final class ProjectionSessionController {
         } finally {
             synchronized (this) {
                 active = false;
-                change(outcome, detail);
+                if (outcome == State.QUARANTINED) {
+                    state = outcome;
+                    observer.quarantined(detail, scope);
+                } else {
+                    change(outcome, detail);
+                }
             }
         }
         if (fatal != null) {

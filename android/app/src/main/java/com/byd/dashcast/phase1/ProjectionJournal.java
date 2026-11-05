@@ -9,6 +9,7 @@ final class ProjectionJournal {
     private final StringBuilder log = new StringBuilder(4096);
     private ProjectionSessionController.State state = ProjectionSessionController.State.IDLE;
     private String detail = "No continuous projection started in this process";
+    private ProjectionSessionController.CleanupScope scope;
 
     synchronized void append(String message) {
         log.append(System.currentTimeMillis()).append(' ').append(message).append('\n');
@@ -19,13 +20,53 @@ final class ProjectionJournal {
     }
 
     synchronized void state(ProjectionSessionController.State next, String message) {
+        // A quarantine without a known scope is treated as the widest one.
+        state(next, message, ProjectionSessionController.CleanupScope.LOCAL);
+    }
+
+    synchronized void state(ProjectionSessionController.State next, String message,
+            ProjectionSessionController.CleanupScope cleanup) {
         state = next;
         detail = message;
-        append("PROJECTION_STATE=" + next + " " + message);
+        scope = next == ProjectionSessionController.State.QUARANTINED ? cleanup : null;
+        append("PROJECTION_STATE=" + next + " " + message
+                + (scope == null ? "" : " cleanup_scope=" + scope));
     }
 
     synchronized boolean quarantined() {
         return state == ProjectionSessionController.State.QUARANTINED;
+    }
+
+    /** Null unless QUARANTINED. */
+    synchronized ProjectionSessionController.CleanupScope cleanupScope() {
+        return scope;
+    }
+
+    /**
+     * The leftover capture helper of a capture-scoped quarantine was ended and confirmed gone. Everything else
+     * was already confirmed, so the session is STOPPED, or RECOVERY_REQUIRED when the instrument receiver's
+     * reply is still missing. Returns false, changing nothing, for any other state or scope.
+     */
+    synchronized boolean leftoverCaptureCleaned(String evidence) {
+        if (state != ProjectionSessionController.State.QUARANTINED
+                || scope == ProjectionSessionController.CleanupScope.LOCAL || scope == null) {
+            return false;
+        }
+        boolean peer = scope == ProjectionSessionController.CleanupScope.CAPTURE_AND_PEER;
+        // The quarantine detail stays in the log above; it is not carried over, so the new status reads as
+        // the state it now is.
+        state(peer ? ProjectionSessionController.State.RECOVERY_REQUIRED : ProjectionSessionController.State.STOPPED,
+                (peer ? "PEER_RECOVERY_REQUIRED: " : "") + "LEFTOVER_CAPTURE_CLEANED " + evidence);
+        return true;
+    }
+
+    /** A fresh process after an automatic restart: the instrument side of the old session is unconfirmed. */
+    synchronized boolean restartedAfterLocalCleanup(String reason) {
+        if (state != ProjectionSessionController.State.IDLE) {
+            return false;
+        }
+        state(ProjectionSessionController.State.RECOVERY_REQUIRED, "PEER_RECOVERY_REQUIRED: " + reason);
+        return true;
     }
 
     synchronized ProjectionSessionController.State currentState() {

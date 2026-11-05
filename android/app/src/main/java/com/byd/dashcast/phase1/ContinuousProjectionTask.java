@@ -241,6 +241,11 @@ final class ContinuousProjectionTask implements ProjectionSessionController.Task
             throw new ProjectionSessionController.PeerCleanupPendingException(proof, failure);
         }
         if (outcome == CleanupRecoveryPolicy.Outcome.LOCAL_UNCONFIRMED) {
+            if (CleanupRecoveryPolicy.captureOnly(captureClean, localUsbClosed, partialOpenUnknown)) {
+                // Only the shell helper is in doubt; it can be found and ended from the shell afterwards.
+                throw new ProjectionSessionController.CaptureExitUnconfirmedException(
+                        "CLEANUP_UNCONFIRMED " + proof, failure, receiverClean);
+            }
             throw new ProjectionSessionController.CleanupUnconfirmedException(
                     "CLEANUP_UNCONFIRMED " + proof, failure);
         }

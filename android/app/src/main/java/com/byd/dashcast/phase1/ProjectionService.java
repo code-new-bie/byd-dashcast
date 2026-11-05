@@ -32,6 +32,7 @@ public final class ProjectionService extends Service {
     private static final int NOTIFICATION_ID = 50;
     private static final ProjectionJournal JOURNAL = new ProjectionJournal();
     private static volatile ProjectionSessionController current;
+    private static volatile Runnable quarantineListener;
     private static final java.util.concurrent.atomic.AtomicLong PRODUCT_GENERATION =
             new java.util.concurrent.atomic.AtomicLong();
     private final Handler main = new Handler(Looper.getMainLooper());
@@ -148,6 +149,22 @@ public final class ProjectionService extends Service {
 
     static void quarantine(String detail) {
         JOURNAL.state(ProjectionSessionController.State.QUARANTINED, detail);
+        Runnable listener = quarantineListener;
+        if (listener != null) { new Handler(Looper.getMainLooper()).post(listener); }
+    }
+
+    /** Called on the main thread whenever the session state becomes QUARANTINED. */
+    static void setQuarantineListener(Runnable listener) { quarantineListener = listener; }
+
+    /** Null unless QUARANTINED. */
+    static ProjectionSessionController.CleanupScope cleanupScope() { return JOURNAL.cleanupScope(); }
+
+    static boolean leftoverCaptureCleaned(String evidence) {
+        return !active() && readyForNewService() && JOURNAL.leftoverCaptureCleaned(evidence);
+    }
+
+    static boolean restartedAfterLocalCleanup(String reason) {
+        return !active() && JOURNAL.restartedAfterLocalCleanup(reason);
     }
 
     static String journal() {
@@ -184,43 +201,58 @@ public final class ProjectionService extends Service {
             thread.setDaemon(true);
             return thread;
         }, new ThreadPoolExecutor.AbortPolicy());
-        controller = new ProjectionSessionController(worker, (state, detail) -> {
-            JOURNAL.state(state, detail);
-            MirrorWorkspace.state(workspaceGeneration, state);
-            try {
-                RecoveryIncidentStore.record(this, state, detail);
-            } catch (RuntimeException diagnosticError) {
-                JOURNAL.append("CLEANUP_DIAGNOSTIC_SAVE_FAILED " + diagnosticError);
+        controller = new ProjectionSessionController(worker, new ProjectionSessionController.Observer() {
+            @Override public void state(ProjectionSessionController.State state, String detail) {
+                sessionState(state, detail, ProjectionSessionController.CleanupScope.LOCAL);
             }
-            if (state == ProjectionSessionController.State.STOPPED || state == ProjectionSessionController.State.FAILED
-                    || state == ProjectionSessionController.State.DISCONNECTED
-                    || state == ProjectionSessionController.State.RECOVERY_REQUIRED
-                    || state == ProjectionSessionController.State.QUARANTINED) {
-                finishing = true;
-                // Publish quarantine BEFORE releasing the process gate; never let a new Service
-                // instance race a previous owner's unconfirmed cleanup.
-                UsbOperationGate.Lease completedLease = ownedLease;
-                ownedLease = null;
-                if (completedLease != null) {
-                    completedLease.close();
-                }
-                main.post(() -> {
-                    if (destroyed) {
-                        if (current == controller) {
-                            current = null;
-                        }
-                        return;
-                    }
-                    if (controller.active()) {
-                        return;
-                    }
-                    releaseWakeLock();
-                    stopForeground(STOP_FOREGROUND_REMOVE);
-                    stopSelf();
-                });
+
+            @Override public void quarantined(String detail, ProjectionSessionController.CleanupScope scope) {
+                sessionState(ProjectionSessionController.State.QUARANTINED, detail, scope);
             }
         });
         current = controller;
+    }
+
+    private void sessionState(ProjectionSessionController.State state, String detail,
+            ProjectionSessionController.CleanupScope scope) {
+        JOURNAL.state(state, detail, scope);
+        MirrorWorkspace.state(workspaceGeneration, state);
+        try {
+            RecoveryIncidentStore.record(this, state, detail);
+        } catch (RuntimeException diagnosticError) {
+            JOURNAL.append("CLEANUP_DIAGNOSTIC_SAVE_FAILED " + diagnosticError);
+        }
+        if (state == ProjectionSessionController.State.STOPPED || state == ProjectionSessionController.State.FAILED
+                || state == ProjectionSessionController.State.DISCONNECTED
+                || state == ProjectionSessionController.State.RECOVERY_REQUIRED
+                || state == ProjectionSessionController.State.QUARANTINED) {
+            finishing = true;
+            // Publish quarantine BEFORE releasing the process gate; never let a new Service
+            // instance race a previous owner's unconfirmed cleanup.
+            UsbOperationGate.Lease completedLease = ownedLease;
+            ownedLease = null;
+            if (completedLease != null) {
+                completedLease.close();
+            }
+            main.post(() -> {
+                if (destroyed) {
+                    if (current == controller) {
+                        current = null;
+                    }
+                    return;
+                }
+                if (controller.active()) {
+                    return;
+                }
+                releaseWakeLock();
+                stopForeground(STOP_FOREGROUND_REMOVE);
+                stopSelf();
+            });
+        }
+        if (state == ProjectionSessionController.State.QUARANTINED) {
+            Runnable listener = quarantineListener;
+            if (listener != null) { main.post(listener); }
+        }
     }
 
     @Override

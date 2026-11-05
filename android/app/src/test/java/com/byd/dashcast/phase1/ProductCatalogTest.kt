@@ -18,6 +18,6 @@ class ProductCatalogTest {
     @Test fun permissionAndFirmwareMessagesExplainUserAction() {
         assertTrue(ProductErrors.explain(java.io.IOException("PRODUCT_MATCHING_FIRMWARE_REQUIRED")).contains("配套"))
         assertTrue(ProductErrors.explain(java.io.IOException("USB_PERMISSION_REQUIRED")).contains("USB"))
-        assertTrue(ProductErrors.explain(java.io.IOException("CLEANUP_UNCONFIRMED")).contains("停止重试"))
+        assertTrue(ProductErrors.explain(java.io.IOException("CLEANUP_UNCONFIRMED")).contains("重启应用"))
     }
 }

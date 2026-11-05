@@ -10,7 +10,7 @@ internal object ProductErrors {
             text.contains("EXTERNAL_") || text.contains("NAMED_WINDOW") ->
                 "应用接入暂不可用。请先关闭再开启接入，或从应用列表开始投屏。"
             text.contains("CLEANUP_UNCONFIRMED") || text.contains("HOT_RELEASE_UNCONFIRMED") ->
-                "上次投屏尚未完全结束，已停止重试。请重启仪表和应用后再试。"
+                "上次投屏没能自动清理。请点“重启应用”，仍不行时再重启仪表。"
             text.contains("APP_NATIVE_SECONDARY_VERSION") ->
                 "暂不支持此地图版本，请刷新应用列表；仍无法使用时可导出日志反馈。"
             text.contains("APP_NATIVE_SECONDARY_ALREADY_IN_USE") ->

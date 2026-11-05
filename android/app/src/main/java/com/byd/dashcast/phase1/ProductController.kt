@@ -44,6 +44,12 @@ internal class ProductController private constructor(context: Context) {
     @Volatile var linkFailure: String? = null
         private set
     val linking: Boolean get() = busy && (operation == ProductOperation.MODE || operation == ProductOperation.CONNECT)
+    /** Automatic cleanup after a session ended with part of its cleanup unconfirmed (QUARANTINED). */
+    @Volatile var cleanup: ProductCleanup = ProductCleanup.NONE
+        private set
+    /** A start pressed while the cleanup runs; it goes ahead once the cleanup succeeds. */
+    @Volatile private var startAfterCleanup: ProductApp? = null
+    val startQueued: Boolean get() = startAfterCleanup != null
     private val usbPermission = UsbPermissionContinuation<StartRequest>()
     private data class StartRequest(val target: ProjectionTarget, val options: CaptureOptions, val underlay: Boolean, val generation: Long)
     val busy: Boolean get() = occupied.get()
@@ -106,6 +112,80 @@ internal class ProductController private constructor(context: Context) {
             addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED)
             addAction(UsbManager.ACTION_USB_DEVICE_DETACHED)
         })
+        ProjectionService.setQuarantineListener { sessionQuarantined() }
+    }
+
+    /** Instead of asking for a restart of the instrument and the app: end the leftover capture helper when it
+     * is the only thing in doubt, otherwise restart this process (the only way to release its own USB handles
+     * and threads). A start pressed meanwhile waits for it. Main thread. */
+    private fun sessionQuarantined() {
+        if (cleanup == ProductCleanup.RUNNING || !ProjectionService.quarantined()) { return }
+        cleanup = ProductCleanup.RUNNING
+        message = "正在清理上次投屏，请稍候。"
+        log("PRODUCT_CLEANUP_SCHEDULED scope=${ProjectionService.cleanupScope()}")
+        main.post(cleanupAttempt)
+    }
+
+    private val cleanupAttempt: Runnable = object : Runnable {
+        override fun run() {
+            if (!ProjectionService.quarantined()) { cleanupFinished(); return }
+            // The operation that failed, or the old Service, may still be finishing.
+            if (busy || !ProjectionService.readyForNewService() ||
+                !operation("正在清理上次投屏，请稍候。", ProductOperation.CLEANUP, { main.post { cleanupFinished() } }) {
+                    cleanUpQuarantine()
+                }) { main.postDelayed(this, 300) }
+        }
+    }
+
+    private fun cleanUpQuarantine() {
+        val scope = ProjectionService.cleanupScope() ?: return
+        if (scope == ProjectionSessionController.CleanupScope.LOCAL) {
+            if (!AppRestart.allowAutomatic(app)) { throw IOException("PRODUCT_AUTOMATIC_RESTART_RECENT") }
+            restartApp("PRODUCT_CLEANUP_LOCAL", automatic = true)
+            return
+        }
+        // Only the shell transport is needed, not the vehicle profile check of authenticate(); the helper runs
+        // as the shell user and LeftoverCapture only ends shell-owned processes.
+        val shell = relay()
+        val ended = LeftoverCapture.clean({ shell.executeChecked(it) }, ::log)
+        if (!ProjectionService.leftoverCaptureCleaned("helper_processes_ended=$ended scope=$scope")) {
+            throw IOException("PRODUCT_CLEANUP_STATE_CHANGED")
+        }
+        message = if (ProjectionService.state() == ProjectionSessionController.State.STOPPED)
+            "已清理上次投屏，可以重新开始。" else "已清理上次投屏，开始时会先确认仪表已就绪。"
+        log("PRODUCT_CLEANUP_CONFIRMED state=${ProjectionService.state()} ended=$ended")
+    }
+
+    private fun cleanupFinished() {
+        if (ProjectionService.quarantined()) {
+            cleanup = ProductCleanup.FAILED
+            startAfterCleanup = null
+            message = "上次投屏没能自动清理，请点“重启应用”。"
+            log("PRODUCT_CLEANUP_FAILED scope=${ProjectionService.cleanupScope()}")
+            return
+        }
+        cleanup = ProductCleanup.NONE
+        startAfterCleanup?.let {
+            startAfterCleanup = null
+            log("PRODUCT_START_AFTER_CLEANUP")
+            startApp(it)
+        }
+    }
+
+    /** From the page when the automatic cleanup failed. */
+    fun restartAfterFailedCleanup() = restartApp("PRODUCT_CLEANUP_RESTART_BY_USER", automatic = false)
+
+    /** The restarted process requires the instrument idle check before its first start (see [RestartReceiver]). */
+    private fun restartApp(reason: String, automatic: Boolean) {
+        log("$reason; restarting app process")
+        if (automatic) { AppRestart.noteAutomatic(app) }
+        AppRestart.restart(app, ProductActivity.visible, ::log)
+    }
+
+    /** After a restart, bring the page back the way the user left it; the shell may start it from the background. */
+    fun reopenUi() {
+        relay().executeChecked("am start -n ${app.packageName}/${ProductActivity::class.java.name}")
+        log("PRODUCT_UI_REOPENED")
     }
 
     fun connect() = operation("正在连接车机，如出现调试弹窗请选择允许。", ProductOperation.CONNECT) { authenticate() }
@@ -175,6 +255,12 @@ internal class ProductController private constructor(context: Context) {
     /** Apps with a verified secondary entry (the custom map's MeterActivity) project that entry and keep
      * their main-screen task where it is; every other app gets the mirrored operation window. */
     fun startApp(selected: ProductApp) {
+        if (cleanup == ProductCleanup.RUNNING) {
+            startAfterCleanup = selected
+            message = "正在清理上次投屏，完成后自动开始投屏。"
+            log("PRODUCT_START_QUEUED_BEHIND_CLEANUP")
+            return
+        }
         if (!selected.capability.nativeSecondary) { startWorkspace(selected.target()); return }
         if (ProjectionService.active()) { replace(selected.target()) } else { start(selected.target()) }
     }

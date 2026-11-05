@@ -2,6 +2,14 @@
 
 较早版本的详细说明文档已从仓库移除，需要时可在 Git 历史中查看（例如提交 `ba358c3` 及更早的 `docs/PRODUCT_*.md`、`docs/TASKS_*.md`）。
 
+## APK1.24.0 / 仪表1.22.0（2026-11-05）
+
+- A QUARANTINED session is cleaned up automatically instead of asking for an instrument and app restart. The session now records what was left unconfirmed (CleanupScope): CAPTURE / CAPTURE_AND_PEER when only the shell capture helper's exit is missing and this process's USB is closed, LOCAL otherwise (local USB, partial open, unexpected worker failure, Host release or recovery USB failure).
+- CAPTURE scopes: over the shell transport, LeftoverCapture finds the shell-owned app_process running ShellScreenCapture and its shell children, kills them and waits until they are gone (standby-display/USB-grant helpers, the cast app and other users untouched); the journal then goes to STOPPED, or RECOVERY_REQUIRED when the instrument receiver's reply was missing too.
+- LOCAL scope: the app restarts its own process through an alarm (RestartReceiver, delivered after about 5 s on Android 10), marks RECOVERY_REQUIRED so the next start passes the instrument idle check, restores the saved switches and reopens the page through the shell if it was in front. At most one automatic restart per 2 minutes.
+- A failed cleanup shows "重启应用" on the cast page; a start pressed during the cleanup goes ahead after it.
+- 622 unit tests, 0 lint errors; emulator: stand-in leftover helper ended and confirmed, local restart, restart cap and the restart button; vehicle acceptance pending. [说明](docs/PRODUCT_1.24.0.md)。
+
 ## APK1.23.1 / 仪表1.22.0（2026-11-05）
 
 - ProjectionService enters the foreground as soon as a start intent arrives, before any check; each early exit (finishing, cancelled, blocked, USB gate busy) now removes the notification and stops. Android 10 killed the whole app when a service started with startForegroundService() stopped before startForeground(); the STOP intent (startService) is unchanged.
