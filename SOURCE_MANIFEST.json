@@ -84,8 +84,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 3477,
-      "sha256": "76c7e3bee2a7df93501b6acc19ecb027fc574e89c4f022e9c8659c1c9df5ee50",
+      "bytes": 3620,
+      "sha256": "417332d2e2261619312a11aa4c119f764d5a56e24182634614578a8968483735",
       "origin": "publication/template/README.md",
       "transformations": []
     },
@@ -2241,8 +2241,8 @@
     },
     {
       "path": "docs/ARCHITECTURE.md",
-      "bytes": 4941,
-      "sha256": "643fdb52f0adc7cf542d2632fd6ffe6e2a79fdf5d0673d82982990f15af9ae61",
+      "bytes": 5098,
+      "sha256": "38c3ae3b70de666699248e39ad19ccd7bd6aeb74e336c64a915b1adbb59cc9ea",
       "origin": "publication/template/docs/ARCHITECTURE.md",
       "transformations": []
     },
@@ -2322,6 +2322,13 @@
       "sha256": "7aeeca892bfb8127a3908510f0d63185b8169232c7ae35a07754dfe3fd3afadb",
       "origin": "publication/template/docs/PUBLISHING.md",
       "transformations": []
+    },
+    {
+      "path": "docs/SEQUENCE.md",
+      "origin": "REVIEWED_AFTER_INITIAL_EXPORT",
+      "transformations": [],
+      "bytes": 39138,
+      "sha256": "3a958b8ce045c238b8d56827c12eb06ebd2aac60782a156c71e18b0885554571"
     },
     {
       "path": "docs/USAGE.md",

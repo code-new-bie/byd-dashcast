@@ -21,6 +21,7 @@
 | [使用说明](docs/USAGE.md) | 安装、连接、投屏和日常操作 |
 | [构建、打包与产出物](docs/BUILD.md) | 环境配置、编译 APK、构建仪表组件、刷机包组成 |
 | [架构](docs/ARCHITECTURE.md) | 车机端与仪表端各部分如何配合 |
+| [实现时序图](docs/SEQUENCE.md) | 连接、应用双端操作、地图/屏幕名接入、视频合成、停止与恢复的详细时序 |
 | [验证状态](docs/VALIDATION.md) | 哪些经过实车验证，哪些只有离线检查 |
 | [改动记录](CHANGELOG.md) | 各版本改动摘要 |
 | [发布检查](docs/PUBLISHING.md) | 向本仓库提交前的检查 |
