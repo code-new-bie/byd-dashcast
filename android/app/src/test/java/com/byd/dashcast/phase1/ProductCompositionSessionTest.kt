@@ -80,6 +80,69 @@ class ProductCompositionSessionTest {
         assertThrows(IOException::class.java) { p.session().prepare(p) }
         assertEquals(listOf(0), p.operations)
     }
+
+    @Test fun rwvgCannotClaimGaugeReadbackCapability() {
+        val p = Peer().apply { capability = 0x52575640 }
+        assertThrows(IOException::class.java) { p.session().prepare(p) }
+        assertEquals(listOf(0), p.operations)
+    }
+
+    @Test fun activeThemeResyncWaitsWithoutRenewalAndResumesOneSession() {
+        val p = Peer(); val s = p.session(); s.prepare(p); s.activate(p)
+        p.now += 1_000_000_000L; s.tick(p)
+        val renewals = p.operations.count { it == 3 }
+        p.navigationOverride = ProductCompositionSession.NAVIGATION_PENDING
+        repeat(3) { p.now += 250_000_000L; s.tick(p) }
+        assertEquals(renewals, p.operations.count { it == 3 })
+        p.navigationOverride = null; p.now += 250_000_000L; s.tick(p)
+        assertEquals(renewals + 1, p.operations.count { it == 3 })
+        assertEquals(1, p.operations.count { it == 1 })
+        s.restore(p); assertEquals(2, p.state)
+    }
+
+    @Test fun resyncDeadlineIsNotExtendedByRepeatedSnapshots() {
+        val p = Peer(); val s = p.session(); s.prepare(p); s.activate(p)
+        p.now += 1_000_000_000L; s.tick(p)
+        val renewals = p.operations.count { it == 3 }
+        p.navigationOverride = ProductCompositionSession.NAVIGATION_PENDING
+        repeat(4) { p.now += 250_000_000L; s.tick(p) }
+        p.now += 250_000_000L
+        assertThrows(IOException::class.java) { s.tick(p) }
+        assertEquals(renewals, p.operations.count { it == 3 })
+        p.navigationOverride = null
+        s.restore(p); assertEquals(2, p.state)
+    }
+
+    @Test fun resyncGraceCannotHideOwnerProfileEpochCapabilityOrRevocation() {
+        repeat(5) { fault ->
+            val p = Peer(); val s = p.session(); s.prepare(p); s.activate(p)
+            p.now += 1_000_000_000L; s.tick(p)
+            val renewals = p.operations.count { it == 3 }
+            p.navigationOverride = ProductCompositionSession.NAVIGATION_PENDING
+            p.now += 250_000_000L; s.tick(p)
+            when (fault) {
+                0 -> p.ownerOverride = 88
+                1 -> p.nativeModeOverride = 1
+                2 -> p.epoch++
+                3 -> p.capability = 0x52575640
+                4 -> p.nativeReason = 3
+            }
+            p.now += 250_000_000L
+            assertThrows(IOException::class.java) { s.tick(p) }
+            assertEquals(renewals, p.operations.count { it == 3 })
+        }
+    }
+
+    @Test fun aLaterResyncHasItsOwnBoundedWindow() {
+        val p = Peer(); val s = p.session(); s.prepare(p); s.activate(p)
+        p.now += 1_000_000_000L; s.tick(p)
+        repeat(2) {
+            p.navigationOverride = ProductCompositionSession.NAVIGATION_PENDING
+            repeat(3) { p.now += 250_000_000L; s.tick(p) }
+            p.navigationOverride = null; p.now += 250_000_000L; s.tick(p)
+        }
+        assertEquals(1, p.operations.count { it == 1 })
+    }
     @Test fun frozenRwv3AndRwv4AreNotAcceptedWithWiderRwv5Content() {
         for (old in listOf(0x52575633, 0x52575634)) {
             val p = Peer().apply { capability = old }

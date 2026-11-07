@@ -26,6 +26,7 @@ internal class ProductCompositionSession @JvmOverloads constructor(
     private var lastRenew = 0L
     private var requestBegan = 0L
     private var waitingAcknowledgement = false
+    private var layoutPendingSince: Long? = null
 
     init { require(nonce > 0) { "PRODUCT_COMPOSITION_NONCE" } }
 
@@ -113,12 +114,26 @@ internal class ProductCompositionSession @JvmOverloads constructor(
             if (now - began >= ACTIVATION_DEADLINE) { throw IOException("PRODUCT_ACTIVATION_UNCONFIRMED") }
             return
         }
-        if (reply.word(29) != NAVIGATION_ACTIVE) {
-            if (reply.word(29) == NAVIGATION_PENDING && now - began < ACTIVATION_DEADLINE) { return }
-            throw IOException("PRODUCT_NAVIGATION_LAYOUT_UNCONFIRMED")
-        }
         if (reply.word(30) != if (centerWindow) 1 else 0) {
             throw IOException("PRODUCT_LAYOUT_PROFILE_MISMATCH")
+        }
+        if (reply.word(29) != NAVIGATION_ACTIVE) {
+            if (reply.word(29) == NAVIGATION_PENDING) {
+                if (!active && now - began < ACTIVATION_DEADLINE) { return }
+                if (active) {
+                    val since = layoutPendingSince ?: now.also {
+                        layoutPendingSince = it
+                        log.log("PRODUCT_LAYOUT_RESYNC_PENDING; media continues, renewal waits for geometry")
+                    }
+                    if (now - since < LAYOUT_RESYNC_DEADLINE) { return }
+                    throw IOException("PRODUCT_LAYOUT_RESYNC_UNCONFIRMED")
+                }
+            }
+            throw IOException("PRODUCT_NAVIGATION_LAYOUT_UNCONFIRMED")
+        }
+        if (layoutPendingSince != null) {
+            log.log("PRODUCT_LAYOUT_RESYNC_CONFIRMED")
+            layoutPendingSince = null
         }
         if (!active) {
             active = true
@@ -167,8 +182,8 @@ internal class ProductCompositionSession @JvmOverloads constructor(
 
     private fun requireReply(reply: InstrumentBackgroundPoc.Reply) {
         val original = before
-        if (reply.error != 0 || original != null &&
-            (reply.word(10) != original.word(10) || reply.word(18) != original.word(18))) {
+        if (reply.error != 0 || original != null && (reply.word(31) != CAPABILITY ||
+            reply.word(10) != original.word(10) || reply.word(18) != original.word(18))) {
             throw IOException("PRODUCT_HMI_CHANGED_OR_UNAVAILABLE error=${reply.error}")
         }
     }
@@ -186,7 +201,7 @@ internal class ProductCompositionSession @JvmOverloads constructor(
         InstrumentCompositionTrial.exchangePacket(channel, operation, request(operation, nonce, centerWindow))
 
     companion object {
-        const val CAPABILITY = 0x52575640 // RWVG: RWVF plus the fade-in band and a full-frame small window
+        const val CAPABILITY = 0x52575641 // RWVH: single-owner gauge geometry and native readback.
         const val NAVIGATION_READY = 0x4e4c4300
         const val NAVIGATION_ACTIVE = 0x4e4c4301
         const val NAVIGATION_PENDING = 0x4e4c4302
@@ -198,6 +213,7 @@ internal class ProductCompositionSession @JvmOverloads constructor(
         private const val RENEW_INTERVAL = 1_000_000_000L
         private const val CONFIRM_DEADLINE = 4_000_000_000L
         private const val ACTIVATION_DEADLINE = 1_500_000_000L
+        private const val LAYOUT_RESYNC_DEADLINE = 1_000_000_000L
 
         @JvmStatic
         fun request(operation: Int, nonce: Int): ByteArray {

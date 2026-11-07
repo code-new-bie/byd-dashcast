@@ -48,7 +48,7 @@ class Product1231Test {
 
     @Test fun aboutTextNamesTheMatchingInstrumentPackage() {
         val source = File("src/main/java/com/byd/dashcast/phase1/ProductActivity.kt").readText()
-        assertTrue(source.contains("配套仪表包为1.22.0"))
+        assertTrue(source.contains("配套仪表包为1.25.0"))
         assertFalse(source.contains("1.19系列"))
     }
 }

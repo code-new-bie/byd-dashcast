@@ -2,7 +2,7 @@
 
 仓库里有两部分可以构建：车机 APK，以及仪表 App 里需要修改的文件（下称“仪表组件”）。APK 只依赖本仓库源码。仪表组件要用你自己持有的固件原件作输入，仓库不包含任何固件。
 
-当前版本：APK **1.24.0 / code79**，配套仪表 **1.22.0**（配对标记 RWVG，APK 1.22.x 必须配这一版仪表）。
+当前版本：APK **1.25.0 / code80**，配套仪表 **1.25.0/RWVH**，两端必须同时更新。
 
 ## 一、环境配置
 
@@ -30,7 +30,7 @@ Windows 用 `gradlew.bat`。三个任务分别是单元测试、构建 debug APK
 
 | 文件 | 内容 |
 |---|---|
-| `android/app/build/outputs/apk/debug/app-debug.apk` | debug APK，包名 `com.byd.dashcast.phase1.debug`，版本 `1.24.0-debug` / code79 |
+| `android/app/build/outputs/apk/debug/app-debug.apk` | debug APK，包名 `com.byd.dashcast.phase1.debug`，版本 `1.25.0-debug` / code80 |
 | `android/app/build/test-results/testDebugUnitTest/` | 单元测试结果（XML） |
 | `android/app/build/reports/lint-results-debug.html` | lint 报告 |
 
@@ -62,17 +62,17 @@ python tools/build_instrument_components.py \
   --receiver instrument-receiver-1.2.0 --output OUT
 ```
 
-`OUT` 必须是新目录（它的上级目录必须已经存在）。工具在内存里依次做四步，再加上 application.cfg 和四个 QNX 脚本。每个产物都要和审核过的 1.22.0 文件逐字节相同，否则报错，一个文件也不写。
+`OUT` 必须是新目录（它的上级目录必须已经存在）。工具在内存里依次做五步，再加上 application.cfg 和四个 QNX 脚本。每个产物都要和审核过的 1.25.0 文件逐字节相同，否则报错，一个文件也不写。
 
 产出（按 app.sv 内的安装路径摆放）：
 
 | 产出文件 | 来自 |
 |---|---|
-| `OUT/base/app/rc_hmi/rc_hmi.exe` | 原 HMI + 各版补丁 + B2 混合模式 + 1.22.0 配对标记 RWVG |
-| `OUT/base/app/rc_hmi/bic_byd_stha.kzb` | 原 KZB + 布局/背景 + B2 遮罩，1.22.0 两张遮罩换成淡入版 |
+| `OUT/base/app/rc_hmi/rc_hmi.exe` | 原 HMI + 各版补丁 + B2 混合模式 + 1.25.0 几何读回及配对标记 RWVH |
+| `OUT/base/app/rc_hmi/bic_byd_stha.kzb` | 原 KZB + 布局/背景 + B2 遮罩，1.22.0 淡入遮罩 + 1.25.0 五项几何及动画统一控制 |
 | `OUT/base/app/rc_hmi/3dscreen.kzb` | 原 3D 场景，投屏时隐藏道路底板和车模 |
 | `OUT/base/app/rc_hmi/application.cfg` | 原文件末尾加一行 `SurfaceBitsAlpha = 8` |
-| `OUT/base/app/dip-instrument/instrument-receiver` | 1.2.0 接收端 + 1.17 各项改动 + 1.22.0 小窗整屏窗口与 RWVG |
+| `OUT/base/app/dip-instrument/instrument-receiver` | 1.2.0 接收端 + 1.17 各项改动 + 1.22.0 小窗整屏窗口 + 1.25.0 配对能力 RWVH |
 | `OUT/base/app/dip-instrument/startup.ksh` 等四个脚本 | 原样复制 `instrument/ref2-noauth/` |
 | `OUT/REPORT.json` | 每个产物的 SHA256 和每一步的检查报告 |
 
@@ -87,6 +87,8 @@ python tools/build_center_mask_components.py --hmi STEP2/rc_hmi.exe --kzb STEP2/
 ```
 
 第 1 步还会输出 `3dscreen.kzb` 和 `receiver`，第 2、3 步不再改动它们。第 4 步（1.22.0 淡入）没有单独的命令，由 `analysis/fade_in_viewport.py` 在一条命令里接着第 3 步执行：改 HMI 的 1 字节、接收端的 7 字节，并换上 `instrument/assets/rwvg/` 里的两张遮罩。这两张遮罩由 `analysis/fade_in_masks.py` 从 1.19.3 遮罩离线生成（需要 scipy），构建时只读取 PNG 并核对哈希。
+
+第 5 步由 `analysis/theme_geometry.py` 迁移几何规则及相关动画，在现有代码页内添加读回函数，并更新接收端配对标记；不会改变 ELF 启动结构。指令离线回归工具为 `tools/test_theme_geometry.py`，需要上一 RWVG 三组件及 Unicorn；不属于 CI 的完整目标 Kanzi 测试。
 
 遮罩 PNG（`instrument/assets/`）的 RGB 是乘数，不是普通图片：不要再预乘，也不要用图片软件重新保存。HMI、KZB、接收端必须成套使用，不能和其他版本混用。
 

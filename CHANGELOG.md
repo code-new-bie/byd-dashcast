@@ -2,6 +2,13 @@
 
 较早版本的详细说明文档已从仓库移除，需要时可在 Git 历史中查看（例如提交 `ba358c3` 及更早的 `docs/PRODUCT_*.md`、`docs/TASKS_*.md`）。
 
+## APK/仪表 1.25.0（2026-11-07）
+
+- Five gauge properties and ten related animations now have one owner; full projection keeps geometry across themes and stopping restores the current style.
+- Native geometry readback; APK permits a bounded 1000 ms layout resync without renewing unconfirmed geometry or hiding ownership errors.
+- RWVH requires both sides updated. OS/MCU, backgrounds, transport and USB scripts unchanged.
+- 627 Android tests, 82 Thumb/engine-double cases, component rebuild and package readback; vehicle acceptance pending. [说明](docs/PRODUCT_1.25.0.md)。
+
 ## APK1.24.0 / 仪表1.22.0（2026-11-05）
 
 - A QUARANTINED session is cleaned up automatically instead of asking for an instrument and app restart. The session now records what was left unconfirmed (CleanupScope): CAPTURE / CAPTURE_AND_PEER when only the shell capture helper's exit is missing and this process's USB is closed, LOCAL otherwise (local USB, partial open, unexpected worker failure, Host release or recovery USB failure).

@@ -1,8 +1,8 @@
-"""Build every changed instrument App file of the current 1.22.0 package in one run; NOT a flash ZIP.
+"""Build every changed instrument App file of the current 1.25.0 package in one run; NOT a flash ZIP.
 
 Runs step 1 (1.17 base), step 2 (1.19.2 B2), step 3 (1.19.3 small mask) and step 4 (1.22.0 RWVG
-fade-in) in memory, adds application.cfg and the four QNX scripts, and lays the files out under their
-app.sv install paths. Every output must match the reviewed 1.22.0 bytes or nothing is written.
+fade-in), then the 1.25.0 gauge ownership/readback patch in memory, adds application.cfg and the
+four QNX scripts. Every output must match reviewed bytes or nothing is written.
 instrument-usb is not built here; see docs/BUILD.md.
 """
 import argparse
@@ -15,15 +15,15 @@ from build_projection_fit_components import build_components, checked_background
 from component_inputs import checked_file, checked_paths
 
 ROOT = Path(__file__).resolve().parents[1]
-STATUS = "INSTRUMENT_1220_APP_FILES_NOT_AN_UPGRADE"
+STATUS = "INSTRUMENT_1250_APP_FILES_NOT_AN_UPGRADE"
 SCRIPTS = ROOT / "instrument/ref2-noauth"
-# Install path inside app.sv -> SHA256 of the reviewed 1.22.0 file.
+# Install path inside app.sv -> SHA256 of the reviewed 1.25.0 file.
 EXPECTED = {
-    "base/app/rc_hmi/rc_hmi.exe": "723129a7a544eef3370c431ef7c3f931d0f73cb1f9e4b92132c7241f36156a3c",
-    "base/app/rc_hmi/bic_byd_stha.kzb": "75a4e82138c28933ae50dcc71637bab490e3779de50e2e44967056dcae592dc7",
+    "base/app/rc_hmi/rc_hmi.exe": "a094be8555b6d8b7e4c24fc0b51daccd015b1cd6fa3dde6e38517dbd3f7b3102",
+    "base/app/rc_hmi/bic_byd_stha.kzb": "70ae4e79c722e98cc393552fe32fd3b1b71babdeee25bc592881b83e6f1e9b68",
     "base/app/rc_hmi/3dscreen.kzb": "31ef7e87ed16632498384818297660c44a113215ec3bec9c9efd2d3b86170f46",
     "base/app/rc_hmi/application.cfg": "37c03ecb7b068f08857fc43a470a144bb3faa70ceddb4fe184cf767ed58f442f",
-    "base/app/dip-instrument/instrument-receiver": "450f9fdd7af816d7de90cfbb99767252f940fe3100d64e88b3f447bdfe424d4b",
+    "base/app/dip-instrument/instrument-receiver": "0daf4091850796d6f5b8f88dec6188a56eba4bb7f76696d4f7b581ba301a8bd7",
     "base/app/dip-instrument/startup.ksh": "10af0bacfa4b797f57b4b88f986114a79ddceb029f87da0a322e80ae92f2fd9b",
     "base/app/dip-instrument/run-cast.ksh": "268ee0e537d6f78dc9715d44d5c3c8e5504aad794480a9708cfb77c9515f6b83",
     "base/app/dip-instrument/cast-mode.ksh": "f8cb30a9c6d9ca610ccb19c00d0360ea9e0794d2f9ad95f03a531229514d0c82",
@@ -56,9 +56,11 @@ def main():
     from b2_matte import build_pair as build_b2
     from center_premul_mask import build_pair as build_center
     from fade_in_viewport import build as build_fade_in
+    from theme_geometry import build_pair as build_theme
     hmi, kzb, b2_report = build_b2(base["rc_hmi.exe"], base["bic_byd_stha.kzb"], args.b2_masks)
     hmi, kzb, center_report = build_center(hmi, kzb, args.center_mask)
     hmi, kzb, receiver, fade_report = build_fade_in(hmi, kzb, base["receiver"])
+    hmi, kzb, receiver, theme_report = build_theme(hmi, kzb, receiver)
     files = {
         "base/app/rc_hmi/rc_hmi.exe": hmi,
         "base/app/rc_hmi/bic_byd_stha.kzb": kzb,
@@ -71,7 +73,7 @@ def main():
     digests = {name: hashlib.sha256(raw).hexdigest() for name, raw in files.items()}
     wrong = sorted(name for name in EXPECTED if digests.get(name) != EXPECTED[name])
     if wrong or set(files) != set(EXPECTED):
-        raise ValueError("Outputs differ from the reviewed 1.22.0 files; nothing written: " + ", ".join(wrong))
+        raise ValueError("Outputs differ from the reviewed 1.25.0 files; nothing written: " + ", ".join(wrong))
     out.mkdir()
     for name, raw in files.items():
         target = out / name
@@ -81,7 +83,7 @@ def main():
     with (out / "REPORT.json").open("x", encoding="utf-8") as stream:
         json.dump(dict(status=STATUS, sha256=digests, not_built=["base/app/dip-instrument/instrument-usb"],
                        steps=dict(base_1170=base_report, b2_1192=b2_report, center_1193=center_report,
-                                  fade_in_1220=fade_report),
+                                  fade_in_1220=fade_report, theme_geometry_1250=theme_report),
                        vehicle=False), stream, ensure_ascii=False, indent=2)
         stream.write("\n")
     print(STATUS)

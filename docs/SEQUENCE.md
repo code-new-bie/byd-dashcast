@@ -1,6 +1,6 @@
 # 仪表投屏实现时序
 
-本文对应 **APK 1.24.0/code79＋仪表 1.22.0/RWVG**，按 2026-11-06 的实际实现整理。产品源码基线为 `e4f250b`。以下是现行运行路径；最后单列整套仪表样式切换的已知缺陷，未把待修复方案画成已实现功能。
+本文对应 **APK 1.25.0/code80＋仪表 1.25.0/RWVH**，按 2026-11-06 的实际实现整理。在 `1fc882a` 基线上完成本版修复，源码以本文所在提交为准；最后单列主题几何控制与离线验证边界。
 
 ## 阅读索引
 
@@ -20,7 +20,7 @@
 | [12. 两档分辨率](#12-全屏与小窗的分辨率和双端输出) | 1920×720 与应用实际布局分辨率有什么区别？ |
 | [13. 停止与换应用](#13-正常停止与更换应用) | 怎样归还任务，避免导航中断和资源残留？ |
 | [14. 断线与隔离恢复](#14-拔线失败与自动清理) | 无法收到清理确认时如何恢复？ |
-| [15. 样式切换缺陷](#15-整套仪表样式切换当前缺陷) | 为什么切仪表样式后布局仍可能错乱？ |
+| [15. 样式切换修复](#15-整套仪表样式切换几何控制) | 样式变化时如何保持全屏几何、恢复最新主题？ |
 
 ### 参与者和通道
 
@@ -421,7 +421,7 @@ sequenceDiagram
     N->>R: 建立 TCP
     R-->>C: DCV1 OFFER（无视频激活认证）
     C->>R: QUERY HMI 能力和空闲状态
-    R-->>C: RWVG、布局状态、请求/确认序号
+    R-->>C: RWVH、布局状态、请求/确认序号
     C->>R: HELLO v3
     R-->>C: ACK
     C->>R: START，1920×720，全屏或小窗标志
@@ -461,7 +461,7 @@ sequenceDiagram
     participant M as dashcast-bg1 共享内存
     participant K as Kanzi 渲染线程 / 布局控制器
     participant S as QNX Screen 合成
-    C->>R: QUERY，要求 RWVG＋空闲且无待确认请求
+    C->>R: QUERY，要求 RWVH＋空闲且无待确认请求
     R-->>C: HMI 快照、epoch/PID、状态和序号
     C->>R: START，nonce＋全屏/小窗租约标志
     R->>M: 发布请求序号/操作/所属 nonce
@@ -496,7 +496,7 @@ sequenceDiagram
 
 深浅模式通过原厂主题色参与背景合成。当前全屏采用 B2 配套遮罩/混合实现，不能把早期建议的“只改窗口预乘声明”当成现行方案。RWVG 小窗改为整屏接收后沿用直通 Alpha 模型，是当前实现的假设，尚缺该版实车 Alpha 读回证据。
 
-现有布局回执主要验证自有蒙版属性及模式，**不包含车速/功率等所有元素的实际几何**；因此不能据此宣称主题切换后的每个位置都正确，见图 15。
+1.25.0 在自有蒙版检查后增加全屏四个实际局部变换及速度对齐的读回；APK 给合法短暂待确认最多 1000 ms，不续租掩盖几何错误。原厂/小窗的几何动画不按全屏固定值校验。它仍不是所有元素或物理显示验收，见图 15。
 
 源码：[ProductCompositionSession](../android/app/src/main/java/com/byd/dashcast/phase1/ProductCompositionSession.kt)、[product-runtime.thumb](../instrument/native-hmi/product-runtime.thumb)、[当前布局构建](../analysis/product_scene_layout.py)、[淡入配套构建](../analysis/fade_in_viewport.py)、[1.19.3 混合说明](PRODUCT_1.19.3.md)。
 
@@ -638,37 +638,40 @@ sequenceDiagram
 
 源码：[DetachedPeerRecovery](../android/app/src/main/java/com/byd/dashcast/phase1/DetachedPeerRecovery.kt)、[LeftoverCapture](../android/app/src/main/java/com/byd/dashcast/phase1/LeftoverCapture.kt)、[AppRestart](../android/app/src/main/java/com/byd/dashcast/phase1/AppRestart.kt)、[ProjectionSessionController](../android/app/src/main/java/com/byd/dashcast/phase1/ProjectionSessionController.java)、[ProductController](../android/app/src/main/java/com/byd/dashcast/phase1/ProductController.kt)。
 
-## 15. 整套仪表样式切换：当前缺陷
+## 15. 整套仪表样式切换：几何控制
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor U as 用户
-    participant T as 原厂整套主题状态组
-    participant N as 速度/功率数字及单位节点
-    participant C as 投屏 DCLayout 控制器
-    participant K as Kanzi StateGroupRuntime
-    participant A as APK 布局确认
-    C->>K: 进入全屏投屏布局
-    K->>N: 应用投屏数字/单位几何
-    U->>T: 从一套仪表样式切到另一套
-    T->>N: 重写速度变换/对齐、功率及两个单位变换
-    Note over T,N: 原厂主题与投屏布局写入相同的 5 项属性
-    C->>K: 后续每帧继续写相同 DCLayout
-    K->>K: 当前状态等于目标状态，直接返回
-    Note over N,K: 相同状态不会重新施加几何；投屏父级和新主题子级混合
-    C-->>A: 蒙版/模式/绘制进展仍可通过
-    Note over N,A: 现有回执未读取这 5 项实际几何，因此漏检错位
+    participant O as 原厂主题状态
+    participant G as 专用 DCGeometry 组
+    participant N as 数字及单位节点
+    participant H as 渲染线程读回
+    participant A as APK
+    H->>G: 全屏模式选择 Full，本地私有键
+    G->>N: 设置四项变换和速度对齐
+    U->>O: 切换整套仪表样式
+    O->>O: 更新当前样式、其他原生颜色与动画
+    Note over O,N: 五项冲突属性及十条相关动画已经迁到专用组
+    H->>G: 仍为 Full；同状态不需要重施加
+    H->>N: 读取全屏实际变换与对齐
+    H-->>A: 同一快照内发布匹配或待确认
+    opt 暂时不匹配且其他归属条件正常
+        A->>A: 最多 1000 ms 同步窗口，保持媒体、不无条件续租
+    end
+    U->>A: 停止投屏
+    A->>H: RESTORE
+    H->>G: 选择节点当前的原厂样式
+    G->>N: 恢复最后所选样式的几何
 ```
 
-这解释的是切换**整套样式**时的控制权冲突，不是简单切深浅颜色，也不是 NCM 重连或编码分辨率变化。现行控制器并非只在缓存的旧 Content 上写入；关键在原厂主题和投屏状态共同写几何，而同状态重写不会重新应用。
+冲突的五项属性和十条主题转场规则集中到一个组；原厂主题组的其余规则、后续组及绑定保留。全屏固定几何；小窗/空闲使用当前原厂样式，并保留其原有几何动画。不存在先恢复旧样式快照的步骤。
 
-本项已定位、尚未修复。后续修复需要统一投屏期间的几何控制权，主题变化后同步并核对实际位置，停止时撤销覆盖、保留最新原厂主题；这不属于本文已经实现的时序。不要用反复切空闲/投屏强刷来替代控制权修复。
-
-关联源码：[原生布局构建](../analysis/navigation_layout.py)、[当前场景布局构建](../analysis/product_scene_layout.py)、[原生控制器来源](../instrument/native-hmi/navigation-layout.thumb)、[APK 合成确认](../android/app/src/main/java/com/byd/dashcast/phase1/ProductCompositionSession.kt)。原厂引擎和原始 KZB 不随源码仓库分发。
+实际 Thumb 与受控属性引擎替身的 82 个用例覆盖字段错误、无效节点、同状态跳过、主题变化及最新样式恢复。尚未运行完整 Kanzi 或实车，本版效果仍待车辆确认。[1.25.0 说明](PRODUCT_1.25.0.md)、[构建模块](../analysis/theme_geometry.py)、[原生检查函数](../instrument/native-hmi/theme-geometry.thumb)。
 
 ## 证据范围
 
 本文是按现行源代码、固定构建链和成品核对得到的实现文档，不是一次新的实车验收报告。基础 USB 切换、视频和部分接入已有历史实车证据；1.21.0 的自动 USB 授权/无障碍与按名接入也有实车日志。1.22.0 起的淡入/小窗 Alpha、1.24.0 真实采集助手的故障恢复等新增点仍应按各自的验证范围判断。
 
-特别要区分：原生属性回执、提交计数、绘制遍历、模拟器行为，与目标仪表真实硬解、Screen 合成、动态画面及安全信息可见性。当前整套样式切换问题保持开放，不因画出时序图而关闭。其他边界见[验证状态](VALIDATION.md)、[架构](ARCHITECTURE.md)和[使用说明](USAGE.md)。
+特别要区分：原生属性回执、提交计数、绘制遍历、模拟器行为，与目标仪表真实硬解、Screen 合成、动态画面及安全信息可见性。整套样式切换修复已实现并通过离线检查，实车验收保持待确认。其他边界见[验证状态](VALIDATION.md)、[架构](ARCHITECTURE.md)和[使用说明](USAGE.md)。
