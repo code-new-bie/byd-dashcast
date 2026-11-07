@@ -2341,8 +2341,8 @@
       "path": "docs/SEQUENCE.md",
       "origin": "REVIEWED_AFTER_INITIAL_EXPORT",
       "transformations": [],
-      "bytes": 38952,
-      "sha256": "60767f2ca3117ca4e573c05e254062d0ca67991813e9456fb1b1932371e717cb"
+      "bytes": 38985,
+      "sha256": "4a3f58546e2e0aaa475dce90cdff77b313939c4256222c4513fb04731632a928"
     },
     {
       "path": "docs/USAGE.md",
