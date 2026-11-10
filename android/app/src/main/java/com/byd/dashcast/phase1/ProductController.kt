@@ -54,6 +54,11 @@ internal class ProductController private constructor(context: Context) {
     @Volatile private var startAfterCleanup: ProductApp? = null
     val startQueued: Boolean get() = startAfterCleanup != null
     private val usbPermission = UsbPermissionContinuation<StartRequest>()
+    /** True from a confirmed switch-off (or the shutdown broadcast) until the car is seen on again. */
+    @Volatile var vehicleOff: Boolean = false
+        private set
+    private val power = VehiclePowerWatch(app.applicationInfo.sourceDir, ::log,
+        { reading -> main.post { vehicleSwitchedOff(reading) } }, { reading -> main.post { vehicleSwitchedOn(reading) } })
     private data class StartRequest(val target: ProjectionTarget, val options: CaptureOptions, val underlay: Boolean, val generation: Long)
     val busy: Boolean get() = occupied.get()
 
@@ -115,7 +120,128 @@ internal class ProductController private constructor(context: Context) {
             addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED)
             addAction(UsbManager.ACTION_USB_DEVICE_DETACHED)
         })
+        // Last chance before the head unit kills every app; the system does not wait for this receiver.
+        app.registerReceiver(object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                if (intent.action != Intent.ACTION_SHUTDOWN) { return }
+                val active = ProjectionService.active()
+                log("PRODUCT_SHUTDOWN_BROADCAST from_quickboot=${intent.getBooleanExtra("from_quickboot", false)} " +
+                    "projecting=$active vehicle_off=$vehicleOff")
+                if (!vehicleOff) {
+                    vehicleOff = true
+                    main.removeCallbacks(reattachCheck)
+                    rememberInterrupted(active)
+                }
+                if (active) { endSession(); log("PRODUCT_SHUTDOWN_STOP_REQUESTED") }
+            }
+        }, IntentFilter(Intent.ACTION_SHUTDOWN))
         ProjectionService.setQuarantineListener { sessionQuarantined() }
+    }
+
+    /** Watches the vehicle power level while projection mode is on and ADB is authorized. */
+    private fun updatePowerWatch() {
+        if (adbReady && settings.instrumentConnection) { power.start() } else { power.stop() }
+    }
+
+    /** The car was switched off; the head unit kills this app about ten seconds later. End the projection now so
+     * the instrument gets its own picture back at once. Without "开机启动" nothing reconnects at the next
+     * power-on, so the instrument also gets its U-disk mode back; the saved switches stay as they are. */
+    private fun vehicleSwitchedOff(reading: VehiclePowerReading) {
+        if (vehicleOff) { return }
+        vehicleOff = true
+        main.removeCallbacks(reattachCheck)
+        val active = ProjectionService.active()
+        rememberInterrupted(active)
+        log("PRODUCT_VEHICLE_OFF ${reading.describe()} projecting=$active boot_start=${settings.bootStart} " +
+            "interrupted=${settings.interruptedProjection != null}")
+        if (active) { endSession() }
+        if (settings.instrumentConnection && !settings.bootStart) {
+            if (!switchRole(InstrumentUsbCommand.HOST)) { log("PRODUCT_VEHICLE_OFF_HOST_SKIPPED busy=true") }
+        }
+        message = if (active) "车辆已熄火，已停止投屏。" else "车辆已熄火。"
+    }
+
+    /** The car came back on before the head unit slept (within about ten seconds), so there is no boot broadcast. */
+    private fun vehicleSwitchedOn(reading: VehiclePowerReading) {
+        if (!vehicleOff) { return }
+        vehicleOff = false
+        log("PRODUCT_VEHICLE_ON ${reading.describe()} interrupted=${settings.interruptedProjection != null}")
+        message = "车辆已上电。"
+        afterPowerOn("vehicle_on", settings.instrumentConnection)
+    }
+
+    /** What a switch-off interrupted, for "上电后恢复上次投屏": only an app this page started (not an app sending to
+     * the access screen by itself). */
+    private fun rememberInterrupted(active: Boolean) {
+        val target = requestedTarget
+        settings.interruptedProjection = if (active && target != null && target.isRemote && !target.isNamed)
+            target.component() else null
+    }
+
+    /** After power-on: bring the link back when [relink], then, when "上电后恢复上次投屏" and "开机启动" are on, start
+     * the interrupted app again once the instrument is connected (waits at most 90 s). */
+    fun afterPowerOn(reason: String, relink: Boolean) {
+        val component = settings.interruptedProjection?.takeIf { settings.resumeAfterPowerOn && settings.bootStart }
+        if (!relink && component == null) { return }
+        Thread({
+            try {
+                if (relink) {
+                    if (awaitIdle(30_000L)) { main.post { ensureLink(reason) } }
+                    else { log("PRODUCT_POWER_ON_LINK_SKIPPED reason=$reason busy=true") }
+                }
+                if (component != null) { resumeInterrupted(component, reason) }
+            } catch (error: InterruptedException) { Thread.currentThread().interrupt() }
+        }, "dashcast-power-on").apply { isDaemon = true; start() }
+    }
+
+    private fun awaitIdle(millis: Long): Boolean {
+        val deadline = System.nanoTime() + millis * 1_000_000L
+        while (busy) {
+            if (System.nanoTime() >= deadline) { return false }
+            Thread.sleep(200)
+        }
+        return true
+    }
+
+    private fun resumeInterrupted(component: String, reason: String) {
+        val deadline = System.nanoTime() + 90_000_000_000L
+        Thread.sleep(1000)
+        while (true) {
+            if (vehicleOff || settings.interruptedProjection != component) {
+                log("PRODUCT_RESUME_CANCELLED reason=$reason"); return
+            }
+            if (ProjectionService.active()) {
+                log("PRODUCT_RESUME_SKIPPED reason=$reason session_active=true")
+                settings.interruptedProjection = null; return
+            }
+            if (!busy && connectionState().observed) { break }
+            if (System.nanoTime() >= deadline) {
+                log("PRODUCT_RESUME_GAVE_UP reason=$reason connection=${connectionState()}")
+                settings.interruptedProjection = null; return
+            }
+            Thread.sleep(500)
+        }
+        val selected = ProductAppCatalog.load(app).firstOrNull { it.component == component && it.capability.allowed }
+        if (selected == null) {
+            log("PRODUCT_RESUME_SKIPPED reason=$reason app_missing=true")
+            settings.interruptedProjection = null; return
+        }
+        if (!selected.capability.nativeSecondary) {
+            // The operation window lives on the page, and Android 10 does not let a background app open it; the
+            // shell may (as after an automatic restart).
+            try { reopenUi(); Thread.sleep(800) } catch (error: Exception) {
+                if (error is InterruptedException) { throw error }
+                log("PRODUCT_RESUME_UI_FAILED type=${error.javaClass.simpleName}")
+            }
+        }
+        main.post {
+            if (vehicleOff || settings.interruptedProjection != component || busy || ProjectionService.active()) {
+                log("PRODUCT_RESUME_CANCELLED reason=$reason state_changed=true"); return@post
+            }
+            log("PRODUCT_RESUME_START reason=$reason component=${IndependentAppPlan.safe(component)}")
+            message = "已恢复熄火前的投屏。"
+            startApp(selected)
+        }
     }
 
     /** Instead of asking for a restart of the instrument and the app: end the leftover capture helper when it
@@ -211,8 +337,10 @@ internal class ProductController private constructor(context: Context) {
      * plugged in, after the instrument disappears); U-disk mode stops casting and gives the port back. */
     fun setProjectionMode(on: Boolean) {
         settings.instrumentConnection = on
+        if (!on) { settings.interruptedProjection = null }
         linkFailure = null
         log("PRODUCT_MODE_SELECTED projection=$on")
+        updatePowerWatch()
         if (on) { ensureLink("switch") } else { main.removeCallbacks(reattachCheck); switchRole(InstrumentUsbCommand.HOST) }
     }
 
@@ -226,7 +354,7 @@ internal class ProductController private constructor(context: Context) {
      * ready and the instrument already has USB access, so a later start skips both. Never queues behind,
      * or reports over, another operation. */
     private fun ensureLink(reason: String) {
-        if (!settings.instrumentConnection || ProjectionService.active() || busy) { return }
+        if (!settings.instrumentConnection || ProjectionService.active() || busy || vehicleOff) { return }
         log("PRODUCT_LINK_ENSURE reason=$reason")
         if (connectionState().observed) {
             operation("正在准备仪表连接。", ProductOperation.CONNECT) {
@@ -250,7 +378,8 @@ internal class ProductController private constructor(context: Context) {
     /** The instrument left while in projection mode and did not come back (it may have restarted in U-disk
      * mode): ask once more. Only one such request per detach, so the instrument is not spammed. */
     private val reattachCheck = Runnable {
-        if (settings.instrumentConnection && !ProjectionService.active() && !connectionState().observed) {
+        if (settings.instrumentConnection && !vehicleOff && !ProjectionService.active() &&
+            !connectionState().observed) {
             ensureLink("reattach_timeout")
         }
     }
@@ -285,6 +414,7 @@ internal class ProductController private constructor(context: Context) {
             return
         }
         if (!target.isNamed) { ExternalDisplayAccess.suppressCurrent() }
+        settings.interruptedProjection = null
         val request = StartRequest(target, settings.options(), settings.underlay, startGeneration.incrementAndGet())
         requestedTarget = target
         if (showWorkspace) { MirrorWorkspace.begin(app, target, request.generation) }
@@ -345,6 +475,7 @@ internal class ProductController private constructor(context: Context) {
         if (request.generation != startGeneration.get()) { return }
         // Casting needs projection mode; the switch shows it, so turning it off still gives the U-disk back.
         settings.instrumentConnection = true
+        updatePowerWatch()
         val result = transition(InstrumentUsbCommand.NCM)
         if (request.generation != startGeneration.get()) { return }
         log("PRODUCT_START_ROLE=$result")
@@ -375,14 +506,21 @@ internal class ProductController private constructor(context: Context) {
     }
 
     fun stop() {
+        settings.interruptedProjection = null
+        val wasActive = endSession()
+        message = if (wasActive) "正在停止投屏并恢复仪表画面。" else "已取消启动，可以重新选择应用。"
+        log("PRODUCT_USER_STOP")
+    }
+
+    /** Ends the session or the pending start; true when a session was running. */
+    private fun endSession(): Boolean {
         MirrorWorkspace.stopping()
         ExternalDisplayAccess.suppressCurrent(captureOnly = true)
         startGeneration.incrementAndGet()
         usbPermission.clear()
         val wasActive = ProjectionService.active()
         ProjectionService.requestStop(app)
-        message = if (wasActive) "正在停止投屏并恢复仪表画面。" else "已取消启动，可以重新选择应用。"
-        log("PRODUCT_USER_STOP")
+        return wasActive
     }
 
     fun changingTarget() {
@@ -399,13 +537,13 @@ internal class ProductController private constructor(context: Context) {
     }
 
     /** NCM only from projection mode (see [ensureLink]); Host when the user selects U-disk mode. */
-    private fun switchRole(command: InstrumentUsbCommand) {
+    private fun switchRole(command: InstrumentUsbCommand): Boolean {
         if (command == InstrumentUsbCommand.HOST) {
             ExternalDisplayAccess.suppressCurrent()
             startGeneration.incrementAndGet()
             usbPermission.clear()
         }
-        operation(if (command == InstrumentUsbCommand.HOST) "正在停止投屏并恢复 U盘使用。" else "正在连接仪表，请稍候。",
+        return operation(if (command == InstrumentUsbCommand.HOST) "正在停止投屏并恢复 U盘使用。" else "正在连接仪表，请稍候。",
             ProductOperation.MODE) {
             if (command == InstrumentUsbCommand.NCM && !ProjectionService.active() &&
                 ProjectionService.state() == ProjectionSessionController.State.DISCONNECTED && observe().allNcm == 0) {
@@ -479,6 +617,7 @@ internal class ProductController private constructor(context: Context) {
     }
 
     fun diagnosticText(): String = "Dashcast ${BuildConfig.VERSION_NAME}\nADB=${adbReady}\n${usbSummary()}\n" +
+        "VEHICLE_POWER watch=${power.running} ${power.last?.describe() ?: "unknown"} off=$vehicleOff\n" +
         ExternalDisplayAccess.diagnosticText() +
         ProjectionService.status() + "\n\n" + history.coordinatorSnapshot() + "\n" + ProjectionService.journal() +
         "\n" + RecoveryIncidentStore.snapshot(app)
@@ -529,6 +668,7 @@ internal class ProductController private constructor(context: Context) {
         adbReady = true
         message = "车机已连接，可以开始投屏。"
         log("PRODUCT_ADB_READY uid=$uid")
+        updatePowerWatch()
     }
 
     private fun relay(identity: AdbRsaIdentity = AndroidAdbIdentity.load()): InstrumentUsbController =

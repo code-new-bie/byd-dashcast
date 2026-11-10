@@ -445,7 +445,22 @@ class ProductActivity : Activity() {
                 }
             }.also { line.addView(it, LinearLayout.LayoutParams(dp(76), dp(52)).apply { marginStart = dp(16) }) }
             addView(line)
-            addView(text("开机后自动恢复上次开着的“投屏模式”和“应用内投屏接入”，不打开界面，也不自动开始投屏。", 16))
+            addView(text("车辆上电后自动恢复上次开着的“投屏模式”和“应用内投屏接入”，不打开界面。", 16))
+            val resume = row().apply { gravity = Gravity.CENTER_VERTICAL }
+            resume.addView(text("上电后恢复上次投屏", 19, true), LinearLayout.LayoutParams(0, -2, 1f))
+            makeSwitch(settings.resumeAfterPowerOn).apply {
+                id = R.id.product_resume_after_power_on
+                textOn = ""; textOff = ""; showText = false
+                contentDescription = "上电后恢复上次投屏开关"
+                trackDrawable?.setTint(if (isChecked) accent else border)
+                setOnCheckedChangeListener { _, checked ->
+                    settings.resumeAfterPowerOn = checked
+                    trackDrawable?.setTint(if (checked) accent else border)
+                }
+            }.also { resume.addView(it, LinearLayout.LayoutParams(dp(76), dp(52)).apply { marginStart = dp(16) }) }
+            addView(resume)
+            addView(text("需要同时打开“开机启动”。熄火时正在投的应用，上电连上仪表后自动重新开始；需要操作窗口的应用会打开投屏页。", 15))
+            addView(text("熄火后会自动停止投屏，仪表马上恢复原厂画面；没开“开机启动”时，还会把仪表切回U盘模式。此功能需要已授权车机调试。", 15))
             addView(text("车机默认禁止第三方应用自启动，需要在原车的自启动管理中允许本应用。", 15))
             addView(button("前往自启动管理") {
                 if (!BootStart.openVendorSettings(this@ProductActivity)) {

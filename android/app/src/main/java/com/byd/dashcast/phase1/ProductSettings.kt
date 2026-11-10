@@ -1,5 +1,6 @@
 package com.byd.dashcast.phase1
 
+import android.annotation.SuppressLint
 import android.content.Context
 
 /** App-private product preferences; never copies or replaces the existing ADB identity.
@@ -29,6 +30,15 @@ internal class ProductSettings(context: Context) {
     var bootStart: Boolean
         get() = preferences.getBoolean("boot_start", false)
         set(value) { preferences.edit().putBoolean("boot_start", value).apply() }
+    /** With [bootStart]: after power-on, start again the app that was projecting when the car was switched off. */
+    var resumeAfterPowerOn: Boolean
+        get() = preferences.getBoolean("resume_after_power_on", false)
+        set(value) { preferences.edit().putBoolean("resume_after_power_on", value).apply() }
+    /** The app (launcher component) a switch-off interrupted; written with commit(), the process dies seconds later. */
+    var interruptedProjection: String?
+        get() = preferences.getString("interrupted_projection", null)
+        @SuppressLint("ApplySharedPref") // must be on disk before the head unit kills the process
+        set(value) { if (interruptedProjection != value) { preferences.edit().putString("interrupted_projection", value).commit() } }
     var underlay: Boolean
         get() = preferences.getBoolean("underlay", true)
         set(value) { preferences.edit().putBoolean("underlay", value).apply() }

@@ -19,4 +19,5 @@
     <item name="product_export_logs" type="id" />
     <item name="product_boot_start" type="id" />
     <item name="product_boot_permission" type="id" />
+    <item name="product_resume_after_power_on" type="id" />
 </resources>
