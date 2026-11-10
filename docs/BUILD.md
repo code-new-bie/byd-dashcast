@@ -6,7 +6,7 @@
 
 ## 一、基础固件包
 
-基础包是维护者为 2021 款宋 Plus DM-i 整理的仪表升级包，文件名 `release_完美复刻四驱仪表_使用原厂mcu.zip`：app.sv 是整理过界面图片和字体的仪表应用，os.sv 是原厂系统，mcu.sv 是原车出厂的 MCU，原样未改。它的六个文件按 SHA256 固定在 `tools/base_firmware.py` 里；ZIP 本身可以重新压缩，文件放在根目录或 `release/` 下都可以：
+基础包是维护者为 2021 款宋 Plus DM-i 整理的仪表升级包，文件名 `release_完美复刻四驱仪表_使用原厂mcu.zip`：app.sv 是整理过界面图片和字体的仪表应用，os.sv 是原厂系统，mcu.sv 是原车出厂的 MCU，原样未改。维护者把它存放在自己的私有仓库里，不随本仓库公开。它的六个文件按 SHA256 固定在 `tools/base_firmware.py` 里；ZIP 本身可以重新压缩，文件放在根目录或 `release/` 下都可以：
 
 | 文件 | SHA256 |
 |---|---|

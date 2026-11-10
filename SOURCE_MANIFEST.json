@@ -2286,8 +2286,8 @@
     },
     {
       "path": "docs/BUILD.md",
-      "bytes": 8674,
-      "sha256": "10f43785e4a92ec93f324834ea5fd1899ab64345e383b57817cfecbe34676172",
+      "bytes": 8749,
+      "sha256": "5a2aef8ed3f5cdc04a074f8b9a9100cad2d2e34f6837fd212913efd1c3da447b",
       "origin": "publication/template/docs/BUILD.md",
       "transformations": []
     },
