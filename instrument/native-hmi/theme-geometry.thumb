@@ -1,0 +1,290 @@
+// Called on the existing render thread, inside the background snapshot seqlock.
+// r0=Screen (borrowed for this frame), r1=DCLayout. Returns actual geometry match.
+// No retained node pointers; only the private local integer is written.
+gauge_entry:
+push {r4, r5, r6, lr}
+bl #NAV_TICK
+ldr r0, [r4, #88]
+cmp r0, #0
+beq gauge_entry_done
+ldr r6, [r4]
+cmp r6, #0
+beq gauge_entry_done
+ldr r0, [r6, #116]
+bic r0, r0, #3
+movw r1, #0x4300
+movt r1, #0x4e4c
+cmp r0, r1
+bne gauge_entry_done
+mov r0, r5
+ldr r1, [r4, #36]
+ldr r2, [r4, #104]
+adds r2, #1
+muls r1, r2, r1
+bl gauge_tick
+cmp r0, #0
+bne gauge_entry_done
+movw r0, #0x4302
+movt r0, #0x4e4c
+str r0, [r6, #116]
+gauge_entry_done:
+pop {r4, r5, r6, pc}
+
+gauge_tick:
+push.w {r4, r5, r6, r7, r8, r9, r10, lr}
+sub sp, #24
+mov r4, r0
+mov r5, r1
+movs r6, #1
+adr r1, gauge_root_name
+movs r2, #8
+bl #BG_FIND
+cmp r0, #0
+beq gauge_tree_absent
+adr r1, gauge_content_name
+movs r2, #7
+bl #BG_FIND
+cmp r0, #0
+beq gauge_tree_absent
+adr r1, gauge_cluster_name
+movs r2, #7
+bl #BG_FIND
+cmp r0, #0
+beq gauge_tree_absent
+adr r1, gauge_prefab_content_name
+movs r2, #7
+bl #BG_FIND
+cmp r0, #0
+beq gauge_tree_absent
+adr r1, gauge_prefab_name
+movs r2, #26
+bl #BG_FIND
+cmp r0, #0
+beq gauge_tree_absent
+adr r1, gauge_prefab_content_name
+movs r2, #7
+bl #BG_FIND
+cmp r0, #0
+beq gauge_tree_absent
+mov r4, r0
+adr r0, gauge_state_name
+movs r1, #5
+bl #0x083edafc
+str r0, [sp]
+cmp r0, #0
+beq gauge_fail
+ldr r3, [r0]
+ldr r3, [r3, #8]
+blx r3
+cmp r0, #1
+bne gauge_fail
+adr r0, gauge_key_name
+movs r1, #13
+bl #0x083edafc
+str r0, [sp, #4]
+cmp r0, #0
+beq gauge_fail
+ldr r3, [r0]
+ldr r3, [r3, #8]
+blx r3
+cmp r0, #1
+bne gauge_fail
+movs r7, #0
+gauge_owner_loop:
+adr r8, gauge_owners
+add.w r8, r8, r7, lsl #4
+mov r0, r4
+ldr r1, [r8]
+ldr r2, [r8, #4]
+bl #BG_FIND
+mov r9, r0
+cmp r0, #0
+beq gauge_missing
+mov r1, sp
+bl #0x084001ac
+cmp r5, #1
+ite eq
+moveq r10, #100
+movne r10, r0
+cmp r10, #100
+beq gauge_key_valid
+cmp r10, #0
+beq gauge_key_valid
+cmp r10, #1
+beq gauge_key_valid
+cmp r10, #9
+bne gauge_fail
+gauge_key_valid:
+add r0, r9, #4
+add r1, sp, #4
+mov r2, r10
+bl #0x0814c210
+cmp r10, #0
+beq gauge_next
+// Native Fashion/Classic retain their original geometry animations. Their
+// intermediate positions are intentional; only Full has fixed geometry.
+cmp r5, #1
+bne gauge_next
+ldr r1, [r8, #8]
+cmp r10, #9
+it eq
+addeq r1, #44
+cmp r10, #100
+it eq
+addeq r1, #88
+mov r0, r9
+mov r2, r7
+bl gauge_side
+ands r6, r0
+b gauge_next
+gauge_missing:
+cmp r5, #0
+it ne
+movne r6, #0
+gauge_next:
+adds r7, #1
+cmp r7, #2
+bne gauge_owner_loop
+mov r0, r6
+b gauge_done
+gauge_tree_absent:
+cmp r5, #0
+ite eq
+moveq r0, #1
+movne r0, #0
+b gauge_done
+gauge_fail:
+movs r0, #0
+gauge_done:
+add sp, #24
+pop.w {r4, r5, r6, r7, r8, r9, r10, pc}
+
+// r0=owner, r1=two SRT2D values plus alignment, r2=0 Power/1 Speed.
+gauge_side:
+push.w {r4, r5, r6, r7, r8, r9, r10, lr}
+sub sp, #8
+mov r4, r0
+mov r5, r1
+mov r9, r2
+// BG_FIND accepts a direct child only; digits and units belong to *Show.
+cmp r2, #0
+ite eq
+adreq r1, gauge_power_show
+adrne r1, gauge_speed_show
+movs r2, #9
+bl #BG_FIND
+cmp r0, #0
+beq gauge_side_fail
+mov r10, r0
+adr r6, gauge_leaf_names
+add.w r6, r6, r9, lsl #4
+movs r7, #0
+gauge_leaf_loop:
+mov r0, r10
+ldr r1, [r6]
+ldr r2, [r6, #4]
+bl #BG_FIND
+cmp r0, #0
+beq gauge_side_fail
+// Keep the Show parent in r10 for the unit lookup as well.
+str r0, [sp]
+cmp r7, #0
+it eq
+moveq r8, r0
+// Prove exact direct ancestry before using the matched leaf.
+bl #0x081c7fec
+cmp r0, #0
+beq gauge_side_fail
+bl #0x081c7fec
+cmp r0, r4
+bne gauge_side_fail
+ldr r0, [sp]
+add r0, #4
+ldr r1, gauge_transform_property
+ldr r1, [r1]
+cmp r1, #0
+beq gauge_side_fail
+bl #0x083eefe4
+cmp r0, #0
+beq gauge_side_fail
+mov r1, r5
+bl gauge_srt_matches
+cmp r0, #0
+beq gauge_side_fail
+adds r5, #20
+adds r6, #8
+adds r7, #1
+cmp r7, #2
+bne gauge_leaf_loop
+cmp r9, #0
+beq gauge_side_ok
+mov r0, r8
+ldr r1, gauge_alignment_property
+bl #0x084001ac
+ldr r1, [r5]
+cmp r0, r1
+bne gauge_side_fail
+gauge_side_ok:
+movs r0, #1
+b gauge_side_done
+gauge_side_fail:
+movs r0, #0
+gauge_side_done:
+add sp, #8
+pop.w {r4, r5, r6, r7, r8, r9, r10, pc}
+
+// Borrowed effective SRT storage is five floats (constructor + equality ABI checked).
+// Exact state constants can differ by at most eight ULP; reject NaN/Inf.
+gauge_srt_matches:
+push {r4, r5, r6, lr}
+movs r4, #5
+gauge_float_loop:
+ldr r2, [r0], #4
+ldr r3, [r1], #4
+bic r5, r2, #0x80000000
+movw r6, #0
+movt r6, #0x7f80
+cmp r5, r6
+bhs gauge_float_fail
+bic r6, r3, #0x80000000
+orrs r5, r6
+beq gauge_float_next
+subs r2, r3
+it mi
+rsbmi r2, r2, #0
+cmp r2, #8
+bhi gauge_float_fail
+gauge_float_next:
+subs r4, #1
+bne gauge_float_loop
+movs r0, #1
+pop {r4, r5, r6, pc}
+gauge_float_fail:
+movs r0, #0
+pop {r4, r5, r6, pc}
+.balign 4
+gauge_transform_property: .word 0x086cf6bc
+gauge_alignment_property: .word 0x086cf63c
+gauge_owners:
+.word gauge_power, 5, gauge_power_values, 0
+.word gauge_speed, 5, gauge_speed_values, 0
+gauge_leaf_names:
+.word gauge_power_digits, 13, gauge_power_unit, 10
+.word gauge_speed_digits, 13, gauge_speed_unit, 11
+gauge_state_name: .asciz "state"
+gauge_key_name: .asciz "DCGaugeLayout"
+gauge_power: .asciz "Power"
+gauge_speed: .asciz "Speed"
+gauge_power_digits: .asciz "PowerShowText"
+gauge_power_unit: .asciz "Power_Unit"
+gauge_speed_digits: .asciz "SpeedShowText"
+gauge_speed_unit: .asciz "Km_Per_Hour"
+gauge_root_name: .asciz "RootPage"
+gauge_content_name: .asciz "Content"
+gauge_cluster_name: .asciz "Cluster"
+gauge_prefab_content_name: .asciz "content"
+gauge_prefab_name: .asciz "Prefab_Cluster_Power_Speed"
+gauge_power_show: .asciz "PowerShow"
+gauge_speed_show: .asciz "SpeedShow"
+.balign 4
+// GAUGE_VALUES

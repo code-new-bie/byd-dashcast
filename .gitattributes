@@ -1,0 +1,8 @@
+* text=auto eol=lf
+*.java text eol=lf
+*.py text eol=lf
+*.ksh text eol=lf
+*.sh text eol=lf
+*.arm text eol=lf
+*.bat text eol=crlf
+*.jar binary

@@ -1,0 +1,46 @@
+package com.byd.dashcast.phase1
+
+import android.os.IBinder
+import android.os.Parcel
+import java.io.IOException
+
+/** Private, per-process Binder rendezvous; the only public contract is the display name. */
+internal object ExternalDisplayWire {
+    const val DESCRIPTOR = "com.byd.dashcast.ExternalDisplay.v1"
+    const val REGISTER = 1
+    const val SNAPSHOT = 2
+    const val ATTACH = 3
+    const val DETACH = 4
+    const val RELEASE = 5
+    const val CAPTURE_READY = 6
+    const val CAPTURE_STATUS = 7
+    const val CAPTURE_DETACH = 8
+    const val SET_MODE = 9
+    const val WIDTH = 1912
+    const val HEIGHT = 498
+    const val DENSITY = 160
+
+    /** Standby display size per instrument mode: the full opening, or the source the native small-window
+     * path uses, each including the RWVG fade-in band. Apps lay out for this size when they open on the display. */
+    @JvmStatic fun width(center: Boolean): Int = if (center) CENTER_WIDTH else WIDTH
+    @JvmStatic fun height(center: Boolean): Int = if (center) CENTER_HEIGHT else HEIGHT
+    const val CENTER_WIDTH = 1870
+    const val CENTER_HEIGHT = 810
+
+    fun <T> call(endpoint: IBinder, ticket: String, code: Int,
+            write: (Parcel) -> Unit = {}, read: (Parcel) -> T): T {
+        val request = Parcel.obtain()
+        val reply = Parcel.obtain()
+        try {
+            request.writeInterfaceToken(DESCRIPTOR)
+            request.writeString(ticket)
+            write(request)
+            if (!endpoint.transact(code, request, reply, 0)) { throw IOException("EXTERNAL_ENDPOINT_REJECTED") }
+            reply.readException()
+            return read(reply)
+        } finally { request.recycle(); reply.recycle() }
+    }
+
+    fun command(endpoint: IBinder, ticket: String, code: Int, write: (Parcel) -> Unit = {}) =
+        call(endpoint, ticket, code, write) { Unit }
+}

@@ -1,0 +1,14 @@
+.gradle-local/
+.gradle/
+.kotlin/
+.gradle-user-home/
+.android-sdk/
+.downloads/
+.extract-build/
+.extract-platform/
+.extract-build36/
+.tmp-test/
+.prefs/
+build/
+app/build/
+local.properties

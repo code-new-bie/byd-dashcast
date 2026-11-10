@@ -1,0 +1,140 @@
+// 1.2.0: same bounded render-thread controller, explicit full/center layout.
+// Short owned names leave room in the same inspected ELF zero-padding cave.
+nav_tick:
+push.w {r4, r5, r6, r7, r8, lr}
+sub sp, #24
+ldr r4, bg_state_address
+mov r0, r5
+adr r1, bg_root_name
+movs r2, #8
+bl bg_find
+cmp r0, #0
+beq nav_fail
+adr r1, bg_content_name
+movs r2, #7
+bl bg_find
+mov r5, r0
+cmp r5, #0
+beq nav_fail
+ldr r7, [r4, #96]
+cmp r7, #0
+bne nav_descriptor_ready
+adr r0, nav_property_name
+movs r1, #8
+bl #0x083edafc
+mov r7, r0
+cmp r7, #0
+beq nav_fail
+ldr r3, [r7]
+ldr r3, [r3, #8]
+blx r3
+cmp r0, #1
+bne nav_fail
+str r7, [r4, #96]
+nav_descriptor_ready:
+ldr r6, [r4, #36]
+ldr r0, [r4, #104]
+adds r0, #1
+muls r6, r0, r6
+movs r8, #1
+mov r0, r5
+adr r1, nav_top_name
+movs r2, #5
+bl bg_find
+str r0, [sp, #8]
+cmp r0, #0
+beq nav_layout_absent
+mov r0, r5
+adr r1, nav_bottom_name
+movs r2, #8
+bl bg_find
+str r0, [sp, #12]
+cmp r0, #0
+bne nav_check_cached
+nav_layout_absent:
+movs r6, #0
+movs r8, #0
+nav_check_cached:
+ldr r0, [r4, #92]
+cmp r0, r5
+bne nav_set
+ldr r0, [r4, #100]
+cmp r0, r6
+beq nav_publish
+nav_set:
+str r7, [sp]
+add r0, r5, #4
+mov r1, sp
+mov r2, r6
+bl #0x0814c210
+str r5, [r4, #92]
+str r6, [r4, #100]
+nav_publish:
+cmp r8, #0
+beq nav_fail
+ldr r0, [sp, #8]
+bl nav_band_matches
+cmp r0, #0
+beq nav_wait
+ldr r0, [sp, #12]
+bl nav_band_matches
+cmp r0, #0
+beq nav_wait
+movw r0, #0x4300
+movt r0, #0x4e4c
+cmp r6, #0
+it ne
+orrne r0, r0, #1
+b nav_status
+nav_wait:
+movw r0, #0x4302
+movt r0, #0x4e4c
+b nav_status
+nav_fail:
+mov.w r0, #-1
+nav_status:
+ldr r1, [r4, #88]
+cmp r1, #0
+beq nav_done
+ldr r1, [r4]
+str r0, [r1, #116]
+nav_done:
+add sp, #24
+pop.w {r4, r5, r6, r7, r8, pc}
+
+nav_band_matches:
+push {r4, lr}
+sub sp, #8
+add r1, r0, #4
+mov r0, sp
+ldr r2, nav_opacity_property
+ldr r2, [r2]
+bl #0x082b66c8
+ldrb r0, [sp]
+cmp r0, #0
+beq nav_band_done
+ldr r0, [sp, #4]
+movw r1, #0
+movt r1, #0x3f80
+cmp r6, #0
+it eq
+moveq r1, #0
+cmp r0, r1
+ite eq
+moveq r0, #1
+movne r0, #0
+nav_band_done:
+add sp, #8
+pop {r4, pc}
+.balign 4
+nav_opacity_property:
+.word 0x086cf620
+nav_property_name:
+.asciz "DCLayout"
+.balign 4
+nav_top_name:
+.asciz "DCTop"
+.balign 4
+nav_bottom_name:
+.asciz "DCBottom"
+.balign 4

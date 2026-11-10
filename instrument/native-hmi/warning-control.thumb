@@ -1,0 +1,111 @@
+// Runs right after the original nav_tick, on the same render-thread entry.
+// r4=background state, r5=Screen; nav_tick keeps both. The indicator state group
+// reads its control through the local-only optional getter, so the value must be
+// written on the current instance's content node; a parent value is never seen.
+// No node pointer survives the frame, so a style change simply finds the new instance.
+warning_entry:
+push {r3, lr}
+bl #NAV_TICK
+// +36 is non-zero while projecting and +104 is the profile: 0 full screen, 1 small window.
+// Only full screen moves the indicators; the small window keeps the OEM positions.
+mov r0, r5
+ldr r1, [r4, #36]
+ldr r2, [r4, #104]
+cmp r2, #0
+it ne
+movne r1, #0
+bl warning_tick
+pop {r3, pc}
+
+// r0=Screen, r1=non-zero while the indicators should use the projection positions.
+warning_tick:
+push.w {r4, r5, r6, r7, r8, lr}
+sub sp, #8
+mov r5, r1
+cmp r5, #0
+it ne
+movne r5, #1
+adr r1, warning_root_name
+movs r2, #8
+bl #BG_FIND
+cmp r0, #0
+beq warning_done
+adr r1, warning_content_name
+movs r2, #7
+bl #BG_FIND
+cmp r0, #0
+beq warning_done
+adr r1, warning_indicator_name
+movs r2, #9
+bl #BG_FIND
+cmp r0, #0
+beq warning_done
+adr r1, warning_view_name
+movs r2, #14
+bl #BG_FIND
+cmp r0, #0
+beq warning_done
+mov r4, r0
+adr r0, warning_key_name
+movs r1, #15
+bl #0x083edafc
+str r0, [sp]
+cmp r0, #0
+beq warning_done
+ldr r3, [r0]
+ldr r3, [r3, #8]
+blx r3
+cmp r0, #1
+bne warning_done
+// PrefabView inserts its instance as a child named after the template; the three
+// styles differ only in that name, so walk the children instead of naming them.
+mov r0, r4
+bl #0x081d0410
+mov r6, r0
+mov r0, r4
+bl #0x081d0418
+mov r7, r0
+subs r0, r7, r6
+tst r0, #7
+bne warning_done
+cmp.w r0, #2048
+bhi warning_done
+warning_child_loop:
+cmp r6, r7
+beq warning_done
+ldr r0, [r6]
+cmp r0, #0
+beq warning_child_next
+adr r1, warning_prefab_content_name
+movs r2, #7
+bl #BG_FIND
+cmp r0, #0
+beq warning_child_next
+mov r8, r0
+mov r1, sp
+bl #0x084001ac
+cmp r0, r5
+beq warning_child_next
+add r0, r8, #4
+mov r1, sp
+mov r2, r5
+bl #0x0814c210
+warning_child_next:
+adds r6, #8
+b warning_child_loop
+warning_done:
+add sp, #8
+pop.w {r4, r5, r6, r7, r8, pc}
+.balign 4
+warning_root_name: .asciz "RootPage"
+.balign 4
+warning_content_name: .asciz "Content"
+.balign 4
+warning_indicator_name: .asciz "Indicator"
+.balign 4
+warning_view_name: .asciz "Prefab View 2D"
+.balign 4
+warning_prefab_content_name: .asciz "content"
+.balign 4
+warning_key_name: .asciz "DCWarningLayout"
+.balign 4

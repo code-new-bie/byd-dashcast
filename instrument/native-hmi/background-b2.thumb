@@ -1,0 +1,6 @@
+// B2: existing private mode 5, immediately after movs r0, #0.
+// glBlendFuncSeparate(ZERO, SRC_COLOR, ZERO, SRC_ALPHA).
+// Keep the original eight-byte slot and all following control flow.
+movw r1, #0x300
+movs r2, #0
+adds r3, r1, #2

@@ -1,0 +1,525 @@
+// Exact 0.8.2 HMI only. Thumb bridge, NOT a QNX SDK build.
+// Entry table: getter / clear-color call / Node2D::render / background brush.
+// Only current-frame, validated RootPage and BG_New pointers are compared.
+// No persistent theme/property, foreground, vehicle data or global alpha edits.
+b.w bg_getter
+b.w bg_clear
+b.w bg_render
+b.w bg_brush
+
+bg_getter:
+push {r0, r1, r2, r3, r12, lr}
+bl bg_tick
+pop.w {r0, r1, r2, r3, r12, lr}
+b.w #0x08138af4
+
+bg_clear:
+push {r4, lr}
+sub sp, #8
+ldr r4, [sp, #16]
+ldr r12, bg_state_address
+ldr.w r12, [r12, #36]
+cmp r12, #0
+it ne
+movne r4, #0
+str r4, [sp]
+bl #0x0831308c
+add sp, #8
+pop {r4, pc}
+
+bg_render:
+push {r3, r4}
+ldr r3, bg_state_address
+ldr r4, [r3, #36]
+cbz r4, bg_render_original
+ldr r4, [r3, #16]
+cmp r4, r0
+bne bg_render_original
+ldr r3, [r3]
+ldr r4, [r3, #64]
+adds r4, #1
+str r4, [r3, #64]
+pop {r3, r4}
+bx lr
+bg_render_original:
+pop {r3, r4}
+push {r3, lr}
+ldr r3, [r0]
+b.w #0x081d09f0
+
+bg_brush:
+push {r3, r4}
+ldr r3, bg_state_address
+ldr r4, [r3, #36]
+cbz r4, bg_brush_original
+ldr r4, [r3, #12]
+cmp r4, r0
+bne bg_brush_original
+ldr r3, [r3]
+ldr r4, [r3, #68]
+adds r4, #1
+str r4, [r3, #68]
+pop {r3, r4}
+bx lr
+bg_brush_original:
+pop {r3, r4}
+ldr r2, bg_original_literal
+push {r4, r5, r6, lr}
+b.w #0x081d09fc
+
+// r0 borrowed Screen, only on the original render thread.
+bg_tick:
+push.w {r4, r5, r6, r7, r8, r9, r10, r11, lr}
+sub sp, #28
+mov r5, r0
+ldr r4, bg_state_address
+movs r0, #0
+str r0, [r4, #12]
+str r0, [r4, #16]
+str r0, [r4, #36]
+str r0, [r4, #88]
+mov r0, r5
+adr r1, bg_root_name
+movs r2, #8
+bl bg_find
+cmp r0, #0
+beq.w bg_done
+mov r9, r0
+adr r1, bg_content_name
+movs r2, #7
+bl bg_find
+cmp r0, #0
+beq.w bg_done
+adr r1, bg_background_name
+movs r2, #6
+bl bg_find
+cmp r0, #0
+beq.w bg_done
+mov r10, r0
+bl #0x081d0410
+mov r11, r0
+mov r0, r10
+bl #0x081d0418
+sub.w r0, r0, r11
+cmp r0, #16
+bne.w bg_done
+ldr.w r0, [r11]
+adr r1, bg_image_name
+movs r2, #2
+bl bg_leaf_named
+cbz r0, bg_done_near
+ldr.w r0, [r11, #8]
+adr r1, bg_sky_name
+movs r2, #3
+bl bg_leaf_named
+cbz r0, bg_done_near
+str.w r9, [r4, #12]
+str.w r10, [r4, #16]
+movs r0, #2
+add r1, sp, #16
+blx #0x080d78e4
+cmp r0, #0
+bne.w bg_clock_failed
+ldr r8, [sp, #16]
+ldr r7, [sp, #20]
+ldr r0, bg_billion
+cmp r7, r0
+bhs.w bg_clock_failed
+ldr r6, [r4]
+cmp r6, #0
+bne bg_mapped
+ldr r0, [r4, #4]
+cmp r8, r0
+blo bg_done_near
+add.w r0, r8, #1
+str r0, [r4, #4]
+adr r0, bg_path
+movs r1, #2
+blx #0x080d7a50
+cmp r0, #0
+blt bg_done_near
+mov r11, r0
+movs r1, #0
+movs r2, #2
+blx #0x080d6dc0
+cmp.w r0, #4096
+bne bg_map_close
+str.w r11, [sp]
+movs r0, #0
+str r0, [sp, #4]
+mov.w r1, #4096
+mov.w r2, #0x300
+movs r3, #1
+blx #0x080d701c
+cmn r0, #1
+it ne
+movne r6, r0
+bg_map_close:
+mov r0, r11
+blx #0x080d7c28
+cmp r0, #0
+bne.w bg_map_close_failed
+cmp r6, #0
+beq bg_done_near
+ldr r0, [r6]
+cmp r0, #0
+beq bg_map_header_ok
+ldr r1, bg_magic
+cmp r0, r1
+bne bg_map_close_failed
+ldr r0, [r6, #4]
+cmp r0, #1
+bne bg_map_close_failed
+ldr r0, [r6, #8]
+cmp r0, #128
+bne bg_map_close_failed
+bg_map_header_ok:
+str r6, [r4]
+bl bg_begin_update
+blx #0x080d6e78
+str r0, [r4, #40]
+str r0, [r6, #40]
+ldr r0, [r6, #12]
+str r0, [r4, #20]
+str r0, [r6, #32]
+movs r0, #1
+str r0, [r6, #4]
+movs r0, #128
+str r0, [r6, #8]
+ldr r0, bg_magic
+str r0, [r6]
+ldr r0, [r6, #72]
+adds r0, #1
+it eq
+moveq r0, #1
+str r0, [r6, #72]
+movs r0, #0
+str r0, [r4, #32]
+str r0, [r6, #36]
+str r0, [r6, #44]
+b bg_mapped
+bg_done_near:
+b.w bg_done
+
+bg_mapped:
+ldr r0, [r6, #40]
+ldr r1, [r4, #40]
+cmp r0, r1
+bne bg_foreign_owner
+bl bg_begin_update
+ldr r0, [r4, #8]
+cmp r0, r5
+bne bg_scene_changed
+ldr r0, [r4, #80]
+cmp r0, r9
+bne bg_scene_changed
+ldr r0, [r4, #84]
+cmp r0, r10
+beq bg_scene_ok
+bg_scene_changed:
+str r5, [r4, #8]
+str.w r9, [r4, #80]
+str.w r10, [r4, #84]
+movs r0, #0
+str r0, [r4, #32]
+ldr r0, [r6, #12]
+str r0, [r4, #20]
+str r0, [r6, #32]
+ldr r0, [r6, #72]
+adds r0, #1
+it eq
+moveq r0, #1
+str r0, [r6, #72]
+movs r0, #0
+str r0, [r6, #36]
+bg_scene_ok:
+// Product capability is published under the existing HMI snapshot seqlock.
+movw r0, #0
+str r0, [r6, #120]
+movw r0, #0x4e32
+movt r0, #0x5257
+str r0, [r6, #124]
+str.w r8, [r6, #48]
+str r7, [r6, #52]
+ldr r0, [r4, #56]
+cmp r8, r0
+blo bg_clock_failed
+bne bg_clock_forward
+ldr r0, [r4, #60]
+cmp r7, r0
+blo bg_clock_failed
+bg_clock_forward:
+str.w r8, [r4, #56]
+str r7, [r4, #60]
+ldr r0, [r4, #32]
+cbz r0, bg_request
+ldr r0, [r4, #24]
+cmp r8, r0
+blo bg_request
+bhi bg_expire
+ldr r0, [r4, #28]
+cmp r7, r0
+blo bg_request
+bg_expire:
+movs r0, #0
+str r0, [r4, #32]
+movs r0, #2
+str r0, [r6, #36]
+movs r0, #3
+str r0, [r4, #68]
+ldr r0, [r6, #96]
+str r0, [r6, #100]
+bg_request:
+ldr r11, [r6, #12]
+tst.w r11, #1
+bne.w bg_apply
+ldr r0, [r4, #20]
+cmp r0, r11
+beq.w bg_apply
+ldr r0, [r6, #16]
+cmp r0, #2
+bhi bg_bad_request
+ldr r1, [r6, #20]
+ldr r2, [r4, #40]
+cmp r1, r2
+bne bg_bad_request
+ldr r1, [r6, #76]
+ldr r2, [r6, #72]
+cmp r1, r2
+bne bg_bad_request
+ldr r1, [r6, #24]
+subs.w r1, r8, r1
+cmp r1, #1
+bhi bg_bad_request
+mov r2, r7
+cmp r1, #0
+it ne
+ldrne r1, bg_billion
+it ne
+addne r2, r2, r1
+ldr r1, [r6, #28]
+ldr r3, bg_billion
+cmp r1, r3
+bhs bg_bad_request
+subs r2, r2, r1
+ldr r1, bg_half_billion
+cmp r2, r1
+bhi bg_bad_request
+ldr r1, [r6, #80]
+cbz r1, bg_bad_request
+ldr r2, [r4, #32]
+cmp r0, #2
+bne bg_initial_request
+cmp r2, #1
+bne bg_bad_request
+ldr r2, [r4, #64]
+cmp r1, r2
+bne bg_bad_request
+b bg_commit
+bg_initial_request:
+cmp r2, #0
+beq bg_commit
+cmp r0, #1
+beq bg_busy_request
+ldr r2, [r4, #64]
+cmp r1, r2
+bne bg_bad_request
+bg_commit:
+dmb ish
+ldr r2, [r6, #12]
+cmp r2, r11
+bne bg_apply
+cmp r0, #2
+it eq
+moveq r0, #1
+str r0, [r4, #32]
+str r1, [r4, #64]
+cmp r0, #0
+beq bg_stop
+add.w r2, r8, #5
+str r2, [r4, #24]
+str r7, [r4, #28]
+str r2, [r6, #56]
+str r7, [r6, #60]
+movs r2, #1
+str r2, [r6, #36]
+movs r2, #0
+b bg_ack
+bg_stop:
+movs r2, #2
+str r2, [r6, #36]
+movs r2, #3
+str r2, [r4, #68]
+movs r2, #0
+b bg_ack
+bg_bad_request:
+movs r2, #3
+b bg_reject
+bg_busy_request:
+movs r2, #4
+bg_reject:
+dmb ish
+ldr r0, [r6, #12]
+cmp r0, r11
+bne bg_apply
+bg_ack:
+str r2, [r6, #44]
+str.w r11, [r4, #20]
+ldr r0, [r6, #80]
+str r0, [r6, #84]
+dmb ish
+str.w r11, [r6, #32]
+bg_apply:
+ldr r0, [r4, #32]
+str r0, [r4, #36]
+ldr r1, [r6, #96]
+adds r1, #1
+str r1, [r6, #96]
+cbnz r0, bg_invalidate
+ldr r0, [r4, #68]
+cbz r0, bg_done
+subs r0, #1
+str r0, [r4, #68]
+bg_invalidate:
+mov r0, r10
+bl #0x081c8324
+mov r0, r9
+bl #0x081c8324
+b bg_done
+bg_clock_failed:
+ldr r6, [r4]
+movs r0, #0
+str r0, [r4, #32]
+cbz r6, bg_done
+bl bg_begin_update
+movs r0, #2
+str r0, [r6, #36]
+movs r0, #1
+str r0, [r6, #44]
+b bg_invalidate
+bg_foreign_owner:
+movs r0, #0
+str r0, [r4, #32]
+b bg_invalidate
+bg_map_close_failed:
+mov.w r0, #-1
+str r0, [r4, #4]
+cbz r6, bg_done
+mov r0, r6
+mov.w r1, #4096
+blx #0x080d6f64
+bg_done:
+ldr r0, [r4, #88]
+cmp r0, #0
+beq bg_done_return
+ldr r6, [r4]
+ldr r0, [r6, #104]
+adds r0, #1
+dmb ish
+str r0, [r6, #104]
+movs r0, #0
+str r0, [r4, #88]
+bg_done_return:
+add sp, #28
+pop.w {r4, r5, r6, r7, r8, r9, r10, r11, pc}
+
+bg_begin_update:
+ldr r0, [r4, #88]
+cmp r0, #0
+bne bg_begin_done
+ldr r0, [r6, #104]
+adds r0, #1
+orr r0, r0, #1
+str r0, [r6, #104]
+dmb ish
+movs r0, #1
+str r0, [r4, #88]
+bg_begin_done:
+bx lr
+
+// Unique direct child, bounded to 256 entries. Native vector getters, no guessed offsets.
+bg_find:
+push.w {r4, r5, r6, r7, r8, lr}
+mov r4, r0
+mov r5, r1
+mov r6, r2
+bl #0x081d0410
+mov r7, r0
+mov r0, r4
+bl #0x081d0418
+mov r4, r0
+subs r0, r4, r7
+tst r0, #7
+bne bg_find_fail
+cmp.w r0, #2048
+bhi bg_find_fail
+mov.w r8, #0
+bg_find_loop:
+cmp r7, r4
+beq bg_find_end
+ldr r0, [r7]
+cbz r0, bg_find_fail
+mov r1, r5
+mov r2, r6
+bl #0x081c8d1c
+cbz r0, bg_find_next
+cmp r8, #0
+bne bg_find_fail
+ldr.w r8, [r7]
+bg_find_next:
+adds r7, #8
+b bg_find_loop
+bg_find_fail:
+mov.w r8, #0
+bg_find_end:
+mov r0, r8
+pop.w {r4, r5, r6, r7, r8, pc}
+
+bg_leaf_named:
+push {r4, r5, r6, lr}
+mov r4, r0
+cbz r0, bg_leaf_end
+bl #0x081c8d1c
+cbz r0, bg_leaf_end
+mov r0, r4
+bl #0x081d0410
+mov r5, r0
+mov r0, r4
+bl #0x081d0418
+subs r0, r0, r5
+it eq
+moveq r0, #1
+it ne
+movne r0, #0
+bg_leaf_end:
+pop {r4, r5, r6, pc}
+
+.balign 4
+bg_state_address:
+.word 0x086e84e0
+bg_original_literal:
+.word 0x004ea600
+bg_billion:
+.word 1000000000
+bg_half_billion:
+.word 500000000
+bg_magic:
+.word 0x31474244
+bg_root_name:
+.asciz "RootPage"
+.balign 4
+bg_content_name:
+.asciz "Content"
+.balign 4
+bg_background_name:
+.asciz "BG_New"
+.balign 4
+bg_image_name:
+.asciz "BG"
+.balign 4
+bg_sky_name:
+.asciz "Sky"
+.balign 4
+bg_path:
+.asciz "/dev/shmem/dashcast-bg1"
+.balign 4

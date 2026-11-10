@@ -1,0 +1,370 @@
+// Exact original Node2D / RenderPass entry ABI. Projection-only, no data edits.
+// Node name at +0xb4 and parent at +0x2c are hash-checked native method semantics.
+// 16/17 are live draw progress; 27/28 count scoped 2D/3D suppression.
+runtime_2d:
+push.w {r0, r1, r2, r3, r4, r5, r6, r7, r8, lr}
+ldr r4, runtime_state
+ldr r5, [r4, #36]
+cmp r5, #0
+beq runtime_2d_original
+ldr r5, [r4]
+cmp r5, #0
+beq runtime_2d_original
+ldr r6, [r5, #64]
+adds r6, #1
+str r6, [r5, #64]
+bl runtime_hide_2d
+cmp r0, #0
+beq runtime_2d_original
+ldr r6, [r5, #108]
+adds r6, #1
+str r6, [r5, #108]
+pop.w {r0, r1, r2, r3, r4, r5, r6, r7, r8, lr}
+bx lr
+runtime_2d_original:
+pop.w {r0, r1, r2, r3, r4, r5, r6, r7, r8, lr}
+push.w {r4, r5, r6, r7, r8, r9, r10, r11, lr}
+b.w #0x081d1600
+
+runtime_mesh:
+push.w {r0, r1, r2, r3, r4, r5, r6, r7, r8, lr}
+ldr r4, runtime_state
+ldr r5, [r4, #36]
+cmp r5, #0
+beq runtime_mesh_original
+ldr r5, [r4]
+cmp r5, #0
+beq runtime_mesh_original
+mov r0, r1
+bl runtime_hide_mesh
+cmp r0, #0
+beq runtime_mesh_original
+ldr r6, [r5, #112]
+adds r6, #1
+str r6, [r5, #112]
+pop.w {r0, r1, r2, r3, r4, r5, r6, r7, r8, lr}
+bx lr
+runtime_mesh_original:
+pop.w {r0, r1, r2, r3, r4, r5, r6, r7, r8, lr}
+push {r4, r5, lr}
+sub sp, #12
+b.w #0x08216188
+
+runtime_brush:
+push {r0, r1, r2, r3, r4, lr}
+ldr r4, runtime_state
+ldr r1, [r4, #36]
+cmp r1, #0
+beq runtime_brush_original
+ldr r1, [r4, #12]
+cmp r0, r1
+bne runtime_brush_original
+ldr r4, [r4]
+cmp r4, #0
+beq runtime_brush_original
+ldr r1, [r4, #68]
+adds r1, #1
+str r1, [r4, #68]
+runtime_brush_original:
+pop {r0, r1, r2, r3, r4, lr}
+ldr r2, runtime_literal
+push {r4, r5, r6, lr}
+b.w #0x081d09fc
+
+// r0 Node, r1 ASCII literal, r2 exact length. No allocations or foreign calls.
+runtime_name:
+cmp r0, #0
+beq runtime_no_name
+ldr.w r3, [r0, #180]
+cmp r3, #0
+beq runtime_no_name
+ldr r12, [r3, #-12]
+cmp r12, r2
+bne runtime_no_name
+runtime_name_loop:
+ldrb r0, [r3], #1
+ldrb r12, [r1], #1
+cmp r0, r12
+bne runtime_no_name
+subs r2, #1
+bne runtime_name_loop
+movs r0, #1
+bx lr
+runtime_no_name:
+movs r0, #0
+bx lr
+
+runtime_hide_2d:
+push {r4, r5, r6, r7, r8, lr}
+mov r4, r0
+adr r1, runtime_car
+movs r2, #3
+bl runtime_name
+cmp r0, #0
+bne runtime_car_parent
+mov r0, r4
+adr r1, runtime_small_car
+movs r2, #8
+bl runtime_name
+cmp r0, #0
+bne runtime_small_parent
+mov r0, r4
+adr r1, runtime_lane
+movs r2, #4
+bl runtime_name
+cmp r0, #0
+bne runtime_content_parent
+mov r0, r4
+adr r1, runtime_small_bg
+movs r2, #12
+bl runtime_name
+cmp r0, #0
+bne runtime_content_parent
+mov r0, r4
+adr r1, runtime_left_lane
+movs r2, #8
+bl runtime_name
+cmp r0, #0
+bne runtime_lane_parent
+mov r0, r4
+adr r1, runtime_right_lane
+movs r2, #9
+bl runtime_name
+cmp r0, #0
+beq runtime_2d_no
+runtime_lane_parent:
+ldr r5, [r4, #44]
+mov r0, r5
+adr r1, runtime_departure
+movs r2, #13
+bl runtime_name
+cmp r0, #0
+bne runtime_2d_scope
+mov r0, r5
+adr r1, runtime_distance
+movs r2, #12
+bl runtime_name
+b runtime_2d_parent_test
+runtime_car_parent:
+ldr r5, [r4, #44]
+mov r0, r5
+adr r1, runtime_departure
+movs r2, #13
+bl runtime_name
+cmp r0, #0
+bne runtime_2d_scope
+mov r0, r5
+adr r1, runtime_viewport
+movs r2, #11
+bl runtime_name
+b runtime_2d_parent_test
+runtime_small_parent:
+ldr r5, [r4, #44]
+mov r0, r5
+adr r1, runtime_distance
+movs r2, #12
+bl runtime_name
+b runtime_2d_parent_test
+runtime_content_parent:
+ldr r5, [r4, #44]
+mov r0, r5
+adr r1, runtime_content
+movs r2, #7
+bl runtime_name
+runtime_2d_parent_test:
+cmp r0, #0
+beq runtime_2d_no
+runtime_2d_scope:
+movs r6, #12
+runtime_2d_ancestors:
+cmp r5, #0
+beq runtime_2d_no
+mov r0, r5
+adr r1, runtime_nn_full
+movs r2, #4
+bl runtime_name
+cmp r0, #0
+bne runtime_full_registry
+mov r0, r5
+adr r1, runtime_nn_small
+movs r2, #4
+bl runtime_name
+cmp r0, #0
+bne runtime_small_registry
+mov r0, r5
+adr r1, runtime_nn_scene
+movs r2, #4
+bl runtime_name
+cmp r0, #0
+bne runtime_scene_registry
+mov r0, r5
+adr r1, runtime_root_2d
+movs r2, #21
+bl runtime_name
+cmp r0, #0
+bne runtime_2d_yes
+mov r0, r5
+adr r1, runtime_root_small
+movs r2, #27
+bl runtime_name
+cmp r0, #0
+bne runtime_2d_yes
+mov r0, r5
+adr r1, runtime_root_3d
+movs r2, #11
+bl runtime_name
+cmp r0, #0
+bne runtime_2d_yes
+runtime_2d_next:
+ldr r5, [r5, #44]
+subs r6, #1
+bne runtime_2d_ancestors
+runtime_2d_no:
+movs r0, #0
+pop {r4, r5, r6, r7, r8, pc}
+runtime_2d_yes:
+movs r0, #1
+pop {r4, r5, r6, r7, r8, pc}
+runtime_full_registry:
+movw r1, #0x768
+b runtime_2d_registry
+runtime_small_registry:
+movw r1, #0x778
+b runtime_2d_registry
+runtime_scene_registry:
+movw r1, #0x788
+runtime_2d_registry:
+mov r0, r5
+bl runtime_registered
+cmp r0, #0
+bne runtime_2d_yes
+b runtime_2d_next
+
+// The OEM loader instantiates roots as NN%u, not the resource's prefab name.
+// Match the CURRENT shared_ptr registry slot, so reused names cannot hide other scenes.
+// RcKanziGetApplication is the hash-checked, allocation-free original pointer getter.
+runtime_registered:
+push {r4, r5, r6, lr}
+mov r4, r0
+mov r5, r1
+bl #0x08104800
+cmp r0, #0
+beq runtime_registered_no
+ldr r0, [r0, r5]
+cmp r0, r4
+ite eq
+moveq r0, #1
+movne r0, #0
+pop {r4, r5, r6, pc}
+runtime_registered_no:
+movs r0, #0
+pop {r4, r5, r6, pc}
+
+runtime_hide_mesh:
+push {r4, r5, r6, r7, r8, lr}
+mov r4, r0
+movs r5, #16
+movs r6, #0
+runtime_mesh_ancestors:
+cmp r4, #0
+beq runtime_mesh_no
+mov r0, r4
+adr r1, runtime_plane
+movs r2, #5
+bl runtime_name
+cmp r0, #0
+bne runtime_mesh_leaf
+mov r0, r4
+adr r1, runtime_road_r
+movs r2, #12
+bl runtime_name
+cmp r0, #0
+bne runtime_mesh_leaf
+mov r0, r4
+adr r1, runtime_road_l
+movs r2, #12
+bl runtime_name
+cmp r0, #0
+bne runtime_mesh_leaf
+mov r0, r4
+adr r1, runtime_road_b
+movs r2, #12
+bl runtime_name
+cmp r0, #0
+bne runtime_mesh_leaf
+mov r0, r4
+adr r1, runtime_road_root
+movs r2, #8
+bl runtime_name
+cmp r0, #0
+beq runtime_mesh_check_root
+cmp r6, #1
+bne runtime_mesh_next
+movs r6, #2
+b runtime_mesh_next
+runtime_mesh_leaf:
+ldr r7, [r4, #44]
+mov r0, r7
+adr r1, runtime_road_root
+movs r2, #8
+bl runtime_name
+cmp r0, #0
+beq runtime_mesh_next
+movs r6, #2
+b runtime_mesh_next
+runtime_mesh_check_root:
+cmp r6, #2
+bne runtime_mesh_next
+mov r0, r4
+adr r1, runtime_root_3d
+movs r2, #11
+bl runtime_name
+cmp r0, #0
+bne runtime_mesh_yes
+mov r0, r4
+adr r1, runtime_nn_scene
+movs r2, #4
+bl runtime_name
+cmp r0, #0
+beq runtime_mesh_next
+mov r0, r4
+movw r1, #0x788
+bl runtime_registered
+cmp r0, #0
+bne runtime_mesh_yes
+runtime_mesh_next:
+ldr r4, [r4, #44]
+subs r5, #1
+bne runtime_mesh_ancestors
+runtime_mesh_no:
+movs r0, #0
+pop {r4, r5, r6, r7, r8, pc}
+runtime_mesh_yes:
+movs r0, #1
+pop {r4, r5, r6, r7, r8, pc}
+
+.balign 4
+runtime_state: .word 0x086e84e0
+runtime_literal: .word 0x004ea600
+runtime_car: .asciz "Car"
+runtime_small_car: .asciz "CarSmall"
+runtime_lane: .asciz "Lane"
+runtime_small_bg: .asciz "ADAS_SmallBG"
+runtime_left_lane: .asciz "LeftLane"
+runtime_right_lane: .asciz "RightLane"
+runtime_departure: .asciz "LaneDeparture"
+runtime_distance: .asciz "LaneDistance"
+runtime_viewport: .asciz "Viewport 2D"
+runtime_content: .asciz "content"
+runtime_root_2d: .asciz "Prefab_ADAS_2D_ACCSys"
+runtime_root_small: .asciz "Prefab_ADAS_2D_ACCSys_Small"
+runtime_root_3d: .asciz "Prefab_ADAS"
+runtime_plane: .asciz "Plane"
+runtime_road_r: .asciz "RoadLine3D_R"
+runtime_road_l: .asciz "RoadLine3D_L"
+runtime_road_b: .asciz "RoadLine3D_B"
+runtime_road_root: .asciz "RoadRoot"
+runtime_nn_full: .asciz "NN95"
+runtime_nn_small: .asciz "NN96"
+runtime_nn_scene: .asciz "NN97"
+.balign 4

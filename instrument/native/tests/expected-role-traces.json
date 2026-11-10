@@ -1,0 +1,1648 @@
+{
+ "Usb.test_attached_storage_blocks_ncm_before_unloading_host": [
+  {
+   "arguments": "ncm",
+   "rc": 1,
+   "state": [
+    "attached-storage",
+    "dcd/",
+    "net/",
+    "platform/",
+    "platform/dev/io-usb/",
+    "platform/dev/io-usb/devu-omap5-xhci.so",
+    "processes",
+    "usb-world"
+   ],
+   "stderr": [
+    "USB_DEVICES_ATTACHED",
+    "USB_NCM_FAILED"
+   ],
+   "stdout": [
+    "USB_HOST_READY"
+   ],
+   "trace": [
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --usb-check no-devices",
+    "/bin/pidin ar",
+    "cast stop",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --usb-check controllers-up",
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --rmdir {RUN}/role-operation"
+   ]
+  }
+ ],
+ "Usb.test_failed_guard_release_turns_success_into_failure": [
+  {
+   "arguments": "host",
+   "rc": 1,
+   "state": [
+    "dcd/",
+    "guard-release-failure",
+    "net/",
+    "platform/",
+    "platform/dev/io-usb/",
+    "platform/dev/io-usb/devu-omap5-xhci.so",
+    "processes",
+    "role-operation/",
+    "usb-world"
+   ],
+   "stderr": [
+    "USB_OPERATION_GUARD_RELEASE_FAILED"
+   ],
+   "stdout": [
+    "USB_HOST_READY"
+   ],
+   "trace": [
+    "/bin/pidin ar",
+    "cast stop",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --usb-check controllers-up",
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --rmdir {RUN}/role-operation"
+   ]
+  }
+ ],
+ "Usb.test_failed_host_clears_the_link_mark": [
+  {
+   "arguments": "ncm",
+   "rc": 0,
+   "state": [
+    "dcd/",
+    "dcd/io-usb",
+    "interface",
+    "interface-present",
+    "interface-up",
+    "link-up",
+    "ncm-connected",
+    "net/",
+    "net/dev/socket",
+    "platform/",
+    "platform/dev/io-usb/",
+    "processes",
+    "usb-world"
+   ],
+   "stderr": [],
+   "stdout": [
+    "USB_NCM_READY"
+   ],
+   "trace": [
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --usb-check no-devices",
+    "/bin/mkdir -p {RUN}/dcd {RUN}/net",
+    "/bin/umount {RUN}/platform/dev/io-usb/devu-omap5-xhci.so",
+    "{RUN}/dashcast-usb --usb-check no-controller",
+    "{RUN}/platform/sbin/io-usb-dcd -n {RUN}/dcd/io-usb -d usbncm-omap543x-dwcotg3 ioport=0x488d0000,irq=110,linkdown",
+    "{RUN}/platform/sbin/io-pkt-v6-hc -i7 -d usbdnet protocol=ncm,path={RUN}/dcd/io-usb,mac=020000000701,usbdnet_mac=020000000702,wait=2 -ptcpip prefix={RUN}/net",
+    "/bin/pidin ar",
+    "{RUN}/platform/sbin/ifconfig ncm0 192.168.77.1 netmask 255.255.255.252 up",
+    "{RUN}/platform/sbin/ifconfig ncm0",
+    "{RUN}/platform/sbin/ulink_ctrl -s {RUN}/dcd/io-usb -w 2 -l 1",
+    "{RUN}/dashcast-usb --usb-check no-controller",
+    "/bin/pidin ar",
+    "cast start",
+    "{RUN}/dashcast-usb --rmdir {RUN}/role-operation"
+   ]
+  },
+  {
+   "arguments": "host",
+   "rc": 1,
+   "state": [
+    "dcd/",
+    "dcd/io-usb",
+    "interface",
+    "interface-present",
+    "interfaces",
+    "net/",
+    "net/dev/socket",
+    "physical-peer",
+    "platform/",
+    "platform/dev/io-usb/",
+    "processes",
+    "usb-world"
+   ],
+   "stderr": [
+    "NCM_DESTROY_UNCONFIRMED",
+    "HOST_NET_DETACH_FAILED",
+    "USB_HOST_FAILED"
+   ],
+   "stdout": [],
+   "trace": [
+    "/bin/pidin ar",
+    "cast stop",
+    "{RUN}/platform/sbin/ulink_ctrl -s {RUN}/dcd/io-usb -w 2 -l 0",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 down",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/dashcast-usb --rmdir {RUN}/role-operation"
+   ]
+  },
+  {
+   "arguments": "ncm",
+   "rc": 0,
+   "state": [
+    "dcd/",
+    "dcd/io-usb",
+    "interface",
+    "interface-present",
+    "interface-up",
+    "interfaces",
+    "link-up",
+    "ncm-connected",
+    "net/",
+    "net/dev/socket",
+    "platform/",
+    "platform/dev/io-usb/",
+    "processes",
+    "usb-world"
+   ],
+   "stderr": [],
+   "stdout": [
+    "USB_NCM_READY"
+   ],
+   "trace": [
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --usb-check no-controller",
+    "{RUN}/platform/sbin/ifconfig ncm0 192.168.77.1 netmask 255.255.255.252 up",
+    "{RUN}/platform/sbin/ifconfig ncm0",
+    "{RUN}/platform/sbin/ulink_ctrl -s {RUN}/dcd/io-usb -w 2 -l 1",
+    "{RUN}/dashcast-usb --usb-check no-controller",
+    "/bin/pidin ar",
+    "cast start",
+    "{RUN}/dashcast-usb --rmdir {RUN}/role-operation"
+   ]
+  }
+ ],
+ "Usb.test_failed_interface_query_is_not_absence": [
+  {
+   "arguments": "host",
+   "rc": 1,
+   "state": [
+    "dcd/",
+    "dcd/io-usb",
+    "ifconfig-failure",
+    "interface-present",
+    "interface-up",
+    "interfaces",
+    "net/",
+    "net/dev/socket",
+    "platform/",
+    "platform/dev/io-usb/",
+    "processes",
+    "usb-world"
+   ],
+   "stderr": [
+    "NCM_INTERFACE_UNKNOWN",
+    "HOST_NET_DETACH_FAILED",
+    "USB_HOST_FAILED"
+   ],
+   "stdout": [],
+   "trace": [
+    "/bin/pidin ar",
+    "cast stop",
+    "{RUN}/platform/sbin/ulink_ctrl -s {RUN}/dcd/io-usb -w 2 -l 0",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/dashcast-usb --rmdir {RUN}/role-operation"
+   ]
+  }
+ ],
+ "Usb.test_failed_link_up_recovers_host_without_claiming_ncm": [
+  {
+   "arguments": "ncm",
+   "rc": 1,
+   "state": [
+    "dcd/",
+    "interface",
+    "interfaces",
+    "linkup-failure",
+    "net/",
+    "platform/",
+    "platform/dev/io-usb/",
+    "platform/dev/io-usb/devu-omap5-xhci.so",
+    "processes",
+    "usb-world"
+   ],
+   "stderr": [
+    "USB_NCM_FAILED"
+   ],
+   "stdout": [
+    "NCM_INTERFACE_REMOVED",
+    "USB_HOST_READY"
+   ],
+   "trace": [
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --usb-check no-devices",
+    "/bin/mkdir -p {RUN}/dcd {RUN}/net",
+    "/bin/umount {RUN}/platform/dev/io-usb/devu-omap5-xhci.so",
+    "{RUN}/dashcast-usb --usb-check no-controller",
+    "{RUN}/platform/sbin/io-usb-dcd -n {RUN}/dcd/io-usb -d usbncm-omap543x-dwcotg3 ioport=0x488d0000,irq=110,linkdown",
+    "{RUN}/platform/sbin/io-pkt-v6-hc -i7 -d usbdnet protocol=ncm,path={RUN}/dcd/io-usb,mac=020000000701,usbdnet_mac=020000000702,wait=2 -ptcpip prefix={RUN}/net",
+    "/bin/pidin ar",
+    "{RUN}/platform/sbin/ifconfig ncm0 192.168.77.1 netmask 255.255.255.252 up",
+    "{RUN}/platform/sbin/ifconfig ncm0",
+    "{RUN}/platform/sbin/ulink_ctrl -s {RUN}/dcd/io-usb -w 2 -l 1",
+    "/bin/pidin ar",
+    "cast stop",
+    "{RUN}/platform/sbin/ulink_ctrl -s {RUN}/dcd/io-usb -w 2 -l 0",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 down",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "/bin/pidin ar",
+    "/bin/kill -TERM 30",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/kill -TERM 20",
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --usb-check no-controller",
+    "/bin/mount -Tio-usb -o ioport=0x48890000,irq=108,ioport=0x488d0000,irq=110 {RUN}/platform/lib/dll/devu-omap5-xhci.so {RUN}/platform/dev/io-usb/io-usb",
+    "{RUN}/dashcast-usb --usb-check controllers-up",
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --rmdir {RUN}/role-operation"
+   ]
+  }
+ ],
+ "Usb.test_failed_recovery_reports_its_own_exit_code": [
+  {
+   "arguments": "ncm",
+   "rc": 3,
+   "state": [
+    "dcd/",
+    "dcd/io-usb",
+    "interface",
+    "interface-present",
+    "interfaces",
+    "linkup-failure",
+    "net/",
+    "net/dev/socket",
+    "physical-peer",
+    "platform/",
+    "platform/dev/io-usb/",
+    "processes",
+    "usb-world"
+   ],
+   "stderr": [
+    "USB_NCM_FAILED",
+    "NCM_DESTROY_UNCONFIRMED",
+    "HOST_NET_DETACH_FAILED",
+    "USB_HOST_RECOVERY_UNCONFIRMED"
+   ],
+   "stdout": [],
+   "trace": [
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --usb-check no-devices",
+    "/bin/mkdir -p {RUN}/dcd {RUN}/net",
+    "/bin/umount {RUN}/platform/dev/io-usb/devu-omap5-xhci.so",
+    "{RUN}/dashcast-usb --usb-check no-controller",
+    "{RUN}/platform/sbin/io-usb-dcd -n {RUN}/dcd/io-usb -d usbncm-omap543x-dwcotg3 ioport=0x488d0000,irq=110,linkdown",
+    "{RUN}/platform/sbin/io-pkt-v6-hc -i7 -d usbdnet protocol=ncm,path={RUN}/dcd/io-usb,mac=020000000701,usbdnet_mac=020000000702,wait=2 -ptcpip prefix={RUN}/net",
+    "/bin/pidin ar",
+    "{RUN}/platform/sbin/ifconfig ncm0 192.168.77.1 netmask 255.255.255.252 up",
+    "{RUN}/platform/sbin/ifconfig ncm0",
+    "{RUN}/platform/sbin/ulink_ctrl -s {RUN}/dcd/io-usb -w 2 -l 1",
+    "/bin/pidin ar",
+    "cast stop",
+    "{RUN}/platform/sbin/ulink_ctrl -s {RUN}/dcd/io-usb -w 2 -l 0",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 down",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/dashcast-usb --rmdir {RUN}/role-operation"
+   ]
+  }
+ ],
+ "Usb.test_foreign_stack_or_failed_survey_is_not_empty": [
+  {
+   "arguments": "ncm",
+   "rc": 3,
+   "state": [
+    "dcd/",
+    "foreign-stack",
+    "net/",
+    "platform/",
+    "platform/dev/io-usb/",
+    "platform/dev/io-usb/devu-omap5-xhci.so",
+    "processes",
+    "usb-world"
+   ],
+   "stderr": [
+    "USB_FOREIGN_STACK",
+    "USB_NCM_FAILED",
+    "USB_FOREIGN_STACK",
+    "USB_HOST_RECOVERY_UNCONFIRMED"
+   ],
+   "stdout": [],
+   "trace": [
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --rmdir {RUN}/role-operation"
+   ]
+  },
+  {
+   "arguments": "ncm",
+   "rc": 3,
+   "state": [
+    "dcd/",
+    "net/",
+    "pidin-failure",
+    "platform/",
+    "platform/dev/io-usb/",
+    "platform/dev/io-usb/devu-omap5-xhci.so",
+    "processes",
+    "usb-world"
+   ],
+   "stderr": [
+    "USB_NCM_FAILED",
+    "USB_HOST_RECOVERY_UNCONFIRMED"
+   ],
+   "stdout": [],
+   "trace": [
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --rmdir {RUN}/role-operation"
+   ]
+  }
+ ],
+ "Usb.test_guard_is_released_after_failure_and_success": [
+  {
+   "arguments": "host",
+   "rc": 1,
+   "state": [
+    "dcd/",
+    "net/",
+    "pidin-failure",
+    "platform/",
+    "platform/dev/io-usb/",
+    "platform/dev/io-usb/devu-omap5-xhci.so",
+    "processes",
+    "usb-world"
+   ],
+   "stderr": [
+    "USB_HOST_FAILED"
+   ],
+   "stdout": [],
+   "trace": [
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --rmdir {RUN}/role-operation"
+   ]
+  },
+  {
+   "arguments": "ncm",
+   "rc": 0,
+   "state": [
+    "dcd/",
+    "dcd/io-usb",
+    "interface",
+    "interface-present",
+    "interface-up",
+    "link-up",
+    "ncm-connected",
+    "net/",
+    "net/dev/socket",
+    "platform/",
+    "platform/dev/io-usb/",
+    "processes",
+    "usb-world"
+   ],
+   "stderr": [],
+   "stdout": [
+    "USB_NCM_READY"
+   ],
+   "trace": [
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --usb-check no-devices",
+    "/bin/mkdir -p {RUN}/dcd {RUN}/net",
+    "/bin/umount {RUN}/platform/dev/io-usb/devu-omap5-xhci.so",
+    "{RUN}/dashcast-usb --usb-check no-controller",
+    "{RUN}/platform/sbin/io-usb-dcd -n {RUN}/dcd/io-usb -d usbncm-omap543x-dwcotg3 ioport=0x488d0000,irq=110,linkdown",
+    "{RUN}/platform/sbin/io-pkt-v6-hc -i7 -d usbdnet protocol=ncm,path={RUN}/dcd/io-usb,mac=020000000701,usbdnet_mac=020000000702,wait=2 -ptcpip prefix={RUN}/net",
+    "/bin/pidin ar",
+    "{RUN}/platform/sbin/ifconfig ncm0 192.168.77.1 netmask 255.255.255.252 up",
+    "{RUN}/platform/sbin/ifconfig ncm0",
+    "{RUN}/platform/sbin/ulink_ctrl -s {RUN}/dcd/io-usb -w 2 -l 1",
+    "{RUN}/dashcast-usb --usb-check no-controller",
+    "/bin/pidin ar",
+    "cast start",
+    "{RUN}/dashcast-usb --rmdir {RUN}/role-operation"
+   ]
+  },
+  {
+   "arguments": "host",
+   "rc": 0,
+   "state": [
+    "dcd/",
+    "interface",
+    "interfaces",
+    "net/",
+    "platform/",
+    "platform/dev/io-usb/",
+    "platform/dev/io-usb/devu-omap5-xhci.so",
+    "processes",
+    "usb-world"
+   ],
+   "stderr": [],
+   "stdout": [
+    "NCM_INTERFACE_REMOVED",
+    "USB_HOST_READY"
+   ],
+   "trace": [
+    "/bin/pidin ar",
+    "cast stop",
+    "{RUN}/platform/sbin/ulink_ctrl -s {RUN}/dcd/io-usb -w 2 -l 0",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 down",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "/bin/pidin ar",
+    "/bin/kill -TERM 30",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/kill -TERM 20",
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --usb-check no-controller",
+    "/bin/mount -Tio-usb -o ioport=0x48890000,irq=108,ioport=0x488d0000,irq=110 {RUN}/platform/lib/dll/devu-omap5-xhci.so {RUN}/platform/dev/io-usb/io-usb",
+    "{RUN}/dashcast-usb --usb-check controllers-up",
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --rmdir {RUN}/role-operation"
+   ]
+  }
+ ],
+ "Usb.test_host_to_ncm_runs_the_stack_up_in_order": [
+  {
+   "arguments": "ncm",
+   "rc": 0,
+   "state": [
+    "dcd/",
+    "dcd/io-usb",
+    "interface",
+    "interface-present",
+    "interface-up",
+    "link-up",
+    "ncm-connected",
+    "net/",
+    "net/dev/socket",
+    "platform/",
+    "platform/dev/io-usb/",
+    "processes",
+    "usb-world"
+   ],
+   "stderr": [],
+   "stdout": [
+    "USB_NCM_READY"
+   ],
+   "trace": [
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --usb-check no-devices",
+    "/bin/mkdir -p {RUN}/dcd {RUN}/net",
+    "/bin/umount {RUN}/platform/dev/io-usb/devu-omap5-xhci.so",
+    "{RUN}/dashcast-usb --usb-check no-controller",
+    "{RUN}/platform/sbin/io-usb-dcd -n {RUN}/dcd/io-usb -d usbncm-omap543x-dwcotg3 ioport=0x488d0000,irq=110,linkdown",
+    "{RUN}/platform/sbin/io-pkt-v6-hc -i7 -d usbdnet protocol=ncm,path={RUN}/dcd/io-usb,mac=020000000701,usbdnet_mac=020000000702,wait=2 -ptcpip prefix={RUN}/net",
+    "/bin/pidin ar",
+    "{RUN}/platform/sbin/ifconfig ncm0 192.168.77.1 netmask 255.255.255.252 up",
+    "{RUN}/platform/sbin/ifconfig ncm0",
+    "{RUN}/platform/sbin/ulink_ctrl -s {RUN}/dcd/io-usb -w 2 -l 1",
+    "{RUN}/dashcast-usb --usb-check no-controller",
+    "/bin/pidin ar",
+    "cast start",
+    "{RUN}/dashcast-usb --rmdir {RUN}/role-operation"
+   ]
+  }
+ ],
+ "Usb.test_interface_already_removed_does_not_block_host": [
+  {
+   "arguments": "host",
+   "rc": 0,
+   "state": [
+    "dcd/",
+    "interface-up",
+    "interfaces",
+    "net/",
+    "platform/",
+    "platform/dev/io-usb/",
+    "platform/dev/io-usb/devu-omap5-xhci.so",
+    "processes",
+    "usb-world"
+   ],
+   "stderr": [],
+   "stdout": [
+    "NCM_INTERFACE_ALREADY_REMOVED",
+    "USB_HOST_READY"
+   ],
+   "trace": [
+    "/bin/pidin ar",
+    "cast stop",
+    "{RUN}/platform/sbin/ulink_ctrl -s {RUN}/dcd/io-usb -w 2 -l 0",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "/bin/pidin ar",
+    "/bin/kill -TERM 30",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/kill -TERM 20",
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --usb-check no-controller",
+    "/bin/mount -Tio-usb -o ioport=0x48890000,irq=108,ioport=0x488d0000,irq=110 {RUN}/platform/lib/dll/devu-omap5-xhci.so {RUN}/platform/dev/io-usb/io-usb",
+    "{RUN}/dashcast-usb --usb-check controllers-up",
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --rmdir {RUN}/role-operation"
+   ]
+  }
+ ],
+ "Usb.test_link_up_is_reached_with_two_process_surveys": [
+  {
+   "arguments": "ncm",
+   "rc": 0,
+   "state": [
+    "dcd/",
+    "dcd/io-usb",
+    "interface",
+    "interface-present",
+    "interface-up",
+    "link-up",
+    "ncm-connected",
+    "net/",
+    "net/dev/socket",
+    "platform/",
+    "platform/dev/io-usb/",
+    "processes",
+    "usb-world"
+   ],
+   "stderr": [],
+   "stdout": [
+    "USB_NCM_READY"
+   ],
+   "trace": [
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --usb-check no-devices",
+    "/bin/mkdir -p {RUN}/dcd {RUN}/net",
+    "/bin/umount {RUN}/platform/dev/io-usb/devu-omap5-xhci.so",
+    "{RUN}/dashcast-usb --usb-check no-controller",
+    "{RUN}/platform/sbin/io-usb-dcd -n {RUN}/dcd/io-usb -d usbncm-omap543x-dwcotg3 ioport=0x488d0000,irq=110,linkdown",
+    "{RUN}/platform/sbin/io-pkt-v6-hc -i7 -d usbdnet protocol=ncm,path={RUN}/dcd/io-usb,mac=020000000701,usbdnet_mac=020000000702,wait=2 -ptcpip prefix={RUN}/net",
+    "/bin/pidin ar",
+    "{RUN}/platform/sbin/ifconfig ncm0 192.168.77.1 netmask 255.255.255.252 up",
+    "{RUN}/platform/sbin/ifconfig ncm0",
+    "{RUN}/platform/sbin/ulink_ctrl -s {RUN}/dcd/io-usb -w 2 -l 1",
+    "{RUN}/dashcast-usb --usb-check no-controller",
+    "/bin/pidin ar",
+    "cast start",
+    "{RUN}/dashcast-usb --rmdir {RUN}/role-operation"
+   ]
+  }
+ ],
+ "Usb.test_ncm_then_host_restores_the_original_host": [
+  {
+   "arguments": "ncm",
+   "rc": 0,
+   "state": [
+    "dcd/",
+    "dcd/io-usb",
+    "interface",
+    "interface-present",
+    "interface-up",
+    "link-up",
+    "ncm-connected",
+    "net/",
+    "net/dev/socket",
+    "platform/",
+    "platform/dev/io-usb/",
+    "processes",
+    "usb-world"
+   ],
+   "stderr": [],
+   "stdout": [
+    "USB_NCM_READY"
+   ],
+   "trace": [
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --usb-check no-devices",
+    "/bin/mkdir -p {RUN}/dcd {RUN}/net",
+    "/bin/umount {RUN}/platform/dev/io-usb/devu-omap5-xhci.so",
+    "{RUN}/dashcast-usb --usb-check no-controller",
+    "{RUN}/platform/sbin/io-usb-dcd -n {RUN}/dcd/io-usb -d usbncm-omap543x-dwcotg3 ioport=0x488d0000,irq=110,linkdown",
+    "{RUN}/platform/sbin/io-pkt-v6-hc -i7 -d usbdnet protocol=ncm,path={RUN}/dcd/io-usb,mac=020000000701,usbdnet_mac=020000000702,wait=2 -ptcpip prefix={RUN}/net",
+    "/bin/pidin ar",
+    "{RUN}/platform/sbin/ifconfig ncm0 192.168.77.1 netmask 255.255.255.252 up",
+    "{RUN}/platform/sbin/ifconfig ncm0",
+    "{RUN}/platform/sbin/ulink_ctrl -s {RUN}/dcd/io-usb -w 2 -l 1",
+    "{RUN}/dashcast-usb --usb-check no-controller",
+    "/bin/pidin ar",
+    "cast start",
+    "{RUN}/dashcast-usb --rmdir {RUN}/role-operation"
+   ]
+  },
+  {
+   "arguments": "host",
+   "rc": 0,
+   "state": [
+    "dcd/",
+    "interface",
+    "interfaces",
+    "net/",
+    "platform/",
+    "platform/dev/io-usb/",
+    "platform/dev/io-usb/devu-omap5-xhci.so",
+    "processes",
+    "usb-world"
+   ],
+   "stderr": [],
+   "stdout": [
+    "NCM_INTERFACE_REMOVED",
+    "USB_HOST_READY"
+   ],
+   "trace": [
+    "/bin/pidin ar",
+    "cast stop",
+    "{RUN}/platform/sbin/ulink_ctrl -s {RUN}/dcd/io-usb -w 2 -l 0",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 down",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "/bin/pidin ar",
+    "/bin/kill -TERM 30",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/kill -TERM 20",
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --usb-check no-controller",
+    "/bin/mount -Tio-usb -o ioport=0x48890000,irq=108,ioport=0x488d0000,irq=110 {RUN}/platform/lib/dll/devu-omap5-xhci.so {RUN}/platform/dev/io-usb/io-usb",
+    "{RUN}/dashcast-usb --usb-check controllers-up",
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --rmdir {RUN}/role-operation"
+   ]
+  }
+ ],
+ "Usb.test_peer_still_attached_blocks_host": [
+  {
+   "arguments": "host",
+   "rc": 1,
+   "state": [
+    "dcd/",
+    "dcd/io-usb",
+    "interface-present",
+    "interfaces",
+    "net/",
+    "net/dev/socket",
+    "physical-peer",
+    "platform/",
+    "platform/dev/io-usb/",
+    "processes",
+    "usb-world"
+   ],
+   "stderr": [
+    "NCM_DESTROY_UNCONFIRMED",
+    "HOST_NET_DETACH_FAILED",
+    "USB_HOST_FAILED"
+   ],
+   "stdout": [],
+   "trace": [
+    "/bin/pidin ar",
+    "cast stop",
+    "{RUN}/platform/sbin/ulink_ctrl -s {RUN}/dcd/io-usb -w 2 -l 0",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 down",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/dashcast-usb --rmdir {RUN}/role-operation"
+   ]
+  }
+ ],
+ "Usb.test_pending_disconnect_is_retried_within_bounds": [
+  {
+   "arguments": "host",
+   "rc": 0,
+   "state": [
+    "dcd/",
+    "destroy-failures",
+    "interfaces",
+    "net/",
+    "platform/",
+    "platform/dev/io-usb/",
+    "platform/dev/io-usb/devu-omap5-xhci.so",
+    "processes",
+    "usb-world"
+   ],
+   "stderr": [],
+   "stdout": [
+    "NCM_INTERFACE_REMOVED",
+    "USB_HOST_READY"
+   ],
+   "trace": [
+    "/bin/pidin ar",
+    "cast stop",
+    "{RUN}/platform/sbin/ulink_ctrl -s {RUN}/dcd/io-usb -w 2 -l 0",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 down",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "/bin/pidin ar",
+    "/bin/kill -TERM 30",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/kill -TERM 20",
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --usb-check no-controller",
+    "/bin/mount -Tio-usb -o ioport=0x48890000,irq=108,ioport=0x488d0000,irq=110 {RUN}/platform/lib/dll/devu-omap5-xhci.so {RUN}/platform/dev/io-usb/io-usb",
+    "{RUN}/dashcast-usb --usb-check controllers-up",
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --rmdir {RUN}/role-operation"
+   ]
+  }
+ ],
+ "Usb.test_repeated_cycles_and_duplicate_ncm": [
+  {
+   "arguments": "host",
+   "rc": 0,
+   "state": [
+    "dcd/",
+    "net/",
+    "platform/",
+    "platform/dev/io-usb/",
+    "platform/dev/io-usb/devu-omap5-xhci.so",
+    "processes",
+    "usb-world"
+   ],
+   "stderr": [],
+   "stdout": [
+    "USB_HOST_READY"
+   ],
+   "trace": [
+    "/bin/pidin ar",
+    "cast stop",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --usb-check controllers-up",
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --rmdir {RUN}/role-operation"
+   ]
+  },
+  {
+   "arguments": "ncm",
+   "rc": 0,
+   "state": [
+    "dcd/",
+    "dcd/io-usb",
+    "interface",
+    "interface-present",
+    "interface-up",
+    "link-up",
+    "ncm-connected",
+    "net/",
+    "net/dev/socket",
+    "platform/",
+    "platform/dev/io-usb/",
+    "processes",
+    "usb-world"
+   ],
+   "stderr": [],
+   "stdout": [
+    "USB_NCM_READY"
+   ],
+   "trace": [
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --usb-check no-devices",
+    "/bin/mkdir -p {RUN}/dcd {RUN}/net",
+    "/bin/umount {RUN}/platform/dev/io-usb/devu-omap5-xhci.so",
+    "{RUN}/dashcast-usb --usb-check no-controller",
+    "{RUN}/platform/sbin/io-usb-dcd -n {RUN}/dcd/io-usb -d usbncm-omap543x-dwcotg3 ioport=0x488d0000,irq=110,linkdown",
+    "{RUN}/platform/sbin/io-pkt-v6-hc -i7 -d usbdnet protocol=ncm,path={RUN}/dcd/io-usb,mac=020000000701,usbdnet_mac=020000000702,wait=2 -ptcpip prefix={RUN}/net",
+    "/bin/pidin ar",
+    "{RUN}/platform/sbin/ifconfig ncm0 192.168.77.1 netmask 255.255.255.252 up",
+    "{RUN}/platform/sbin/ifconfig ncm0",
+    "{RUN}/platform/sbin/ulink_ctrl -s {RUN}/dcd/io-usb -w 2 -l 1",
+    "{RUN}/dashcast-usb --usb-check no-controller",
+    "/bin/pidin ar",
+    "cast start",
+    "{RUN}/dashcast-usb --rmdir {RUN}/role-operation"
+   ]
+  },
+  {
+   "arguments": "ncm",
+   "rc": 0,
+   "state": [
+    "dcd/",
+    "dcd/io-usb",
+    "interface",
+    "interface-present",
+    "interface-up",
+    "link-up",
+    "ncm-connected",
+    "net/",
+    "net/dev/socket",
+    "platform/",
+    "platform/dev/io-usb/",
+    "processes",
+    "usb-world"
+   ],
+   "stderr": [],
+   "stdout": [
+    "NCM_ALREADY_CONFIGURED_NO_RECONNECT"
+   ],
+   "trace": [
+    "/bin/pidin ar",
+    "{RUN}/platform/sbin/ifconfig ncm0",
+    "{RUN}/dashcast-usb --usb-check no-controller",
+    "cast start",
+    "{RUN}/dashcast-usb --rmdir {RUN}/role-operation"
+   ]
+  },
+  {
+   "arguments": "host",
+   "rc": 0,
+   "state": [
+    "dcd/",
+    "interface",
+    "interfaces",
+    "net/",
+    "platform/",
+    "platform/dev/io-usb/",
+    "platform/dev/io-usb/devu-omap5-xhci.so",
+    "processes",
+    "usb-world"
+   ],
+   "stderr": [],
+   "stdout": [
+    "NCM_INTERFACE_REMOVED",
+    "USB_HOST_READY"
+   ],
+   "trace": [
+    "/bin/pidin ar",
+    "cast stop",
+    "{RUN}/platform/sbin/ulink_ctrl -s {RUN}/dcd/io-usb -w 2 -l 0",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 down",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "/bin/pidin ar",
+    "/bin/kill -TERM 30",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/kill -TERM 20",
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --usb-check no-controller",
+    "/bin/mount -Tio-usb -o ioport=0x48890000,irq=108,ioport=0x488d0000,irq=110 {RUN}/platform/lib/dll/devu-omap5-xhci.so {RUN}/platform/dev/io-usb/io-usb",
+    "{RUN}/dashcast-usb --usb-check controllers-up",
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --rmdir {RUN}/role-operation"
+   ]
+  },
+  {
+   "arguments": "host",
+   "rc": 0,
+   "state": [
+    "dcd/",
+    "interface",
+    "interfaces",
+    "net/",
+    "platform/",
+    "platform/dev/io-usb/",
+    "platform/dev/io-usb/devu-omap5-xhci.so",
+    "processes",
+    "usb-world"
+   ],
+   "stderr": [],
+   "stdout": [
+    "USB_HOST_READY"
+   ],
+   "trace": [
+    "/bin/pidin ar",
+    "cast stop",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --usb-check controllers-up",
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --rmdir {RUN}/role-operation"
+   ]
+  },
+  {
+   "arguments": "ncm",
+   "rc": 0,
+   "state": [
+    "dcd/",
+    "dcd/io-usb",
+    "interface",
+    "interface-present",
+    "interface-up",
+    "interfaces",
+    "link-up",
+    "ncm-connected",
+    "net/",
+    "net/dev/socket",
+    "platform/",
+    "platform/dev/io-usb/",
+    "processes",
+    "usb-world"
+   ],
+   "stderr": [],
+   "stdout": [
+    "USB_NCM_READY"
+   ],
+   "trace": [
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --usb-check no-devices",
+    "/bin/mkdir -p {RUN}/dcd {RUN}/net",
+    "/bin/umount {RUN}/platform/dev/io-usb/devu-omap5-xhci.so",
+    "{RUN}/dashcast-usb --usb-check no-controller",
+    "{RUN}/platform/sbin/io-usb-dcd -n {RUN}/dcd/io-usb -d usbncm-omap543x-dwcotg3 ioport=0x488d0000,irq=110,linkdown",
+    "{RUN}/platform/sbin/io-pkt-v6-hc -i7 -d usbdnet protocol=ncm,path={RUN}/dcd/io-usb,mac=020000000701,usbdnet_mac=020000000702,wait=2 -ptcpip prefix={RUN}/net",
+    "/bin/pidin ar",
+    "{RUN}/platform/sbin/ifconfig ncm0 192.168.77.1 netmask 255.255.255.252 up",
+    "{RUN}/platform/sbin/ifconfig ncm0",
+    "{RUN}/platform/sbin/ulink_ctrl -s {RUN}/dcd/io-usb -w 2 -l 1",
+    "{RUN}/dashcast-usb --usb-check no-controller",
+    "/bin/pidin ar",
+    "cast start",
+    "{RUN}/dashcast-usb --rmdir {RUN}/role-operation"
+   ]
+  },
+  {
+   "arguments": "ncm",
+   "rc": 0,
+   "state": [
+    "dcd/",
+    "dcd/io-usb",
+    "interface",
+    "interface-present",
+    "interface-up",
+    "interfaces",
+    "link-up",
+    "ncm-connected",
+    "net/",
+    "net/dev/socket",
+    "platform/",
+    "platform/dev/io-usb/",
+    "processes",
+    "usb-world"
+   ],
+   "stderr": [],
+   "stdout": [
+    "NCM_ALREADY_CONFIGURED_NO_RECONNECT"
+   ],
+   "trace": [
+    "/bin/pidin ar",
+    "{RUN}/platform/sbin/ifconfig ncm0",
+    "{RUN}/dashcast-usb --usb-check no-controller",
+    "cast start",
+    "{RUN}/dashcast-usb --rmdir {RUN}/role-operation"
+   ]
+  },
+  {
+   "arguments": "host",
+   "rc": 0,
+   "state": [
+    "dcd/",
+    "interface",
+    "interfaces",
+    "net/",
+    "platform/",
+    "platform/dev/io-usb/",
+    "platform/dev/io-usb/devu-omap5-xhci.so",
+    "processes",
+    "usb-world"
+   ],
+   "stderr": [],
+   "stdout": [
+    "NCM_INTERFACE_REMOVED",
+    "USB_HOST_READY"
+   ],
+   "trace": [
+    "/bin/pidin ar",
+    "cast stop",
+    "{RUN}/platform/sbin/ulink_ctrl -s {RUN}/dcd/io-usb -w 2 -l 0",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 down",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "/bin/pidin ar",
+    "/bin/kill -TERM 30",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/kill -TERM 20",
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --usb-check no-controller",
+    "/bin/mount -Tio-usb -o ioport=0x48890000,irq=108,ioport=0x488d0000,irq=110 {RUN}/platform/lib/dll/devu-omap5-xhci.so {RUN}/platform/dev/io-usb/io-usb",
+    "{RUN}/dashcast-usb --usb-check controllers-up",
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --rmdir {RUN}/role-operation"
+   ]
+  },
+  {
+   "arguments": "host",
+   "rc": 0,
+   "state": [
+    "dcd/",
+    "interface",
+    "interfaces",
+    "net/",
+    "platform/",
+    "platform/dev/io-usb/",
+    "platform/dev/io-usb/devu-omap5-xhci.so",
+    "processes",
+    "usb-world"
+   ],
+   "stderr": [],
+   "stdout": [
+    "USB_HOST_READY"
+   ],
+   "trace": [
+    "/bin/pidin ar",
+    "cast stop",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --usb-check controllers-up",
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --rmdir {RUN}/role-operation"
+   ]
+  },
+  {
+   "arguments": "ncm",
+   "rc": 0,
+   "state": [
+    "dcd/",
+    "dcd/io-usb",
+    "interface",
+    "interface-present",
+    "interface-up",
+    "interfaces",
+    "link-up",
+    "ncm-connected",
+    "net/",
+    "net/dev/socket",
+    "platform/",
+    "platform/dev/io-usb/",
+    "processes",
+    "usb-world"
+   ],
+   "stderr": [],
+   "stdout": [
+    "USB_NCM_READY"
+   ],
+   "trace": [
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --usb-check no-devices",
+    "/bin/mkdir -p {RUN}/dcd {RUN}/net",
+    "/bin/umount {RUN}/platform/dev/io-usb/devu-omap5-xhci.so",
+    "{RUN}/dashcast-usb --usb-check no-controller",
+    "{RUN}/platform/sbin/io-usb-dcd -n {RUN}/dcd/io-usb -d usbncm-omap543x-dwcotg3 ioport=0x488d0000,irq=110,linkdown",
+    "{RUN}/platform/sbin/io-pkt-v6-hc -i7 -d usbdnet protocol=ncm,path={RUN}/dcd/io-usb,mac=020000000701,usbdnet_mac=020000000702,wait=2 -ptcpip prefix={RUN}/net",
+    "/bin/pidin ar",
+    "{RUN}/platform/sbin/ifconfig ncm0 192.168.77.1 netmask 255.255.255.252 up",
+    "{RUN}/platform/sbin/ifconfig ncm0",
+    "{RUN}/platform/sbin/ulink_ctrl -s {RUN}/dcd/io-usb -w 2 -l 1",
+    "{RUN}/dashcast-usb --usb-check no-controller",
+    "/bin/pidin ar",
+    "cast start",
+    "{RUN}/dashcast-usb --rmdir {RUN}/role-operation"
+   ]
+  },
+  {
+   "arguments": "ncm",
+   "rc": 0,
+   "state": [
+    "dcd/",
+    "dcd/io-usb",
+    "interface",
+    "interface-present",
+    "interface-up",
+    "interfaces",
+    "link-up",
+    "ncm-connected",
+    "net/",
+    "net/dev/socket",
+    "platform/",
+    "platform/dev/io-usb/",
+    "processes",
+    "usb-world"
+   ],
+   "stderr": [],
+   "stdout": [
+    "NCM_ALREADY_CONFIGURED_NO_RECONNECT"
+   ],
+   "trace": [
+    "/bin/pidin ar",
+    "{RUN}/platform/sbin/ifconfig ncm0",
+    "{RUN}/dashcast-usb --usb-check no-controller",
+    "cast start",
+    "{RUN}/dashcast-usb --rmdir {RUN}/role-operation"
+   ]
+  },
+  {
+   "arguments": "host",
+   "rc": 0,
+   "state": [
+    "dcd/",
+    "interface",
+    "interfaces",
+    "net/",
+    "platform/",
+    "platform/dev/io-usb/",
+    "platform/dev/io-usb/devu-omap5-xhci.so",
+    "processes",
+    "usb-world"
+   ],
+   "stderr": [],
+   "stdout": [
+    "NCM_INTERFACE_REMOVED",
+    "USB_HOST_READY"
+   ],
+   "trace": [
+    "/bin/pidin ar",
+    "cast stop",
+    "{RUN}/platform/sbin/ulink_ctrl -s {RUN}/dcd/io-usb -w 2 -l 0",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 down",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "/bin/pidin ar",
+    "/bin/kill -TERM 30",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/kill -TERM 20",
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --usb-check no-controller",
+    "/bin/mount -Tio-usb -o ioport=0x48890000,irq=108,ioport=0x488d0000,irq=110 {RUN}/platform/lib/dll/devu-omap5-xhci.so {RUN}/platform/dev/io-usb/io-usb",
+    "{RUN}/dashcast-usb --usb-check controllers-up",
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --rmdir {RUN}/role-operation"
+   ]
+  }
+ ],
+ "Usb.test_slow_stack_exit_is_waited_for": [
+  {
+   "arguments": "host",
+   "rc": 0,
+   "state": [
+    "dcd/",
+    "interfaces",
+    "net/",
+    "platform/",
+    "platform/dev/io-usb/",
+    "platform/dev/io-usb/devu-omap5-xhci.so",
+    "processes",
+    "stop-delay",
+    "usb-world"
+   ],
+   "stderr": [],
+   "stdout": [
+    "NCM_INTERFACE_REMOVED",
+    "USB_HOST_READY"
+   ],
+   "trace": [
+    "/bin/pidin ar",
+    "cast stop",
+    "{RUN}/platform/sbin/ulink_ctrl -s {RUN}/dcd/io-usb -w 2 -l 0",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "{RUN}/platform/sbin/ifconfig ncm0 down",
+    "{RUN}/platform/sbin/ifconfig ncm0 destroy",
+    "{RUN}/platform/sbin/ifconfig -a",
+    "/bin/pidin ar",
+    "/bin/kill -TERM 30",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/kill -TERM 20",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --usb-check no-controller",
+    "/bin/mount -Tio-usb -o ioport=0x48890000,irq=108,ioport=0x488d0000,irq=110 {RUN}/platform/lib/dll/devu-omap5-xhci.so {RUN}/platform/dev/io-usb/io-usb",
+    "{RUN}/dashcast-usb --usb-check controllers-up",
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --rmdir {RUN}/role-operation"
+   ]
+  }
+ ],
+ "Usb.test_stack_left_down_is_brought_back_up": [
+  {
+   "arguments": "ncm",
+   "rc": 0,
+   "state": [
+    "dcd/",
+    "dcd/io-usb",
+    "interface",
+    "interface-present",
+    "interface-up",
+    "link-up",
+    "ncm-connected",
+    "net/",
+    "net/dev/socket",
+    "platform/",
+    "platform/dev/io-usb/",
+    "processes",
+    "usb-world"
+   ],
+   "stderr": [],
+   "stdout": [
+    "USB_NCM_READY"
+   ],
+   "trace": [
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --usb-check no-controller",
+    "{RUN}/platform/sbin/ifconfig ncm0 192.168.77.1 netmask 255.255.255.252 up",
+    "{RUN}/platform/sbin/ifconfig ncm0",
+    "{RUN}/platform/sbin/ulink_ctrl -s {RUN}/dcd/io-usb -w 2 -l 1",
+    "{RUN}/dashcast-usb --usb-check no-controller",
+    "/bin/pidin ar",
+    "cast start",
+    "{RUN}/dashcast-usb --rmdir {RUN}/role-operation"
+   ]
+  }
+ ],
+ "Usb.test_status_does_not_accept_a_down_interface": [
+  {
+   "arguments": "query",
+   "rc": 1,
+   "state": [
+    "dcd/",
+    "dcd/io-usb",
+    "interface",
+    "interface-present",
+    "net/",
+    "net/dev/socket",
+    "platform/",
+    "platform/dev/io-usb/",
+    "processes",
+    "usb-world"
+   ],
+   "stderr": [],
+   "stdout": [],
+   "trace": [
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --usb-check no-controller",
+    "{RUN}/platform/sbin/ifconfig ncm0"
+   ]
+  }
+ ],
+ "Usb.test_timeout_during_ncm_skips_recovery": [
+  {
+   "arguments": "ncm",
+   "rc": 124,
+   "state": [
+    "command-timeout",
+    "dcd/",
+    "net/",
+    "platform/",
+    "platform/dev/io-usb/",
+    "platform/dev/io-usb/devu-omap5-xhci.so",
+    "processes",
+    "role-operation/",
+    "usb-world"
+   ],
+   "stderr": [
+    "USB_BACKEND_COMMAND_TIMEOUT",
+    "USB_NCM_FAILED",
+    "USB_OPERATION_QUARANTINED_RESTART_REQUIRED"
+   ],
+   "stdout": [],
+   "trace": [
+    "/bin/pidin ar"
+   ]
+  }
+ ],
+ "Usb.test_timeout_keeps_the_guard_and_blocks_new_work": [
+  {
+   "arguments": "host",
+   "rc": 124,
+   "state": [
+    "command-timeout",
+    "dcd/",
+    "dcd/io-usb",
+    "interface-present",
+    "interface-up",
+    "link-up",
+    "net/",
+    "net/dev/socket",
+    "platform/",
+    "platform/dev/io-usb/",
+    "processes",
+    "role-operation/",
+    "usb-world"
+   ],
+   "stderr": [
+    "USB_BACKEND_COMMAND_TIMEOUT",
+    "USB_HOST_FAILED",
+    "USB_OPERATION_QUARANTINED_RESTART_REQUIRED"
+   ],
+   "stdout": [],
+   "trace": [
+    "/bin/pidin ar"
+   ]
+  },
+  {
+   "arguments": "ncm",
+   "rc": 1,
+   "state": [
+    "dcd/",
+    "dcd/io-usb",
+    "interface-present",
+    "interface-up",
+    "link-up",
+    "net/",
+    "net/dev/socket",
+    "platform/",
+    "platform/dev/io-usb/",
+    "processes",
+    "role-operation/",
+    "usb-world"
+   ],
+   "stderr": [
+    "USB_OPERATION_BUSY_OR_UNCONFIRMED"
+   ],
+   "stdout": [],
+   "trace": []
+  }
+ ],
+ "Usb.test_unconfirmed_video_stop_blocks_teardown": [
+  {
+   "arguments": "host",
+   "rc": 1,
+   "state": [
+    "cast-stop-failure",
+    "dcd/",
+    "dcd/io-usb",
+    "interface-present",
+    "interface-up",
+    "link-up",
+    "net/",
+    "net/dev/socket",
+    "platform/",
+    "platform/dev/io-usb/",
+    "processes",
+    "usb-world"
+   ],
+   "stderr": [
+    "HOST_VIDEO_STOP_UNCONFIRMED",
+    "USB_HOST_FAILED"
+   ],
+   "stdout": [],
+   "trace": [
+    "/bin/pidin ar",
+    "cast stop",
+    "{RUN}/dashcast-usb --rmdir {RUN}/role-operation"
+   ]
+  }
+ ],
+ "Usb.test_unknown_guard_blocks_changes_but_not_status": [
+  {
+   "arguments": "ncm",
+   "rc": 1,
+   "state": [
+    "dcd/",
+    "net/",
+    "platform/",
+    "platform/dev/io-usb/",
+    "platform/dev/io-usb/devu-omap5-xhci.so",
+    "role-operation/",
+    "usb-world"
+   ],
+   "stderr": [
+    "USB_OPERATION_BUSY_OR_UNCONFIRMED"
+   ],
+   "stdout": [],
+   "trace": []
+  },
+  {
+   "arguments": "query",
+   "rc": 0,
+   "state": [
+    "dcd/",
+    "net/",
+    "platform/",
+    "platform/dev/io-usb/",
+    "platform/dev/io-usb/devu-omap5-xhci.so",
+    "processes",
+    "role-operation/",
+    "usb-world"
+   ],
+   "stderr": [],
+   "stdout": [
+    "USB_HOST_READY"
+   ],
+   "trace": [
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --usb-check controllers-up"
+   ]
+  }
+ ],
+ "Usb.test_video_failure_does_not_undo_ncm": [
+  {
+   "arguments": "ncm",
+   "rc": 0,
+   "state": [
+    "cast-start-failure",
+    "dcd/",
+    "dcd/io-usb",
+    "interface",
+    "interface-present",
+    "interface-up",
+    "link-up",
+    "ncm-connected",
+    "net/",
+    "net/dev/socket",
+    "platform/",
+    "platform/dev/io-usb/",
+    "processes",
+    "usb-world"
+   ],
+   "stderr": [
+    "DCV1_UNAVAILABLE"
+   ],
+   "stdout": [
+    "USB_NCM_READY"
+   ],
+   "trace": [
+    "/bin/pidin ar",
+    "{RUN}/dashcast-usb --usb-check no-devices",
+    "/bin/mkdir -p {RUN}/dcd {RUN}/net",
+    "/bin/umount {RUN}/platform/dev/io-usb/devu-omap5-xhci.so",
+    "{RUN}/dashcast-usb --usb-check no-controller",
+    "{RUN}/platform/sbin/io-usb-dcd -n {RUN}/dcd/io-usb -d usbncm-omap543x-dwcotg3 ioport=0x488d0000,irq=110,linkdown",
+    "{RUN}/platform/sbin/io-pkt-v6-hc -i7 -d usbdnet protocol=ncm,path={RUN}/dcd/io-usb,mac=020000000701,usbdnet_mac=020000000702,wait=2 -ptcpip prefix={RUN}/net",
+    "/bin/pidin ar",
+    "{RUN}/platform/sbin/ifconfig ncm0 192.168.77.1 netmask 255.255.255.252 up",
+    "{RUN}/platform/sbin/ifconfig ncm0",
+    "{RUN}/platform/sbin/ulink_ctrl -s {RUN}/dcd/io-usb -w 2 -l 1",
+    "{RUN}/dashcast-usb --usb-check no-controller",
+    "/bin/pidin ar",
+    "cast start",
+    "{RUN}/dashcast-usb --rmdir {RUN}/role-operation"
+   ]
+  }
+ ]
+}

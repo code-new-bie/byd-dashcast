@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Status-bar glyph: the launcher icon's instrument housing with the arrow cut out. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M2.86,8.91 Q12.00,5.22 21.14,8.91 Q22.00,9.05 21.86,9.84 L20.28,17.16 Q20.07,18.02 19.17,18.02 L4.83,18.02 Q3.93,18.02 3.72,17.16 L2.14,9.84 Q2.00,9.05 2.86,8.91 Z M12.00,9.91 L14.02,14.57 L12.00,13.48 L9.98,14.57 Z" />
+</vector>

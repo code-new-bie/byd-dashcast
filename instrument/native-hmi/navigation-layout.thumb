@@ -1,0 +1,97 @@
+// Included after the hash-pinned unlimited bridge, inside its verified RX gap.
+// Called only on the original render thread before the HMI seqlock closes.
+// Node::PropertyObject is node+4 (original GridLayout2D::setColumn ABI).
+// No vehicle data writes. The inherited private property drives KZB states.
+nav_tick:
+push.w {r4, r5, r6, r7, r8, lr}
+sub sp, #8
+ldr r4, bg_state_address
+mov r0, r5
+adr r1, bg_root_name
+movs r2, #8
+bl bg_find
+mov r5, r0
+cmp r5, #0
+beq nav_fail
+ldr r7, [r4, #96]
+cmp r7, #0
+bne nav_descriptor_ready
+adr r0, nav_property_name
+movs r1, #25
+bl #0x083edafc
+mov r7, r0
+cmp r7, #0
+beq nav_fail
+ldr r3, [r7]
+ldr r3, [r3, #8]
+blx r3
+cmp r0, #1
+bne nav_fail
+str r7, [r4, #96]
+nav_descriptor_ready:
+ldr r6, [r4, #36]
+movs r8, #1
+mov r0, r5
+adr r1, bg_content_name
+movs r2, #7
+bl bg_find
+cmp r0, #0
+beq nav_layout_absent
+str r0, [sp, #4]
+adr r1, nav_top_name
+movs r2, #15
+bl bg_find
+cmp r0, #0
+beq nav_layout_absent
+ldr r0, [sp, #4]
+adr r1, nav_bottom_name
+movs r2, #18
+bl bg_find
+cmp r0, #0
+bne nav_check_cached
+nav_layout_absent:
+movs r6, #0
+movs r8, #0
+nav_check_cached:
+ldr r0, [r4, #92]
+cmp r0, r5
+bne nav_set
+ldr r0, [r4, #100]
+cmp r0, r6
+beq nav_publish
+nav_set:
+str r7, [sp]
+add r0, r5, #4
+mov r1, sp
+mov r2, r6
+bl #0x0814c210
+str r5, [r4, #92]
+str r6, [r4, #100]
+nav_publish:
+cmp r8, #0
+beq nav_fail
+movw r0, #0x5600
+movt r0, #0x4e41
+orrs r0, r6
+b nav_status
+nav_fail:
+mov.w r0, #-1
+nav_status:
+ldr r1, [r4, #88]
+cmp r1, #0
+beq nav_done
+ldr r1, [r4]
+str r0, [r1, #116]
+nav_done:
+add sp, #8
+pop.w {r4, r5, r6, r7, r8, pc}
+.balign 4
+nav_property_name:
+.asciz "Dashcast.NavigationLayout"
+.balign 4
+nav_top_name:
+.asciz "DashcastTopBand"
+.balign 4
+nav_bottom_name:
+.asciz "DashcastBottomBand"
+.balign 4
