@@ -22,7 +22,15 @@ from analyze_kzb_hmi import KzbDirectory, custom_types, node_head
 from navigation_layout import digest
 from theme_geometry import first_group
 from warning_perimeter import (build, build_hmi, heads, native_image_size, SLOTS, ALIASES, LIGHTS, FITTED, TEXT_SLOTS,
-                               STYLES, NATIVE_MANAGER, CONTROL, GEOMETRY, TRANSFORM, LAYOUT, ORIGIN, HMI_SHA)
+                               STYLES, NATIVE_MANAGER, CONTROL, GEOMETRY, TRANSFORM, LAYOUT, ORIGIN, HMI_SHA,
+                               ADAS_MANAGER, SMALL_ADAS_MANAGER, ADAS_FULL, SMALL_ADAS_FULL)
+
+# What the OEM draws around the video in full screen (panel pixels: x, y, width, height), measured from the
+# node positions and the cluster font: the clock with its am/pm word, the EV/HEV lamp, the gear, the drive and
+# terrain mode lamps, the compass, the outside temperature (right-aligned, three characters at most), and the
+# bottom row of power, battery/fuel/range and speed/mileage. No slot may overlap any of them.
+PROTECTED = [(456, 68, 200, 58), (800, 84, 82, 28), (915, 64, 90, 66), (1040, 73, 154, 46), (1221, 70, 96, 42),
+             (1356, 80, 110, 34), (150, 555, 400, 115), (550, 555, 810, 97), (1360, 550, 415, 145)]
 
 
 def decoded(raw, kind):
@@ -236,11 +244,17 @@ def run(original, hmi):
             if name >= other:
                 continue
             assert not (x < a+c and x+w > a and y < b+d and y+h > b), (name, other)
-    protected = [(490, 50, 1170, 60), (150, 555, 400, 115), (550, 555, 810, 97), (1360, 550, 415, 145)]
     for name, (x, y, w, h) in SLOTS.items():
-        for a, b, c, d in protected:
+        for a, b, c, d in PROTECTED:
             assert not (x < a+c and x+w > a and y < b+d and y+h > b), (name, 'protected information')
     cases.append(f'{len(SLOTS)} complete family rectangles: no cross-family/protected-area overlap')
+    # The cruise set speed is drawn over its slot's top edge: the text box must clear the clock as well.
+    for name, (x, y, scale) in TEXT_SLOTS.items():
+        for a, b, c, d in PROTECTED:
+            assert not (x < a+c and x+100*scale > a and y < b+d and y+50*scale > b), (name, 'protected information')
+    cases.append('cruise set-speed text clears the clock and the other top-bar information')
+    cases.extend(unmoved_images(before, clear['Full']))
+    cases.extend(adas_scene(before, after))
     assert before.read('/StartupPrefab') == after.read('/StartupPrefab')
     assert all(after.read(n) == before.read(n) for n in before.records if n not in report['changed_resources'])
     assert after.read('/State Managers/DCSafetyRail') == before.read('/State Managers/DCSafetyRail')
@@ -252,6 +266,81 @@ def run(original, hmi):
                         native_matrix_calls=native.calls, cases=cases, build=report,
                         original_layer_order_verified=True, right_glass_mirror_verified=True,
                         real_layout_engine=False, vehicle=False), all_bounds
+
+
+def all_heads(d, raw):
+    """Every node header of a prefab, in file order (headers with the empty base name only)."""
+    empty = words_of(d.dictionary('/$strings').index(''))
+    at, found = 0, []
+    while at + 16 <= len(raw):
+        if raw[at + 4:at + 8] == empty:
+            try:
+                h = node_head(d, raw, at)
+                if h['name'] and h['node_class'].startswith(('Kanzi.', 'Rc.')):
+                    found.append(h)
+                    at = h['end_properties']
+                    continue
+            except (ValueError, KeyError, IndexError, struct.error, UnicodeError):
+                pass
+        at += 1
+    return found
+
+
+def words_of(value):
+    return struct.pack('<I', value)
+
+
+def unmoved_images(d, clear):
+    """An indicator image that keeps its OEM place in full screen must not be inside the video opening.
+
+    This is the check that was missing when the speed-limit sign stayed in the video. Indicator images are
+    direct children of the identity `content` node, so their own transforms are panel positions.
+    """
+    moved, cases = set(SLOTS) | set(ALIASES), []
+    for style in STYLES:
+        kept = 0
+        for h in all_heads(d, d.read('/Prefabs/Prefab_Indicator_' + style)):
+            if h['node_class'] != 'Kanzi.Image2D' or h['name'] in moved or 'Image2D.Image' not in h['properties']:
+                continue
+            try:
+                width, height = native_image_size(d, h)
+            except (KeyError, ValueError, OSError, struct.error):
+                continue
+            p = h['properties']
+            render, layout = p.get(TRANSFORM, [1., 1., 0., 0., 0.]), p.get(LAYOUT, [1., 1., 0., 0., 0.])
+            left, top = layout[3] + render[3] * layout[0], layout[4] + render[4] * layout[1]
+            scale = render[0] * layout[0]
+            box = clear[max(0, math.floor(top)):math.ceil(top + height * scale), max(0, math.floor(left)):math.ceil(left + width * scale)]
+            assert not box.any(), (style, h['name'], 'keeps its OEM place inside the full-screen video')
+            kept += 1
+        assert kept >= 10
+        cases.append(f'{style}: {kept} images keep their OEM place, none inside the full-screen video')
+    return cases
+
+
+def adas_scene(before, after):
+    """Full screen hides the driver-assistance scene; idle and the small window keep every rule byte."""
+    strings, props = after.dictionary('/$strings'), after.dictionary('/$property_dictionary')
+    cases = []
+    for manager, index, rules in ((ADAS_MANAGER, 0, ADAS_FULL), (SMALL_ADAS_MANAGER, 1, SMALL_ADAS_FULL)):
+        old, new = before.read(manager), after.read(manager)
+        at_old = at_new = 16
+        for group in range(index + 1):
+            a, b = first_group(before, old, at_old), first_group(after, new, at_new)
+            if group < index:
+                assert old[at_old:a['end'] + 4] == new[at_new:b['end'] + 4]
+                at_old, at_new = a['end'] + 4, b['end'] + 4
+        assert old[:at_old] == new[:at_new] and old[a['end']:] == new[b['end']:]
+        assert [s[:2] for s in a['states']] == [s[:2] for s in b['states']]
+        assert a['states'][0] == b['states'][0] and a['states'][2] == b['states'][2]
+        full = [(strings[path], props[values[0][0]], values[0][1]) for path, values, tail in b['states'][1][2]
+                if len(values) == 1 and tail == bytes(12)]
+        assert full == rules
+        hidden = {path for path, key, value in full if key == 'Node.Visible' and value == bytes(4)}
+        assert hidden >= ({'Lane', 'ACCSys', 'LaneDeparture'} if index == 0 else {'ACCSys', 'LaneDistance', 'ADAS_SmallBG'})
+        assert not any(key == TRANSFORM for _, key, _ in full)
+        cases.append(manager.rsplit('/', 1)[1] + ': full screen hides the scene, idle and small window byte exact')
+    return cases
 
 
 class ControlBench:

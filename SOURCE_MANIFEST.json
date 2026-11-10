@@ -63,8 +63,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "bytes": 1745,
-      "sha256": "03c8d9ebd00801727cf52dc4848633fddc1a4258528ea49beb4b58de01b91f5b",
+      "bytes": 2267,
+      "sha256": "157be76592c5df02b7d794e7358ffb0550b5326557dc49ea10f62c9cf1eada94",
       "origin": "publication/template/CHANGELOG.md",
       "transformations": []
     },
@@ -85,7 +85,7 @@
     {
       "path": "README.md",
       "bytes": 3689,
-      "sha256": "7e02ee368c540a3c1e3a03a52c4ee8cba8d447abd5713c3cbb37ae71e4cee585",
+      "sha256": "78b286e9a7ed5b51f646fc412908548e6e9b66a9db67407ed02f13982c3aca38",
       "origin": "publication/template/README.md",
       "transformations": []
     },
@@ -409,8 +409,8 @@
       "path": "analysis/warning_perimeter.py",
       "origin": "REVIEWED_AFTER_INITIAL_EXPORT",
       "transformations": [],
-      "bytes": 18363,
-      "sha256": "a589f251a09e72b23bbdd026718b515f9ce6331255d9c849815dfbdfdb9cdff1"
+      "bytes": 21453,
+      "sha256": "26c69ed14febda5ad28b13a5372e484f5b991f54ca18a3d39e2419a829116b82"
     },
     {
       "path": "android/.gitignore",
@@ -422,7 +422,7 @@
     {
       "path": "android/app/build.gradle",
       "bytes": 1107,
-      "sha256": "14d643efc937d0c15780380b54be6d7869dd8cdf7c1cba4b1f854c5b717c12b5",
+      "sha256": "68b98cb2c7ba4411cb363c09a878e98edca7b8e96406c091cbd3db8dc2557593",
       "origin": "phase1/android/app/build.gradle",
       "transformations": []
     },
@@ -2307,15 +2307,15 @@
     },
     {
       "path": "docs/ARCHITECTURE.md",
-      "bytes": 6488,
-      "sha256": "f901a9388807f734c8af2a9cda042126e3d1dabe0c8b88112e36d8bc99d97e58",
+      "bytes": 6721,
+      "sha256": "6f5a3ccab8079446eed4381fbb7ce3dbc0737e21050b004d66c5930074707c84",
       "origin": "publication/template/docs/ARCHITECTURE.md",
       "transformations": []
     },
     {
       "path": "docs/BUILD.md",
-      "bytes": 8749,
-      "sha256": "6596498914430a32fd2f10d2a975abf60705250e0f5e022f00136e38267ebaea",
+      "bytes": 8794,
+      "sha256": "6a9ceaeb023803cb19bad24e81429c75f551ea85ba97017856ebdc868478017d",
       "origin": "publication/template/docs/BUILD.md",
       "transformations": []
     },
@@ -2331,19 +2331,19 @@
       "origin": "REVIEWED_AFTER_INITIAL_EXPORT",
       "transformations": [],
       "bytes": 40139,
-      "sha256": "4c47bc296fc7c9e799c5d51e8d3f3fda16508f6269a536e3ff04a5edf14511ec"
+      "sha256": "dc99f640501e46580664f234afeaf8e525bc6312abd99520ca13e51dfdd30b2f"
     },
     {
       "path": "docs/USAGE.md",
-      "bytes": 5501,
-      "sha256": "1fb241c4881a6f26047b8e06ac06dbad631471233af4468d8cfc672b863d7723",
+      "bytes": 5677,
+      "sha256": "26fa3bae21346da4375cb7baddbacdb977de5f8eddc3fed86e5d6bff345a4787",
       "origin": "publication/template/docs/USAGE.md",
       "transformations": []
     },
     {
       "path": "docs/VALIDATION.md",
-      "bytes": 2957,
-      "sha256": "8a8c77266e98b3f284179cda3d1dce14abbf40b8f7fb0ac4931105feea131ab0",
+      "bytes": 3620,
+      "sha256": "2c0b6fd07e1c24cb0a41e42c870e2b2c841a7a60db64ba39af77aaa3d19ec30b",
       "origin": "publication/template/docs/VALIDATION.md",
       "transformations": []
     },
@@ -2590,7 +2590,7 @@
       "origin": "REVIEWED_AFTER_INITIAL_EXPORT",
       "transformations": [],
       "bytes": 172,
-      "sha256": "1e7061ffd8f7657a1271a1598ed47450218fa7ee3ccdf9b227b51dc8e3a1fd8b"
+      "sha256": "71e6b1e77b6727b4db823e078d34ef63219fc1b2a1495aff057be038adf37648"
     },
     {
       "path": "requirements-native.txt",
@@ -2629,8 +2629,8 @@
     },
     {
       "path": "tools/build_instrument_components.py",
-      "bytes": 6263,
-      "sha256": "8aef5236bce31bac9ae824b908632b80b1fed919f141c86c3eb6228c7fa8c86c",
+      "bytes": 6297,
+      "sha256": "9217c67814e84d8b1134376e08890a253520999244ec1dfcd912ac3ccfd974aa",
       "origin": "publication/template/tools/build_instrument_components.py",
       "transformations": []
     },
@@ -2680,8 +2680,8 @@
       "path": "tools/test_warning_perimeter.py",
       "origin": "REVIEWED_AFTER_INITIAL_EXPORT",
       "transformations": [],
-      "bytes": 28991,
-      "sha256": "a0c6d83352587143971206ac2252c23a6f1b3c5674eb760b1e1c9b46df38fc7f"
+      "bytes": 33938,
+      "sha256": "eed5b8a97bbe0482b687114a8400593ba0401d14ee7c75a1eab950a4f850f7e2"
     },
     {
       "path": "tools/tests/test_b2_matte_cli.py",

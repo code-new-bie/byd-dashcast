@@ -2,7 +2,7 @@
 
 仓库里有车机 APK 和仪表端两部分源码。APK 只依赖本仓库源码；仪表端在一个**基础固件包**上构建：取出其中要改的原厂文件，打补丁、加入本项目的两个程序，再和基础包的其余文件一起打成刷机包。仓库不包含任何固件。
 
-当前版本：APK **1.39.0 / code96**，配套仪表 **1.39.0/RWVI**。
+当前版本：APK **1.40.0 / code97**，配套仪表 **1.40.0/RWVI**。
 
 ## 一、基础固件包
 
@@ -39,7 +39,7 @@ cd android
 bash gradlew testDebugUnitTest assembleDebug lintDebug --console=plain
 ```
 
-Windows 用 `gradlew.bat`。产出 `android/app/build/outputs/apk/debug/app-debug.apk`（包名 `com.byd.dashcast.phase1.debug`，版本 `1.39.0-debug` / code96），单测结果在 `android/app/build/test-results/`，lint 报告在 `android/app/build/reports/lint-results-debug.html`。
+Windows 用 `gradlew.bat`。产出 `android/app/build/outputs/apk/debug/app-debug.apk`（包名 `com.byd.dashcast.phase1.debug`，版本 `1.40.0-debug` / code97），单测结果在 `android/app/build/test-results/`，lint 报告在 `android/app/build/reports/lint-results-debug.html`。
 
 **签名**：debug APK 用构建机上的 debug 密钥签名。只有签名与车上已装的 APK 相同才能覆盖安装；不同时只能先卸载，应用数据和 ADB 身份会一并丢失。仓库不包含任何签名密钥。
 
@@ -63,12 +63,12 @@ python tools/build_instrument_components.py --base BASE \
 
 # 5. 和基础包的其余文件一起打成刷机包
 python tools/package_full.py --base BASE --components W/components \
-  --output W/dashcast-2021-song-plus-dmi-instrument-1.39.0-RWVI-FULL.zip --report W/PACKAGE.json
+  --output W/dashcast-2021-song-plus-dmi-instrument-1.40.0-RWVI-FULL.zip --report W/PACKAGE.json
 ```
 
 `CLANG_USR` 是 clang/lld 的安装前缀（`$CLANG_USR/bin/clang`、`$CLANG_USR/bin/ld.lld`）。每个输出目录都必须是新目录。
 
-第 4 步在内存里依次完成：布局与背景（`tools/build_projection_fit_components.py`）→ B2 混合模式和全屏遮罩 → 小窗遮罩 → RWVG 淡入 → RWVI 仪表几何 → 投屏告警位置，再给 `application.cfg` 加一行 `SurfaceBitsAlpha = 8`，给启动模块表加上本模块的启动项（`analysis/startup_entry.py`）。七个产物都要和审核过的文件逐字节相同（`EXPECTED`），否则一个文件也不写。产物按安装路径放在 `W/components/app/` 和 `W/components/os/`，`REPORT.json` 记录每一步的检查结果。
+第 4 步在内存里依次完成：布局与背景（`tools/build_projection_fit_components.py`）→ B2 混合模式和全屏遮罩 → 小窗遮罩 → RWVG 淡入 → RWVI 仪表几何 → 投屏告警位置（含全屏时隐藏驾驶辅助场景图），再给 `application.cfg` 加一行 `SurfaceBitsAlpha = 8`，给启动模块表加上本模块的启动项（`analysis/startup_entry.py`）。七个产物都要和审核过的文件逐字节相同（`EXPECTED`），否则一个文件也不写。产物按安装路径放在 `W/components/app/` 和 `W/components/os/`，`REPORT.json` 记录每一步的检查结果。
 
 排查时前三步可以单独运行：`build_projection_fit_components.py --base BASE --output STEP1`，`build_b2_matte_components.py --hmi STEP1/rc_hmi.exe --kzb STEP1/bic_byd_stha.kzb --output STEP2`，`build_center_mask_components.py --hmi STEP2/rc_hmi.exe --kzb STEP2/bic_byd_stha.kzb --output STEP3`。主题几何和告警位置的指令级离线检查是 `tools/test_theme_geometry.py`、`tools/test_warning_perimeter.py`（需要 Unicorn，`--toc` 用第 1 步取出的 `bic_byd_stha.kzb.txt`）。
 
@@ -105,7 +105,7 @@ python tools/package_full.py --base BASE --components W/components \
 | 文件 | 说明 |
 |---|---|
 | `dashcast-<版本>-debug.apk` | 用维护者固定的 debug 密钥签名，可以覆盖安装 |
-| `dashcast-2021-song-plus-dmi-instrument-<版本>-<标记>-FULL.zip` | 上一节所述的刷机包，例如 `…-1.39.0-RWVI-FULL.zip` |
+| `dashcast-2021-song-plus-dmi-instrument-<版本>-<标记>-FULL.zip` | 上一节所述的刷机包，例如 `…-1.40.0-RWVI-FULL.zip` |
 
 ## 七、提交前检查
 

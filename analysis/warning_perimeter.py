@@ -4,6 +4,10 @@ One geometry group is appended to the indicators' own content manager; original
 state groups, event/binding tails and textures survive. The group reads its control
 through the local-only optional getter, so the HMI writes a private local value on
 the current instance's content node, in full screen only. Video, USB and capability are unchanged.
+
+Full screen also hides the driver-assistance scene (lead car, following-distance and lane pictures of the ADAS
+page and of its small widget): the frame has no room for them and they used to sit inside the video. The ACC lamp,
+the set speed, the other lamps and the take-over text stay. The small window keeps the side panel.
 """
 import io
 import re
@@ -14,13 +18,15 @@ from PIL import Image
 
 from analyze_kzb_hmi import KzbDirectory, Cursor, STANDARD_NODE_TYPES, custom_types, node_head
 from navigation_layout import digest, words, dictionary, repack, srt
-from theme_geometry import variant
+from theme_geometry import variant, first_group, encode_group
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / 'instrument/native-hmi/warning-control.thumb'
 INPUT_SHA = '70ae4e79c722e98cc393552fe32fd3b1b71babdeee25bc592881b83e6f1e9b68'
 HMI_SHA = 'd910e76aee04113299a5febadab99e4de6ce96196cd8ce23a20b14aa7080e90c'
 NATIVE_MANAGER = '/State Managers/Fashion_Indicator_Theme'
+ADAS_MANAGER = '/State Managers/DCADASPresentation'
+SMALL_ADAS_MANAGER = '/State Managers/DCSmallADASPresentation'
 SAFETY_URL = 'kzb://bic_byd_stha/State Managers/DCSafetyRail'
 STYLES = ('Fashion', 'Classic', 'ACC')
 CONTROL = 'DCWarningLayout'
@@ -50,18 +56,22 @@ SLOTS = {
     'EPSErr': (1816, 318, 46, 37), 'EBSystemError': (1800, 360, 50, 37),
     'EBSystemWarn': (1786, 402, 50, 37), 'PCWSafetyDistanceWarn': (1732, 442, 50, 37),
     'CheckTyre': (1796, 234, 34, 36), 'SmartKeySysWarn': (1762, 484, 46, 34),
-    'TaiLlight': (560, 112, 43, 24), 'HighBeam': (630, 112, 40, 24),
-    'FrontFogLED': (700, 112, 34, 24), 'RearFogLED': (1220, 112, 24, 24),
+    # The clock is x 460..654 (with its am/pm word), y 73..123; nothing may sit on or right under it.
+    'TaiLlight': (660, 112, 43, 24), 'HighBeam': (707, 112, 40, 24),
+    'FrontFogLED': (751, 112, 34, 24), 'RearFogLED': (1194, 112, 24, 24),
     'SmartHeadLightsWhite': (1290, 112, 40, 24), 'ACCModeErr': (1708, 494, 50, 47),
     'SteepSlopeError': (100, 442, 54, 42), 'GPF RequireMaintain': (158, 482, 48, 34),
     'ChargingConnectStatus': (1589, 112, 49, 32), 'Discharge': (126, 520, 44, 28),
     'BrakeSystemFault_1': (1380, 114, 84, 17),
     # 1.33.0: driver-assist and status icons that were still over the video.
-    'ACCModeGreen': (438, 76, 52, 45), 'Cruise': (492, 112, 64, 24), 'TJAWork0': (738, 112, 55, 25),
-    'EngineSimulationOff': (798, 112, 40, 25), 'LedInDoorShowMode': (1466, 112, 60, 25),
+    # 1.40.0: the ACC lamp and the cruise set speed moved from the clock to the free strip right of it.
+    'ACCModeGreen': (660, 64, 52, 45), 'Cruise': (718, 86, 64, 24), 'TJAWork0': (789, 112, 55, 25),
+    'EngineSimulationOff': (848, 112, 40, 25), 'LedInDoorShowMode': (1466, 112, 60, 25),
     'AVHModeGreen': (1772, 320, 42, 36), 'ReservationCharging': (1782, 272, 39, 44),
     'LEDGuidedBlindSpot': (115, 343, 40, 37), 'LEDInternshipCareGreen': (172, 520, 46, 34),
     'LEDGameMode': (110, 486, 46, 32),
+    # 1.40.0: the speed-limit sign (with its number) was still inside the video at its OEM place.
+    'TrafficSign': (1530, 84, 54, 54),
 }
 ALIASES = {
     'EngineOilPressureLow_Yellow': 'EngineOilPressureLow', 'ABS': 'ABSError',
@@ -75,15 +85,24 @@ ALIASES = {
     'ReservationCharging_1': 'ReservationCharging', 'ReservationChargingOff': 'ReservationCharging',
     'ReservationChargingOff_1': 'ReservationCharging', 'LedOutDoorShowMode': 'LedInDoorShowMode',
     'LEDGuidedBlindGreen': 'LEDGuidedBlindSpot', 'LEDGuidedBlindWhite': 'LEDGuidedBlindSpot',
-    'LEDInternshipCareWhite': 'LEDInternshipCareGreen',
+    'LEDInternshipCareWhite': 'LEDInternshipCareGreen', 'SpeedLim60': 'TrafficSign',
 }
 LIGHTS = frozenset(('TaiLlight', 'HighBeam', 'FrontFogLED', 'RearFogLED', 'SmartHeadLightsWhite'))
 # The perimeter is tighter than these icons' OEM rows: they shrink to fit and never grow.
 FITTED = frozenset(('ACCModeGreen', 'Cruise', 'TJAWork0', 'EngineSimulationOff', 'LedInDoorShowMode', 'AVHModeGreen',
-                    'ReservationCharging', 'LEDGuidedBlindSpot', 'LEDInternshipCareGreen', 'LEDGameMode', 'SteepSlopeError'))
+                    'ReservationCharging', 'LEDGuidedBlindSpot', 'LEDInternshipCareGreen', 'LEDGameMode', 'SteepSlopeError',
+                    'TrafficSign'))
 # The cruise set speed is text: left edge, top and uniform scale of its 100-wide box, right-aligned by the OEM.
 # It shares the Cruise slot, as it shares the OEM position with the SET image.
-TEXT_SLOTS = {'ACCGreen': (492, 104, .64), 'ACCWhite': (492, 104, .64)}
+TEXT_SLOTS = {'ACCGreen': (718, 78, .64), 'ACCWhite': (718, 78, .64)}
+HIDDEN, CLEAR = words(0), struct.pack('<f', 0.)
+# Full screen: (target, property, value) of the DCFull state. The small window (DCCenter) keeps its rules.
+ADAS_FULL = [('Lane', 'Node.Visible', HIDDEN), ('Lane', 'Node.Opacity', CLEAR),
+             ('ACCSys', 'Node.Visible', HIDDEN), ('ACCSys', 'Node.Opacity', CLEAR),
+             ('LaneDeparture', 'Node.Visible', HIDDEN), ('LaneDeparture', 'Node.Opacity', CLEAR)]
+SMALL_ADAS_FULL = [('.', 'Node.Opacity', CLEAR), ('ACCSys', 'Node.Visible', HIDDEN),
+                   ('LaneDistance', 'Node.Visible', HIDDEN),
+                   ('ADAS_SmallBG', 'Node.Visible', HIDDEN), ('ADAS_SmallBG', 'Node.Opacity', CLEAR)]
 
 
 def heads(directory, raw, wanted):
@@ -193,6 +212,30 @@ def position_group(strings, props, rows):
     return result + words(0)  # no geometry transition animations
 
 
+def full_screen_state(d, raw, group_index, rules):
+    """Replace the targets of the DCFull state in the manager's DCLayout group; every other byte stays."""
+    strings, props = d.dictionary('/$strings'), d.dictionary('/$property_dictionary')
+    at, group = 16, None
+    for index in range(struct.unpack_from('<I', raw, 12)[0]):
+        group = first_group(d, raw, at)
+        if struct.unpack_from('<I', raw, group['end'])[0] != 0:
+            raise ValueError('Unexpected ADAS manager transitions')
+        if index == group_index:
+            break
+        at = group['end'] + 4
+    else:
+        raise ValueError('ADAS manager group missing')
+    if props[group['control']] != 'DCLayout' or \
+            [(strings[name], value) for name, value, _ in group['states']] != [('DCIdle', 0), ('DCFull', 1), ('DCCenter', 2)]:
+        raise ValueError('Unexpected ADAS presentation group')
+    if group['states'][0][2] or not group['states'][2][2]:
+        raise ValueError('Unexpected ADAS idle/small-window rules')
+    states = list(group['states'])
+    states[1] = (states[1][0], 1, [(strings.index(path), [(props.index(key), value)], words(0, 0, 0))
+                                   for path, key, value in rules])
+    return raw[:group['begin']] + encode_group(dict(group, states=states)) + raw[group['end']:]
+
+
 def build(original):
     if digest(original) != INPUT_SHA:
         raise ValueError('Exact reviewed 1.25.1 KZB required')
@@ -239,6 +282,8 @@ def build(original):
         style_reports[style] = dict(moved_nodes=len(rows), original_binding_and_action_bytes_preserved=True)
     # Keep every original group/transition byte; append exactly one geometry group.
     changes[NATIVE_MANAGER] = native[:12] + words(4) + native[16:] + position_group(strings, props, reference_rows)
+    changes[ADAS_MANAGER] = full_screen_state(d, d.read(ADAS_MANAGER), 0, ADAS_FULL)
+    changes[SMALL_ADAS_MANAGER] = full_screen_state(d, d.read(SMALL_ADAS_MANAGER), 1, SMALL_ADAS_FULL)
     custom = d.read('/$property_types')
     changes['/$strings'], changes['/$property_dictionary'] = dictionary(strings), dictionary(props)
     changes['/$property_types'] = words(struct.unpack_from('<I', custom)[0] + 1) + custom[4:] + words(strings.index(CONTROL), 1, 0, 0, 0)
@@ -251,6 +296,7 @@ def build(original):
     return output, dict(input_sha256=digest(original), output_sha256=digest(output),
         changed_resources=list(changes), styles=style_reports,
         panel_slots=len(SLOTS), native_images_moved=len(names), native_logic_preserved=True,
+        adas_scene_hidden_in_full_screen=True,
         clear_apertures_unchanged=True, runtime_kanzi_or_vehicle=False)
 
 
