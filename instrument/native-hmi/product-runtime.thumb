@@ -121,6 +121,12 @@ bl runtime_name
 cmp r0, #0
 bne runtime_content_parent
 mov r0, r4
+adr r1, runtime_accsys
+movs r2, #6
+bl runtime_name
+cmp r0, #0
+bne runtime_content_parent
+mov r0, r4
 adr r1, runtime_left_lane
 movs r2, #8
 bl runtime_name
@@ -350,6 +356,7 @@ runtime_car: .asciz "Car"
 runtime_small_car: .asciz "CarSmall"
 runtime_lane: .asciz "Lane"
 runtime_small_bg: .asciz "ADAS_SmallBG"
+runtime_accsys: .asciz "ACCSys"
 runtime_left_lane: .asciz "LeftLane"
 runtime_right_lane: .asciz "RightLane"
 runtime_departure: .asciz "LaneDeparture"

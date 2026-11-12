@@ -21,7 +21,7 @@ from navigation_layout import digest, repack
 ROOT = Path(__file__).resolve().parents[1]
 MASK = ROOT / "instrument/assets/b3-center/DXCenterDark.png"
 RESOURCE = "/Resource Files/Images/DXCenterDark.png"
-HMI_SHA = "94afdc93bb641dd2d9e9b7cd62e0ffaf4094ac7be376f605fbb05c9eaa910bc8"
+HMI_SHA = "6d1122f4b2411b069764cd17d6617e9134431424ce408a5dd60750df498706ad"
 KZB_SHA = "bc2929b3b061a7ac8399537f6b42810d19de29b127c13036345edf39d21c9713"
 MASK_SHA = "0e91c53698e5bc06d5739e8caf7a8467608cc8e8d64506bd3b1351eb8f471e75"
 KZB_MD5 = "112569bd7e44d6815d618bdafcfbd7d8"

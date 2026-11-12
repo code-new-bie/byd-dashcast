@@ -6,7 +6,8 @@
 The original HMI, KZB with its TOC, 3D scene, application.cfg and the OS start-up module list are read straight
 from your base firmware ZIP and checked against their pins (tools/base_firmware.py). In memory the HMI/KZB go
 through the layout and background step, the B2 blend mode and masks, the small-window mask, the RWVG fade-in,
-the RWVI gauge geometry and the warning positions (with the full-screen ADAS rules); the start-up entry is added to the module list. The two
+the RWVI gauge geometry and the warning positions; the layout step's HMI also carries the runtime draw filter
+that hides the ACCSys overlay during projection (both layouts); the start-up entry is added to the module list. The two
 programs come from instrument/native/build.sh. OUT/app holds the app.sv files, OUT/os the one os.sv file;
 tools/package_full.py turns them and the same base ZIP into the flash package.
 Every output must match the reviewed bytes or nothing is written.
@@ -21,14 +22,14 @@ from build_projection_fit_components import build_components, checked_background
 from component_inputs import checked_file, new_output
 
 ROOT = Path(__file__).resolve().parents[1]
-STATUS = "INSTRUMENT_1400_FILES_NOT_AN_UPGRADE"
-# Output path -> SHA256 of the reviewed 1.40.0 file.
+STATUS = "INSTRUMENT_1410_FILES_NOT_AN_UPGRADE"
+# Output path -> SHA256 of the reviewed 1.41.0 file.
 EXPECTED = {
-    "app/base/app/rc_hmi/rc_hmi.exe": "2bcf0e996f6acdea976afb0d7ffaf3fe9cb3074733bb0fdefeb0d917787e18aa",
+    "app/base/app/rc_hmi/rc_hmi.exe": "6895a7253afa3df2445bcfec3a0f50adfcf25e1f9637933c0440a6adb12c0351",
     "app/base/app/rc_hmi/bic_byd_stha.kzb": "f80d81981b5075361f8c8f46a585f73b96925c7c128f6ba8c2fdf837643763c2",
     "app/base/app/rc_hmi/3dscreen.kzb": "31ef7e87ed16632498384818297660c44a113215ec3bec9c9efd2d3b86170f46",
     "app/base/app/rc_hmi/application.cfg": "37c03ecb7b068f08857fc43a470a144bb3faa70ceddb4fe184cf767ed58f442f",
-    "app/base/app/dashcast/dashcast-receiver": "83076b113cea8d05e9235698fe324f31832645cedcbf804efafe609ee1b00a4b",
+    "app/base/app/dashcast/dashcast-receiver": "fb4e9b42e74cefec72f433c8ce1c55deb7ab201dea686728af5fe402cb289e60",
     "app/base/app/dashcast/dashcast-usb": "3e4327a7ab07c926fc74067547ed51870d590e9de1ce3d96fd0b79f7bc15ee42",
     "os/base/etc/slm-config-modules.xml": "e34425c570cc5d2cd3a7b1a0fa2fc11707e5290fd79d1f0b405b4511352c04a8",
 }

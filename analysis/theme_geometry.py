@@ -14,7 +14,7 @@ from navigation_layout import words, dictionary, repack, digest
 from display_fusion import encode_manager
 
 ROOT = Path(__file__).resolve().parents[1]
-HMI_SHA = '723129a7a544eef3370c431ef7c3f931d0f73cb1f9e4b92132c7241f36156a3c'
+HMI_SHA = '357069b347976c78255e39aa572260a20cd871f5dc88b60cc6ceb69fb8445a1e'
 KZB_SHA = '75a4e82138c28933ae50dcc71637bab490e3779de50e2e44967056dcae592dc7'
 KEY = 'DCGaugeLayout'
 TRANSFORM = 'Node2D.RenderTransformation'

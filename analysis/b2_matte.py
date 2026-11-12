@@ -26,9 +26,9 @@ from product_runtime_layout import CAPABILITY, RECURSIVE_2D, RENDER_MESH
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "instrument/native-hmi/background-b2.thumb"
 MASKS = ROOT / "instrument/assets/b2"
-HMI_SHA = "5dfef87a7786c3b6af5866b44572c795156473001f0ffa29e7a0f2d3d966b9a2"
+HMI_SHA = "c35a4179a6a55a3f8d8d515e2077315baed210c106addcdff43f86ed06f8c6d1"
 KZB_SHA = "15822ca13bf5b2c8ca07d4c5a64bec6af1a1562117def4211af951bb46da0a63"
-HMI_MD5 = "d87808a04fc74d5ed5ce2fe4c1d2da71"
+HMI_MD5 = "b129a40fbf9906fa70a1356058ceb47e"
 KZB_MD5 = "283f693a72ac84dcd7982fabc5fc0a1e"
 SITE = 0x086A2E50
 ORIGINAL = bytes.fromhex("40f2023100220b46")

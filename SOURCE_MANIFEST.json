@@ -63,8 +63,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "bytes": 2267,
-      "sha256": "157be76592c5df02b7d794e7358ffb0550b5326557dc49ea10f62c9cf1eada94",
+      "bytes": 3015,
+      "sha256": "5a1f78f9daff42b83dba07073f94605ad39ccf45ed45b0a5fdbda651e5435ece",
       "origin": "publication/template/CHANGELOG.md",
       "transformations": []
     },
@@ -85,7 +85,7 @@
     {
       "path": "README.md",
       "bytes": 3689,
-      "sha256": "78b286e9a7ed5b51f646fc412908548e6e9b66a9db67407ed02f13982c3aca38",
+      "sha256": "fe103a85a7fcd386a2b5a6566ca08315fbdcee0ac2d6be0d12b1420efde2b8b9",
       "origin": "publication/template/README.md",
       "transformations": []
     },
@@ -138,7 +138,7 @@
     {
       "path": "analysis/b2_matte.py",
       "bytes": 8065,
-      "sha256": "68006b5921ce7af4d638aceb680d1e68730006a88868355365ff7c218b493bff",
+      "sha256": "c84389009e55d8c8c366caed6cb2068d46215eddff8848ef475e6a746dd35b98",
       "origin": "analysis/b2_matte.py",
       "transformations": [
         "PUBLIC_LAYOUT_PATHS_PHASE1_TO_ANDROID_INSTRUMENT"
@@ -156,7 +156,7 @@
     {
       "path": "analysis/center_premul_mask.py",
       "bytes": 4878,
-      "sha256": "d4abb90c93eb8be7d5701c0d3f6a86377f2a9bb82ce8df0d70e46470a5657a59",
+      "sha256": "717660773590fa64e018f8590246409cc79450d6ee22dbdedc651d3107ddaac4",
       "origin": "analysis/center_premul_mask.py",
       "transformations": [
         "PUBLIC_LAYOUT_PATHS_PHASE1_TO_ANDROID_INSTRUMENT"
@@ -239,7 +239,7 @@
       "origin": "REVIEWED_AFTER_INITIAL_EXPORT",
       "transformations": [],
       "bytes": 6692,
-      "sha256": "5edd40ea5d241986800a7053af777ba080a607f965372c59dd9c9ee4fa5414e8"
+      "sha256": "ce4cb081efdf0c9331a225b3f15fb59a9b7baa30eb2fc58831cd22abd1975484"
     },
     {
       "path": "analysis/inner_ring_refinement.py",
@@ -272,7 +272,7 @@
     {
       "path": "analysis/native_background_clear.py",
       "bytes": 2562,
-      "sha256": "75cdb5c95b59de9e0aa5b9ad5b4f92ad8b78bcc8635af912e992745efe3b3978",
+      "sha256": "7217a047e6724c038f1e6073df2eb3be21344472636f15313399bf9a2520dc60",
       "origin": "analysis/native_background_clear.py",
       "transformations": []
     },
@@ -380,7 +380,7 @@
       "origin": "REVIEWED_AFTER_INITIAL_EXPORT",
       "transformations": [],
       "bytes": 13887,
-      "sha256": "f7794a193de0a566cca7b99899dd53ebdfd014c81bfcdc68ecd7fec7bb77b4e2"
+      "sha256": "743093afb659a0bef3315b3cc945ed3791da55acfbd7e641f78451810c3091aa"
     },
     {
       "path": "analysis/unlimited_native.py",
@@ -409,8 +409,8 @@
       "path": "analysis/warning_perimeter.py",
       "origin": "REVIEWED_AFTER_INITIAL_EXPORT",
       "transformations": [],
-      "bytes": 21453,
-      "sha256": "26c69ed14febda5ad28b13a5372e484f5b991f54ca18a3d39e2419a829116b82"
+      "bytes": 21556,
+      "sha256": "95bbe9939bff878d60d78d6f2de3928638f732270ac42b02c56a669bc247e936"
     },
     {
       "path": "android/.gitignore",
@@ -422,7 +422,7 @@
     {
       "path": "android/app/build.gradle",
       "bytes": 1107,
-      "sha256": "68b98cb2c7ba4411cb363c09a878e98edca7b8e96406c091cbd3db8dc2557593",
+      "sha256": "6dc14daf55183f0c17cdae0b22f24025c6956df09c28a5dee99151c9a83a2b6d",
       "origin": "phase1/android/app/build.gradle",
       "transformations": []
     },
@@ -2307,15 +2307,15 @@
     },
     {
       "path": "docs/ARCHITECTURE.md",
-      "bytes": 6721,
-      "sha256": "6f5a3ccab8079446eed4381fbb7ce3dbc0737e21050b004d66c5930074707c84",
+      "bytes": 6910,
+      "sha256": "fae5023c5e1607e0e2a070450eabb4c0b96706453dee6edf825db47c5183de85",
       "origin": "publication/template/docs/ARCHITECTURE.md",
       "transformations": []
     },
     {
       "path": "docs/BUILD.md",
-      "bytes": 8794,
-      "sha256": "6a9ceaeb023803cb19bad24e81429c75f551ea85ba97017856ebdc868478017d",
+      "bytes": 9072,
+      "sha256": "05613814d123e52c0dcfe23baf6d9b9504e2f0ce5001ac9608393ed7055e5771",
       "origin": "publication/template/docs/BUILD.md",
       "transformations": []
     },
@@ -2331,19 +2331,19 @@
       "origin": "REVIEWED_AFTER_INITIAL_EXPORT",
       "transformations": [],
       "bytes": 40139,
-      "sha256": "dc99f640501e46580664f234afeaf8e525bc6312abd99520ca13e51dfdd30b2f"
+      "sha256": "5fcd40fefeec200e99438802067a428ec3700ccbf6d435de2548c4654ac76473"
     },
     {
       "path": "docs/USAGE.md",
-      "bytes": 5677,
-      "sha256": "26fa3bae21346da4375cb7baddbacdb977de5f8eddc3fed86e5d6bff345a4787",
+      "bytes": 5752,
+      "sha256": "542a60a3bf7c8c5c762e6da19276b617bae0efa0b3c52b4e1bafbf0868cf6974",
       "origin": "publication/template/docs/USAGE.md",
       "transformations": []
     },
     {
       "path": "docs/VALIDATION.md",
-      "bytes": 3620,
-      "sha256": "2c0b6fd07e1c24cb0a41e42c870e2b2c841a7a60db64ba39af77aaa3d19ec30b",
+      "bytes": 4384,
+      "sha256": "f4c1ab176e5d983cb256760521d005278d23046378a9380deb2cd15d43a3d96a",
       "origin": "publication/template/docs/VALIDATION.md",
       "transformations": []
     },
@@ -2433,8 +2433,8 @@
     },
     {
       "path": "instrument/native-hmi/product-runtime.thumb",
-      "bytes": 7292,
-      "sha256": "21111c853ea7ce8b5a8320b6d29d9640ecfca9b3550a0fafd4dacc46859cc26f",
+      "bytes": 7424,
+      "sha256": "87a98bf272db91c92f6787f1f3dc1f1692035e089f4f27665310c2f64b4957a3",
       "origin": "phase1/qnx/native-hmi/product-runtime.thumb",
       "transformations": []
     },
@@ -2590,7 +2590,7 @@
       "origin": "REVIEWED_AFTER_INITIAL_EXPORT",
       "transformations": [],
       "bytes": 172,
-      "sha256": "71e6b1e77b6727b4db823e078d34ef63219fc1b2a1495aff057be038adf37648"
+      "sha256": "a872a3e0a08571ac854d0bd13a195d61ac53e7f52229108910a0195e0024e67a"
     },
     {
       "path": "requirements-native.txt",
@@ -2629,8 +2629,8 @@
     },
     {
       "path": "tools/build_instrument_components.py",
-      "bytes": 6297,
-      "sha256": "9217c67814e84d8b1134376e08890a253520999244ec1dfcd912ac3ccfd974aa",
+      "bytes": 6386,
+      "sha256": "13f5412b971e6b4a45acabe37b3737317c792d0a52aae312a64a663b18e78c1a",
       "origin": "publication/template/tools/build_instrument_components.py",
       "transformations": []
     },

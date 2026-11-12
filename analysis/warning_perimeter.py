@@ -5,9 +5,10 @@ state groups, event/binding tails and textures survive. The group reads its cont
 through the local-only optional getter, so the HMI writes a private local value on
 the current instance's content node, in full screen only. Video, USB and capability are unchanged.
 
-Full screen also hides the driver-assistance scene (lead car, following-distance and lane pictures of the ADAS
-page and of its small widget): the frame has no room for them and they used to sit inside the video. The ACC lamp,
-the set speed, the other lamps and the take-over text stay. The small window keeps the side panel.
+Full screen also records hide rules for the driver-assistance scene in the KZB, but real hardware (1.40.0)
+showed that the DCLayout state never reaches the ADAS prefab instances: the effective suppression is the HMI
+runtime draw filter in instrument/native-hmi/product-runtime.thumb, which skips the whole ACCSys group during
+projection in both layouts. The ACC lamp, the set speed, the other lamps and the take-over text stay.
 """
 import io
 import re
@@ -23,7 +24,7 @@ from theme_geometry import variant, first_group, encode_group
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / 'instrument/native-hmi/warning-control.thumb'
 INPUT_SHA = '70ae4e79c722e98cc393552fe32fd3b1b71babdeee25bc592881b83e6f1e9b68'
-HMI_SHA = 'd910e76aee04113299a5febadab99e4de6ce96196cd8ce23a20b14aa7080e90c'
+HMI_SHA = '63cbe7c6b972eb26f9f8e575a089283f1d804a5ecdc9e4b7103b7deda7ebcbdc'
 NATIVE_MANAGER = '/State Managers/Fashion_Indicator_Theme'
 ADAS_MANAGER = '/State Managers/DCADASPresentation'
 SMALL_ADAS_MANAGER = '/State Managers/DCSmallADASPresentation'

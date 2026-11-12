@@ -22,7 +22,7 @@ ORIGINAL_CLEAR=0x0831308c
 
 def build_background_hmi(original):
     base,prior=build_boot_hmi(original)
-    assert digest(base)=='b657b7edf926b67748f51244e2eab02632ae53d18e85c703c484e4e081f4fa2c'
+    assert digest(base)=='1b213302e9cb4e4a9ce565a4e46d0d0faa523d4b81e7ab9ab563be158af97424'
     patch=Patch(base,digest(base))
     offset=patch.offset(CLEAR_ENTRY,4)
     before=base[offset:offset+4]
